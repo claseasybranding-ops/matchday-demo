@@ -6,115 +6,128 @@
     <title>MatchDay Fredrikstad</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f4f7f6; color: #333; font-family: sans-serif; }
+        body { background-color: #f4f7f6; color: #333; font-family: sans-serif; padding-bottom: 50px; }
         .match-card { 
             background: white; 
             border-radius: 20px; 
-            padding: 25px; 
-            margin-bottom: 20px; 
+            padding: 20px; 
+            margin-bottom: 15px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
             border: 1px solid #e0e0e0;
         }
-        .team-name { font-weight: 700; font-size: 1.1rem; color: #1a1a1a; }
+        .team-name { 
+            font-weight: 800; 
+            font-size: 0.9rem; /* Litt mindre skrift for å unngå kræsj */
+            text-transform: uppercase;
+            color: #1a1a1a;
+            line-height: 1.2;
+        }
         
-        /* Poeng-kontrollene med +/- */
-        .score-row { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 10px 0; }
+        .score-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 5px 0; }
         .btn-qty { 
             border: 1px solid #ddd; 
             background: #fff; 
             color: #d62828; 
-            width: 40px; 
-            height: 40px; 
+            width: 35px; 
+            height: 35px; 
             border-radius: 10px; 
             font-weight: bold; 
-            font-size: 1.2rem;
             transition: 0.2s;
         }
-        .btn-qty:active { background: #f0f0f0; transform: scale(0.95); }
-        .score-val { font-size: 2rem; font-weight: 800; min-width: 40px; text-align: center; color: #1a1a1a; }
+        .score-val { font-size: 1.6rem; font-weight: 800; min-width: 30px; text-align: center; color: #1a1a1a; }
 
         .btn-send { 
-            background: #d62828; 
-            color: white; 
-            border: none; 
-            padding: 18px; 
-            border-radius: 15px; 
-            width: 100%; 
-            font-weight: bold; 
-            font-size: 1.1rem; 
-            margin-top: 20px;
-            box-shadow: 0 4px 12px rgba(214, 40, 40, 0.3);
+            background: #d62828; color: white; border: none; padding: 18px; 
+            border-radius: 15px; width: 100%; font-weight: bold; margin-top: 20px;
         }
-        .header { padding: 40px 0 20px 0; text-align: center; }
-        .logo { font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; }
+        .header { padding: 30px 0 10px 0; text-align: center; }
+        .logo { font-size: 2rem; font-weight: 900; }
         .logo span { color: #d62828; }
+
+        /* Mobil-fix for symmetri */
+        @media (max-width: 400px) {
+            .team-name { font-size: 0.8rem; }
+            .score-val { font-size: 1.4rem; }
+            .btn-qty { width: 30px; height: 30px; }
+        }
     </style>
 </head>
 <body>
 
-<div class="container" style="max-width: 500px;">
+<div class="container" style="max-width: 480px;">
     <div class="header">
         <div class="logo">MatchDay<span>.</span></div>
-        <p class="text-muted fw-bold">GUTTENE I FREDRIKSTAD</p>
+        <p class="text-muted small fw-bold">GUTTENE I FREDRIKSTAD</p>
     </div>
 
-    <div class="mb-4">
-        <label class="small fw-bold text-muted ml-2">DITT NAVN</label>
-        <input type="text" id="brukerNavn" class="form-control p-3" placeholder="Skriv navnet ditt her..." style="border-radius: 12px; border: 2px solid #eee;">
+    <div class="mb-3">
+        <input type="text" id="brukerNavn" class="form-control p-3" placeholder="Ditt navn..." style="border-radius: 12px; border: 2px solid #eee;">
     </div>
 
-    <div class="match-card text-center">
-        <div class="row align-items-center">
-            <div class="col-4 team-name">LIVERPOOL</div>
+    <div class="match-card">
+        <div class="row align-items-center text-center g-0">
+            <div class="col-4 team-name px-1">LIVERPOOL</div>
             <div class="col-4">
                 <div class="score-row">
                     <button class="btn-qty" onclick="endre('h1', -1)">-</button>
                     <span class="score-val" id="h1">0</span>
                     <button class="btn-qty" onclick="endre('h1', 1)">+</button>
                 </div>
+            </div>
+            <div class="col-4 team-name px-1">CHELSEA</div>
+        </div>
+        <div class="row align-items-center text-center g-0 mt-2">
+            <div class="col-4 small text-muted">Hjemme</div>
+            <div class="col-4">
                 <div class="score-row">
                     <button class="btn-qty" onclick="endre('b1', -1)">-</button>
                     <span class="score-val" id="b1">0</span>
                     <button class="btn-qty" onclick="endre('b1', 1)">+</button>
                 </div>
             </div>
-            <div class="col-4 team-name">CHELSEA</div>
+            <div class="col-4 small text-muted">Borte</div>
         </div>
     </div>
 
-    <div class="match-card text-center">
-        <div class="row align-items-center">
-            <div class="col-4 team-name">BODØ/GLIMT</div>
+    <div class="match-card">
+        <div class="row align-items-center text-center g-0">
+            <div class="col-4 team-name px-1">BODØ/GLIMT</div>
             <div class="col-4">
                 <div class="score-row">
                     <button class="btn-qty" onclick="endre('h2', -1)">-</button>
                     <span class="score-val" id="h2">0</span>
                     <button class="btn-qty" onclick="endre('h2', 1)">+</button>
                 </div>
+            </div>
+            <div class="col-4 team-name px-1">FREDRIKSTAD</div>
+        </div>
+        <div class="row align-items-center text-center g-0 mt-2">
+            <div class="col-4 small text-muted">Hjemme</div>
+            <div class="col-4">
                 <div class="score-row">
                     <button class="btn-qty" onclick="endre('b2', -1)">-</button>
                     <span class="score-val" id="b2">0</span>
                     <button class="btn-qty" onclick="endre('b2', 1)">+</button>
                 </div>
             </div>
-            <div class="col-4 team-name">FREDRIKSTAD</div>
+            <div class="col-4 small text-muted">Borte</div>
         </div>
     </div>
 
-    <button class="btn-send" onclick="sendTips()">LÅS TIPS & SE TABELL ⚽</button>
+    <button class="btn-send shadow" onclick="sendTips()">LÅS TIPS & SE TABELL ⚽</button>
 </div>
 
 <script>
     function endre(id, verdi) {
         let el = document.getElementById(id);
-        let nyVerdi = parseInt(el.innerText) + verdi;
-        if(nyVerdi >= 0) el.innerText = nyVerdi;
+        let ny = parseInt(el.innerText) + verdi;
+        if(ny >= 0) el.innerText = ny;
     }
 
     function sendTips() {
         const navn = document.getElementById('brukerNavn').value;
-        if(!navn) { alert('Du må skrive navnet ditt!'); return; }
-        alert('Takk ' + navn + '! Tipsene dine er lagret.');
+        if(!navn) { alert('Skriv navnet ditt!'); return; }
+        alert('Takk, ' + navn + '! Tips lagret.');
     }
 </script>
 
