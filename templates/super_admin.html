@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super-Admin | MatchDay Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f0f2f5; font-family: 'Inter', sans-serif; }
+        .sidebar { background: #1a1a1a; color: white; min-height: 100vh; padding: 20px; }
+        .card { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .btn-import { background: #d62828; color: white; border: none; font-weight: bold; }
+        .match-row { border-bottom: 1px solid #eee; padding: 10px 0; }
+        .match-row:last-child { border: none; }
+        .logo-sm { width: 30px; height: 30px; object-fit: contain; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar">
+            <h3 class="fw-bold text-danger">MatchDay.</h3>
+            <hr>
+            <nav class="nav flex-column">
+                <a class="nav-link text-white fw-bold" href="#">Dashboard</a>
+                <a class="nav-link text-white-50" href="#">Grupper / Kunder</a>
+                <a class="nav-link text-white-50" href="#">Økonomi</a>
+            </nav>
+        </div>
+
+        <div class="col-md-10 p-5">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold">System-kontroll</h2>
+                <div>
+                    <button class="btn btn-dark" onclick="importLeague(39)">Hent Premier League (API)</button>
+                    <button class="btn btn-dark" onclick="importLeague(103)">Hent Eliteserien (API)</button>
+                </div>
+            </div>
+
+            <div class="card p-4">
+                <h4 class="fw-bold mb-3">Kamper i databasen</h4>
+                <div id="match-list">
+                    {% for k in kamper %}
+                    <div class="row match-row align-items-center">
+                        <div class="col-md-2 text-muted small">{{ k[6] }}</div> <div class="col-md-4 text-end">
+                            <span class="fw-bold">{{ k[2] }}</span>
+                            <img src="{{ k[4] }}" class="logo-sm ms-2">
+                        </div>
+                        <div class="col-md-1 text-center fw-bold text-danger">VS</div>
+                        <div class="col-md-4 text-start">
+                            <img src="{{ k[5] }}" class="logo-sm me-2">
+                            <span class="fw-bold">{{ k[3] }}</span>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" checked>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function importLeague(id) {
+        if(confirm("Vil du hente de neste 20 kampene fra API-et?")) {
+            fetch('/api/import_league/' + id)
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.status);
+                    window.location.reload();
+                });
+        }
+    }
+</script>
+
+</body>
+</html>
