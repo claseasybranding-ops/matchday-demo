@@ -1,13 +1,10 @@
 from flask import Flask, render_template, request, jsonify
-import json, os, requests
+import json, os
 
 app = Flask(__name__)
 
-# Innstillinger
-API_KEY = "c06ec6de7644023e13c7b881248ef5bc"
-CONFIG_FIL = "konkurranse_oppsett.json"
+CONFIG_FIL = "oppsett.json"
 
-# Funksjon for å hente eller lage standard-oppsett
 def hent_oppsett():
     default = {
         "gruppe": "Liverbirds Fredrikstad",
@@ -19,15 +16,10 @@ def hent_oppsett():
         }]
     }
     if not os.path.exists(CONFIG_FIL):
-        with open(CONFIG_FIL, 'w') as f:
-            json.dump(default, f)
         return default
-    
     with open(CONFIG_FIL, 'r') as f:
-        try:
-            return json.load(f)
-        except:
-            return default
+        try: return json.load(f)
+        except: return default
 
 @app.route('/')
 def index():
@@ -37,15 +29,14 @@ def index():
 def admin():
     oppsett = hent_oppsett()
     if request.method == 'POST':
-        nytt_oppsett = {
+        nytt = {
             "gruppe": request.form.get('gruppe'),
             "modus": request.form.get('modus'),
             "kamper": json.loads(request.form.get('kamp_data'))
         }
         with open(CONFIG_FIL, 'w') as f:
-            json.dump(nytt_oppsett, f)
-        return render_template('admin.html', o=nytt_oppsett, msg="Oppdatert!")
-    
+            json.dump(nytt, f)
+        return render_template('admin.html', o=nytt, msg="Lagret!")
     return render_template('admin.html', o=oppsett)
 
 @app.route('/send_tips', methods=['POST'])
