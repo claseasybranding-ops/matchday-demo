@@ -16,43 +16,52 @@ def init_db():
     # Tabell for grupper (dine kunder)
     c.execute('''CREATE TABLE IF NOT EXISTS groups 
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_name TEXT, admin_code TEXT, 
-                  active_fixtures TEXT, mode TEXT)''') # active_fixtures lagres som JSON-liste
+                  active_fixtures TEXT, mode TEXT)''')
     conn.commit()
     conn.close()
 
+# Kjører databasen med en gang appen starter
 init_db()
 
 @app.route('/')
 def index():
-    return "Hovedsiden for brukere (Kommer snart)"
+    return "Hovedsiden er under oppbygging. Gå til /super_admin_dashboard"
 
-# DITT SUPER-ADMIN PANEL
 @app.route('/super_admin_dashboard')
 def super_admin():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT * FROM fixtures ORDER BY date DESC")
-    alle_kamper = c.fetchall()
-    conn.close()
-    return render_template('super_admin.html', kamper=alle_kamper)
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT * FROM fixtures ORDER BY date ASC")
+        alle_kamper = c.fetchall()
+        conn.close()
+        # Her sender vi en tom liste hvis databasen er tom, i stedet for å krasje
+        return render_template('super_admin.html', kamper=alle_kamper if alle_kamper else [])
+    except Exception as e:
+        return f"Databasefeil: {str(e)}"
 
-# Funksjon for å hente en hel liga (f.eks Premier League = 39)
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
-    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&next=20"
+    # Henter neste 20 kamper
+    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&next=20"
     headers = {'x-apisports-key': API_KEY}
-    res = requests.get(url, headers=headers).json()
     
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    for f in res['response']:
-        c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)",
-                  (f['fixture']['id'], league_id, f['teams']['home']['name'], 
-                   f['teams']['away']['name'], f['teams']['home']['logo'], 
-                   f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "Importert 20 kamper"})
+    try:
+        res = requests.get(url, headers=headers).json()
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        
+        for f in res.get('response', []):
+            c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)",
+                      (f['fixture']['id'], league_id, f['teams']['home']['name'], 
+                       f['teams']['away']['name'], f['teams']['home']['logo'], 
+                       f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
+        
+        conn.commit()
+        conn.close()
+        return jsonify({"status": f"Suksess! Importerte {len(res.get('response', []))} kamper."})
+    except Exception as e:
+        return jsonify({"status": f"Feil: {str(e)}"})
 
 if __name__ == '__main__':
     app.run(debug=True)
