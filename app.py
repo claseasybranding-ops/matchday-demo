@@ -1,50 +1,14 @@
-import sqlite3
-from flask import Flask, render_template, request, jsonify
-import requests, json, os
-
-app = Flask(__name__)
-DB_PATH = "matchday_pro.db"
-
-# Din verifiserte API-nøkkel
-API_KEY = "c06ecd6de7644023a13c7b881248e5bc"
-
-def init_db():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS fixtures 
-                     (id INTEGER PRIMARY KEY, league_id INTEGER, h_navn TEXT, b_navn TEXT, 
-                      h_logo TEXT, b_logo TEXT, date TEXT, status TEXT)''')
-        c.execute('''CREATE TABLE IF NOT EXISTS groups 
-                     (id INTEGER PRIMARY KEY AUTOINCREMENT, group_name TEXT, admin_code TEXT, 
-                      active_fixtures TEXT, mode TEXT)''')
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Database init feil: {e}")
-
-init_db()
-
-@app.route('/')
-def index():
-    return "Hovedside under oppbygging. Gå til /super_admin_dashboard"
-
-@app.route('/super_admin_dashboard')
-def super_admin():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT * FROM fixtures ORDER BY date ASC")
-        alle_kamper = c.fetchall()
-        conn.close()
-        # VIKTIG: Her sender vi 'kamper' variabelen til HTML-en din
-        return render_template('super_admin.html', kamper=alle_kamper)
-    except Exception as e:
-        return f"Systemet har en intern feil: {str(e)}"
+from datetime import datetime, timedelta
 
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
-    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&next=20"
+    # Vi henter dato for i dag og 14 dager frem i tid
+    fra_dato = datetime.now().strftime('%Y-%m-%d')
+    til_dato = (datetime.now() + timedelta(days=14)).strftime('%Y-%m-%d')
+    
+    # Vi bruker 'from' og 'to' i stedet for 'next' (Dette er gratis!)
+    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&from={fra_dato}&to={til_dato}"
+    
     headers = {
         'x-apisports-key': API_KEY,
         'x-rapidapi-host': 'v3.football.api-sports.io'
@@ -53,14 +17,10 @@ def import_league(league_id):
     try:
         response = requests.get(url, headers=headers)
         res = response.json()
-        
-        # Sjekk om API-et klager på nøkkelen
-        if res.get('errors'):
-            return jsonify({"status": f"API-feil: {res['errors']}"})
-            
         data = res.get('response', [])
+        
         if not data:
-            return jsonify({"status": "Fant ingen kamper i API-et."})
+            return jsonify({"status": f"Ingen kamper funnet mellom {fra_dato} og {til_dato}. Sjekk om ligaen spiller nå."})
 
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -72,10 +32,7 @@ def import_league(league_id):
         conn.commit()
         conn.close()
         
-        return jsonify({"status": f"Suksess! Importerte {len(data)} kamper."})
+        return jsonify({"status": f"Suksess! Importerte {len(data)} kamper for de neste 14 dagene."})
         
     except Exception as e:
         return jsonify({"status": f"Feil ved import: {str(e)}"})
-
-if __name__ == '__main__':
-    app.run(debug=True)
