@@ -3,50 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MatchDay Fredrikstad</title>
+    <title>MatchDay | Fredrikstad</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
-        .match-container { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 30px; margin-top: 20px; border-bottom: 5px solid #d62828; }
-        .team-name { font-weight: 700; font-size: 1.1rem; text-transform: uppercase; }
-        .score-box { background: #f8f9fa; border-radius: 10px; padding: 10px 20px; font-size: 2.5rem; font-weight: 800; color: #d62828; min-width: 120px; display: inline-block; }
-        .minute-badge { background: #d62828; color: white; padding: 5px 15px; border-radius: 50px; font-size: 0.9rem; font-weight: bold; margin-bottom: 10px; display: inline-block; }
-        .form-control { border-radius: 10px; padding: 12px; border: 1px solid #ddd; }
-        .btn-action { background: #d62828; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; transition: 0.3s; }
-        .btn-action:hover { background: #a51d1d; transform: translateY(-2px); }
+        body { 
+            background: #0f0f0f; 
+            color: #ffffff; 
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            padding-bottom: 50px;
+        }
+        .hero-section { 
+            padding: 30px 0; 
+            background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%); 
+            border-bottom: 1px solid #333; 
+        }
+        .logo { font-weight: 900; font-size: 2rem; letter-spacing: -1px; }
+        .logo span { color: #ff3e3e; }
+
+        .match-card { 
+            background: rgba(255, 255, 255, 0.05); 
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            border-radius: 24px; 
+            padding: 30px; 
+            margin-top: 20px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        
+        .live-tag { 
+            background: #ff3e3e; 
+            color: white; 
+            padding: 4px 12px; 
+            border-radius: 6px; 
+            font-size: 0.75rem; 
+            font-weight: bold; 
+            display: inline-block;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite; 
+        }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .team-name { font-weight: 700; font-size: 1.2rem; text-transform: uppercase; }
+        .score-display { 
+            font-size: 3.5rem; 
+            font-weight: 900; 
+            color: #ff3e3e; 
+            line-height: 1;
+            margin: 10px 0;
+        }
+
+        .input-box { 
+            background: #1a1a1a; 
+            border: 1px solid #333; 
+            border-radius: 16px; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+            text-align: left;
+        }
+        .input-label { 
+            font-size: 0.7rem; 
+            text-transform: uppercase; 
+            color: #888; 
+            font-weight: bold; 
+            margin-bottom: 5px;
+            display: block;
+        }
+        .form-control-custom {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            width: 100%;
+            outline: none;
+        }
+        .form-control-custom::placeholder { color: #444; }
+
+        .btn-submit { 
+            background: #ff3e3e; 
+            color: white;
+            border: none; 
+            padding: 18px; 
+            border-radius: 16px; 
+            font-weight: 900; 
+            width: 100%; 
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s; 
+            margin-top: 10px;
+        }
+        .btn-submit:hover { background: #e63636; transform: translateY(-2px); }
+        
+        .footer-text { color: #555; font-size: 0.8rem; margin-top: 30px; }
     </style>
 </head>
 <body>
-    <div class="container text-center mb-5">
-        <h2 class="mt-5 fw-bold text-dark">GUTTENE I FREDRIKSTAD</h2>
-        <p class="text-muted mb-4">Eksklusiv Tippekonkurranse</p>
 
-        <div class="match-container mx-auto" style="max-width: 600px;">
-            <div class="minute-badge">{{ s.minutt }}</div>
-            <div class="d-flex justify-content-between align-items-center">
-                <div style="flex: 1;" class="team-name">{{ s.h_navn }}</div>
-                <div style="flex: 0 0 auto;" class="score-box mx-3">{{ s.h_score }} - {{ s.b_score }}</div>
-                <div style="flex: 1;" class="team-name">{{ s.b_navn }}</div>
+    <div class="hero-section text-center">
+        <div class="logo">MatchDay<span>.</span></div>
+        <p class="small text-secondary m-0">LIVERBIRDS FREDRIKSTAD</p>
+    </div>
+
+    <div class="container mt-4">
+        <div class="match-card text-center mx-auto" style="max-width: 550px;">
+            <div class="live-tag">LIVE {{ s.minutt }}</div>
+            
+            <div class="row align-items-center">
+                <div class="col-4">
+                    <div class="team-name">{{ s.h_navn }}</div>
+                </div>
+                <div class="col-4">
+                    <div class="score-display">{{ s.h_score }}-{{ s.b_score }}</div>
+                </div>
+                <div class="col-4">
+                    <div class="team-name">{{ s.b_navn }}</div>
+                </div>
             </div>
-            <p class="mt-4 text-secondary italic"><strong>Status:</strong> {{ s.hendelse }}</p>
+            
+            <div class="mt-3 py-2 border-top border-secondary">
+                <small class="text-secondary">{{ s.hendelse }}</small>
+            </div>
         </div>
 
-        <div class="mt-4 mx-auto" style="max-width: 450px;">
-            <div class="card p-4 border-0 shadow-sm" style="border-radius: 20px;">
-                <input type="text" id="navn" class="form-control mb-3" placeholder="Ditt kallenavn">
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label class="small fw-bold text-muted">{{ s.h_navn }}</label>
-                        <input type="number" id="h_tips" class="form-control text-center" placeholder="Mål">
-                    </div>
-                    <div class="col-6">
-                        <label class="small fw-bold text-muted">{{ s.b_navn }}</label>
-                        <input type="number" id="b_tips" class="form-control text-center" placeholder="Mål">
+        <div class="mx-auto mt-4" style="max-width: 450px;">
+            <div class="input-box">
+                <span class="input-label">Ditt Navn</span>
+                <input type="text" id="navn" class="form-control-custom" placeholder="F.eks. Ola Nordmann">
+            </div>
+
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="input-box text-center">
+                        <span class="input-label">{{ s.h_navn }}</span>
+                        <input type="number" id="h_tips" class="form-control-custom text-center" placeholder="0">
                     </div>
                 </div>
-                <label class="small fw-bold text-muted">Første målminutt (Tie-break)</label>
-                <input type="number" id="gg" class="form-control mb-4 text-center" placeholder="Minutt">
-                <button onclick="sendTips()" class="btn btn-action w-100 shadow">LÅS TIPS & SE TABELL ⚽</button>
+                <div class="col-6">
+                    <div class="input-box text-center">
+                        <span class="input-label">{{ s.b_navn }}</span>
+                        <input type="number" id="b_tips" class="form-control-custom text-center" placeholder="0">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="sendTips()" class="btn btn-submit shadow-lg">Send ditt tips ⚽</button>
+            
+            <div class="text-center footer-text">
+                Powered by MatchDay Engine v1.0
             </div>
         </div>
     </div>
@@ -57,16 +162,16 @@
                 navn: document.getElementById('navn').value,
                 h: document.getElementById('h_tips').value,
                 b: document.getElementById('b_tips').value,
-                gg: document.getElementById('gg').value
+                gg: 0
             };
-            if(!data.navn) { alert('Du må skrive navnet ditt!'); return; }
+            if(!data.navn) { alert('Vennligst skriv navnet ditt'); return; }
+            
             fetch('/send_tips', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
             }).then(() => {
-                alert('Takk, ' + data.navn + '! Ditt tips er registrert.');
-                window.location.reload();
+                alert('Tips registrert! Lykke til, ' + data.navn + '!');
             });
         }
     </script>
