@@ -1,47 +1,58 @@
+import sqlite3
 from flask import Flask, render_template, request, jsonify
-import json, os
+import requests, json, os
 
 app = Flask(__name__)
+DB_PATH = "matchday_pro.db"
+API_KEY = "c06ec6de7644023e13c7b881248ef5bc"
 
-CONFIG_FIL = "oppsett.json"
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    # Tabell for kamper hentet fra API
+    c.execute('''CREATE TABLE IF NOT EXISTS fixtures 
+                 (id INTEGER PRIMARY KEY, league_id INTEGER, h_navn TEXT, b_navn TEXT, 
+                  h_logo TEXT, b_logo TEXT, date TEXT, status TEXT)''')
+    # Tabell for grupper (dine kunder)
+    c.execute('''CREATE TABLE IF NOT EXISTS groups 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, group_name TEXT, admin_code TEXT, 
+                  active_fixtures TEXT, mode TEXT)''') # active_fixtures lagres som JSON-liste
+    conn.commit()
+    conn.close()
 
-def hent_oppsett():
-    default = {
-        "gruppe": "Liverbirds Fredrikstad",
-        "modus": "singel",
-        "kamper": [{
-            "id": 1, 
-            "h_navn": "Liverpool", "h_logo": "https://media.api-sports.io/football/teams/40.png",
-            "b_navn": "Chelsea", "b_logo": "https://media.api-sports.io/football/teams/49.png"
-        }]
-    }
-    if not os.path.exists(CONFIG_FIL):
-        return default
-    with open(CONFIG_FIL, 'r') as f:
-        try: return json.load(f)
-        except: return default
+init_db()
 
 @app.route('/')
 def index():
-    return render_template('index.html', o=hent_oppsett())
+    return "Hovedsiden for brukere (Kommer snart)"
 
-@app.route('/admin_secret_fFK', methods=['GET', 'POST'])
-def admin():
-    oppsett = hent_oppsett()
-    if request.method == 'POST':
-        nytt = {
-            "gruppe": request.form.get('gruppe'),
-            "modus": request.form.get('modus'),
-            "kamper": json.loads(request.form.get('kamp_data'))
-        }
-        with open(CONFIG_FIL, 'w') as f:
-            json.dump(nytt, f)
-        return render_template('admin.html', o=nytt, msg="Lagret!")
-    return render_template('admin.html', o=oppsett)
+# DITT SUPER-ADMIN PANEL
+@app.route('/super_admin_dashboard')
+def super_admin():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT * FROM fixtures ORDER BY date DESC")
+    alle_kamper = c.fetchall()
+    conn.close()
+    return render_template('super_admin.html', kamper=alle_kamper)
 
-@app.route('/send_tips', methods=['POST'])
-def send_tips():
-    return jsonify({"status": "ok"})
+# Funksjon for å hente en hel liga (f.eks Premier League = 39)
+@app.route('/api/import_league/<int:league_id>')
+def import_league(league_id):
+    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&next=20"
+    headers = {'x-apisports-key': API_KEY}
+    res = requests.get(url, headers=headers).json()
+    
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    for f in res['response']:
+        c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)",
+                  (f['fixture']['id'], league_id, f['teams']['home']['name'], 
+                   f['teams']['away']['name'], f['teams']['home']['logo'], 
+                   f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "Importert 20 kamper"})
 
 if __name__ == '__main__':
     app.run(debug=True)
