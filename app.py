@@ -1,33 +1,28 @@
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
-    # Vi bruker dagens dato
-    fra_dato = datetime.now().strftime('%Y-%m-%d')
-    # Vi henter for de neste 10 dagene for å holde oss innenfor grensene
-    til_dato = (datetime.now() + timedelta(days=10)).strftime('%Y-%m-%d')
-    
-    # Vi legger til timezone=Europe/Oslo (viktig for gratis-planen)
-    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&from={fra_dato}&to={til_dato}&timezone=Europe/Oslo"
-    
     headers = {
         'x-apisports-key': API_KEY,
         'x-rapidapi-host': 'v3.football.api-sports.io'
     }
     
     try:
+        # STEG 1: Finn ut hva som er "gjeldende runde" (Dette er alltid gratis)
+        round_url = f"https://v3.football.api-sports.io/fixtures/rounds?league={league_id}&season=2025&current=true"
+        round_res = requests.get(round_url, headers=headers).json()
+        current_round = round_res.get('response', [None])[0]
+        
+        if not current_round:
+            # Fallback hvis de ikke har en "current" runde akkurat nå
+            current_round = "Regular Season - 30" 
+
+        # STEG 2: Hent alle kamper i denne runden
+        url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&round={current_round}&timezone=Europe/Oslo"
         response = requests.get(url, headers=headers)
         res = response.json()
-        
-        # Hvis vi fortsatt får feil, prøver vi en siste "nød-metode" uten dato-filter
-        if res.get('errors') and 'plan' in str(res.get('errors')):
-            # Denne henter bare de absolutt neste kampene uansett plan
-            url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&last=10"
-            response = requests.get(url, headers=headers)
-            res = response.json()
-
         data = res.get('response', [])
-        
+
         if not data:
-            return jsonify({"status": f"Fant ingen kamper. API-svar: {res}"})
+            return jsonify({"status": f"Fant ingen kamper i {current_round}. API-svar: {res}"})
 
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -39,7 +34,7 @@ def import_league(league_id):
         conn.commit()
         conn.close()
         
-        return jsonify({"status": f"Suksess! Importerte {len(data)} kamper."})
+        return jsonify({"status": f"Suksess! Importerte {len(data)} kamper fra {current_round}."})
         
     except Exception as e:
-        return jsonify({"status": f"Feil ved import: {str(e)}"})
+        return jsonify({"status": f"Systemfeil: {str(e)}"})
