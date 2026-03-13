@@ -1,7 +1,7 @@
 import sqlite3
 from flask import Flask, render_template, request, jsonify
 import requests, os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 DB_PATH = "matchday_pro.db"
@@ -29,9 +29,12 @@ def super_admin():
 
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
-    # VIKTIG: Vi bruker KUN league og season. Dette SKAL alle planer ha tilgang til.
-    # Vi henter alle kamper for sesongen, og filtrerer i koden i stedet for i API-et.
-    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&timezone=Europe/Oslo"
+    # Vi henter fra i dag og 7 dager frem i tid
+    today = datetime.now().strftime('%Y-%m-%d')
+    next_week = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
+    
+    # Denne spørringen med 'from' og 'to' er gratis og stabil
+    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&from={today}&to={next_week}&timezone=Europe/Oslo"
     
     headers = {
         'x-apisports-key': API_KEY,
@@ -39,36 +42,24 @@ def import_league(league_id):
     }
     
     try:
-        response = requests.get(url, headers=headers)
-        res = response.json()
-        
-        # Hvis du fortsatt får "Next" feil her, så er det RENDER som ikke har oppdatert seg.
-        if 'Next' in str(res):
-            return jsonify({"status": "FEIL: Render kjører fortsatt gammel kode. Vennligst slett 'Matchday' på Render og lag ny."})
-
+        res = requests.get(url, headers=headers).json()
         data = res.get('response', [])
+        
         if not data:
-            return jsonify({"status": "Fant ingen data i API-et."})
+            return jsonify({"status": f"Ingen kamper funnet mellom {today} og {next_week}."})
 
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        
-        count = 0
         for f in data:
-            # Vi lagrer kun kamper som ikke har startet ennå (upcoming)
-            match_date = f['fixture']['date']
-            if match_date > datetime.now().isoformat():
-                c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)",
-                          (f['fixture']['id'], league_id, f['teams']['home']['name'], 
-                           f['teams']['away']['name'], f['teams']['home']['logo'], 
-                           f['teams']['away']['logo'], match_date, 'upcoming'))
-                count += 1
-        
+            c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)",
+                      (f['fixture']['id'], league_id, f['teams']['home']['name'], 
+                       f['teams']['away']['name'], f['teams']['home']['logo'], 
+                       f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
         conn.commit()
         conn.close()
-        return jsonify({"status": f"Suksess! Importerte {count} kommende kamper."})
+        return jsonify({"status": f"Suksess! Hentet {len(data)} kamper for den neste uken."})
     except Exception as e:
-        return jsonify({"status": f"Systemfeil: {str(e)}"})
+        return jsonify({"status": f"Feil: {str(e)}"})
 
 if __name__ == '__main__':
     app.run(debug=True)
