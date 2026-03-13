@@ -1,27 +1,28 @@
 from flask import Flask, render_template, request, jsonify
-import json, os
+import requests, os
 
 app = Flask(__name__)
 
-# Enkel funksjon for å styre status uten database-krøll i starten
-def hent_status():
-    return {
-        "h_navn": "Liverpool", 
-        "b_navn": "Chelsea", 
-        "h_score": 0, 
-        "b_score": 0, 
-        "minutt": "0'", 
-        "hendelse": "Venter på kampstart"
-    }
+# Her kan vi senere legge inn ekte API-kall til API-Sports
+def hent_kamper():
+    return [
+        {
+            "id": 1, 
+            "h_navn": "Liverpool", "h_logo": "https://media.api-sports.io/football/teams/40.png",
+            "b_navn": "Chelsea", "b_logo": "https://media.api-sports.io/football/teams/49.png",
+            "h_score": 0, "b_score": 0
+        },
+        {
+            "id": 2, 
+            "h_navn": "Bodø/Glimt", "h_logo": "https://media.api-sports.io/football/teams/933.png",
+            "b_navn": "Fredrikstad", "b_logo": "https://media.api-sports.io/football/teams/3501.png",
+            "h_score": 0, "b_score": 0
+        }
+    ]
 
 @app.route('/')
 def index():
-    # Vi sender statusen til det lyse designet
-    return render_template('index.html', s=hent_status())
-
-@app.route('/admin_secret_fFK')
-def admin():
-    return render_template('admin.html', s=hent_status())
+    return render_template('index.html', kamper=hent_kamper())
 
 @app.route('/send_tips', methods=['POST'])
 def send_tips():
