@@ -13,12 +13,11 @@
         .logo-text { color: var(--md-red); font-weight: 800; font-size: 1.4rem; margin: 0; letter-spacing: -1px; }
         .prize-container { background: white; margin: 15px auto; max-width: 450px; border-radius: 12px; border: 2px solid var(--md-red); padding: 12px; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 4px 10px rgba(204, 0, 0, 0.1); }
         .prize-badge { background: var(--md-red); color: white; font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; }
-        .match-card { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; }
+        .match-card { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
         .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
         .team-logo { width: 35px; height: 35px; object-fit: contain; margin-bottom: 5px; }
         .score-val { font-size: 1.8rem; font-weight: 800; width: 25px; }
-        .btn-adj { width: 35px; height: 35px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.1s; }
-        .btn-adj:active { transform: scale(0.9); }
+        .btn-adj { width: 35px; height: 35px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
         .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; }
         .lb-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; }
         .lb-rank { width: 30px; font-weight: 800; color: #94a3b8; }
@@ -52,7 +51,7 @@
         <div class="match-card" data-match-id="{{ m[0] }}">
             <div class="match-grid">
                 <div class="team-side">
-                    <img src="{{ m[4] }}" class="team-logo">
+                    <img src="{{ m[4] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/35'">
                     <span class="d-block small fw-bold">{{ m[2] }}</span>
                     <div class="d-flex justify-content-center gap-1 mt-2">
                         <button class="btn-adj" onclick="adj(this, -1)">-</button>
@@ -65,7 +64,7 @@
                     <span class="score-val a-val">0</span>
                 </div>
                 <div class="team-side">
-                    <img src="{{ m[5] }}" class="team-logo">
+                    <img src="{{ m[5] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/35'">
                     <span class="d-block small fw-bold">{{ m[3] }}</span>
                     <div class="d-flex justify-content-center gap-1 mt-2">
                         <button class="btn-adj" onclick="adj(this, -1)">-</button>
@@ -79,7 +78,7 @@
         <button class="btn-submit" onclick="submitTicket()">LEVER KUPONG</button>
     </div>
 
-    <div id="screen-leaderboard" class="d-none">
+    <div id="screen-leaderboard" class="{% if not leaderboard %}d-none{% endif %}">
         <div class="text-center mb-3">
             <h5 class="fw-bold m-0">Leaderboard</h5>
             <small class="text-muted">Poeng beregnes live fra API</small>
@@ -93,17 +92,12 @@
             </div>
             {% endfor %}
         </div>
-        <button class="btn btn-link w-100 text-danger mt-3 small fw-bold" onclick="reset()">Prøv på nytt</button>
+        <button class="btn btn-link w-100 text-danger mt-3 small fw-bold" onclick="reset()">Tipp på nytt</button>
     </div>
 </div>
 
 <script>
-    window.onload = function() {
-        if(localStorage.getItem('sub_{{ group[2] }}')) {
-            document.getElementById('screen-coupon').classList.add('d-none');
-            document.getElementById('screen-leaderboard').classList.remove('d-none');
-        }
-    };
+    // Fjernet automatisk sjekk av localStorage her så du ikke blir låst ute.
     function adj(btn, val) {
         const side = btn.closest('.team-side');
         const card = btn.closest('.match-card');
@@ -119,9 +113,12 @@
             d.matches.push({ match_id: c.getAttribute('data-match-id'), h: c.querySelector('.h-val').innerText, a: c.querySelector('.a-val').innerText });
         });
         fetch('/api/submit_bet', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(d) })
-        .then(() => { localStorage.setItem('sub_{{ group[2] }}', 't'); location.reload(); });
+        .then(() => { location.reload(); });
     }
-    function reset() { localStorage.removeItem('sub_{{ group[2] }}'); location.reload(); }
+    function reset() { 
+        document.getElementById('screen-coupon').classList.remove('d-none');
+        document.getElementById('screen-leaderboard').classList.add('d-none');
+    }
 </script>
 </body>
 </html>
