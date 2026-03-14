@@ -13,11 +13,12 @@
         .logo-text { color: var(--md-red); font-weight: 800; font-size: 1.4rem; margin: 0; letter-spacing: -1px; }
         .prize-container { background: white; margin: 15px auto; max-width: 450px; border-radius: 12px; border: 2px solid var(--md-red); padding: 12px; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 4px 10px rgba(204, 0, 0, 0.1); }
         .prize-badge { background: var(--md-red); color: white; font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; }
-        .match-card { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+        .match-card { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; }
         .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
         .team-logo { width: 35px; height: 35px; object-fit: contain; margin-bottom: 5px; }
         .score-val { font-size: 1.8rem; font-weight: 800; width: 25px; }
-        .btn-adj { width: 35px; height: 35px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .btn-adj { width: 35px; height: 35px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.1s; }
+        .btn-adj:active { transform: scale(0.9); }
         .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; }
         .lb-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; }
         .lb-rank { width: 30px; font-weight: 800; color: #94a3b8; }
@@ -81,7 +82,7 @@
     <div id="screen-leaderboard" class="d-none">
         <div class="text-center mb-3">
             <h5 class="fw-bold m-0">Leaderboard</h5>
-            <small class="text-muted">Poeng beregnes live</small>
+            <small class="text-muted">Poeng beregnes live fra API</small>
         </div>
         <div class="leaderboard-card">
             {% for entry in leaderboard %}
@@ -111,13 +112,13 @@
         target.innerText = Math.max(0, parseInt(target.innerText) + val);
     }
     function submitTicket() {
-        const name = document.getElementById('player-name').value;
-        if(!name) return alert("Navn!");
-        const data = { group_id: "{{ group[0] }}", player_name: name, matches: [] };
-        document.querySelectorAll('.match-card').forEach(card => {
-            data.matches.push({ match_id: card.getAttribute('data-match-id'), h: card.querySelector('.h-val').innerText, a: card.querySelector('.a-val').innerText });
+        const n = document.getElementById('player-name').value;
+        if(!n) return alert("Navn!");
+        const d = { group_id: "{{ group[0] }}", player_name: n, matches: [] };
+        document.querySelectorAll('.match-card').forEach(c => {
+            d.matches.push({ match_id: c.getAttribute('data-match-id'), h: c.querySelector('.h-val').innerText, a: c.querySelector('.a-val').innerText });
         });
-        fetch('/api/submit_bet', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) })
+        fetch('/api/submit_bet', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(d) })
         .then(() => { localStorage.setItem('sub_{{ group[2] }}', 't'); location.reload(); });
     }
     function reset() { localStorage.removeItem('sub_{{ group[2] }}'); location.reload(); }
