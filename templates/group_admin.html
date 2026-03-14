@@ -9,15 +9,25 @@
     <style>
         :root { --md-red: #cc0000; --md-bg: #f3f4f6; --md-card: #ffffff; --md-text: #111827; --md-border: #e5e7eb; }
         body { background-color: var(--md-bg); color: var(--md-text); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 100px; }
+        
         .admin-header { background: white; padding: 20px; border-bottom: 1px solid var(--md-border); margin-bottom: 20px; text-align: center; }
+        
+        /* Delingsboks */
+        .share-box { background: #eff6ff; border: 2px solid #3b82f6; border-radius: 16px; padding: 20px; margin-bottom: 15px; }
+        .share-url { background: white; border: 1px solid #d1d5db; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
         .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .label-style { font-size: 0.7rem; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: block; }
+        
         .mode-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .mode-card { border: 2px solid #e5e7eb; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; font-weight: 700; }
         .mode-card.active { border-color: var(--md-red); background: #fff1f2; color: var(--md-red); }
+        
         .match-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f3f4f6; justify-content: space-between; }
         .team-logo-small { width: 24px; height: 24px; object-fit: contain; margin-right: 8px; }
         .btn-select { border-radius: 50px; font-size: 0.75rem; font-weight: 700; padding: 6px 15px; }
+        
+        .fixed-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; border-top: 1px solid var(--md-border); z-index: 1000; }
         .btn-main { background: var(--md-red); color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; }
     </style>
 </head>
@@ -29,6 +39,16 @@
 </div>
 
 <div class="container" style="max-width: 500px;">
+    
+    <div class="share-box">
+        <label class="label-style" style="color: #1e40af;">Send denne linken til medlemmene:</label>
+        <div class="d-flex gap-2">
+            <div class="share-url flex-grow-1" id="group-link">https://{{ request.host }}/group/{{ group[2] }}</div>
+            <button class="btn btn-primary btn-sm fw-bold" onclick="copyLink()">KOPIER</button>
+        </div>
+        <small class="text-muted mt-2 d-block" style="font-size: 0.65rem;">Medlemmer bruker denne for å tippe og se leaderboard.</small>
+    </div>
+
     <div class="card-custom">
         <label class="label-style">Instillinger for runden</label>
         <input type="text" id="prize" class="form-control mb-3" placeholder="Hva er premien?" value="{{ group[5] or '' }}">
@@ -57,30 +77,30 @@
     </div>
 </div>
 
-<div class="fixed-bottom p-3 bg-white border-top">
+<div class="fixed-bottom-nav">
     <div class="container" style="max-width: 500px;">
-        <a href="/group/{{ group[2] }}" target="_blank" class="btn btn-main">ÅPNE KUPONG (LIVE)</a>
+        <a href="/group/{{ group[2] }}" target="_blank" class="btn btn-main">FORHÅNDSVIS KUPONG</a>
     </div>
 </div>
 
 <script>
     let currentMode = '{{ group[4] }}';
 
-    // Denne funksjonen sender modusen til databasen med en gang
+    function copyLink() {
+        const linkText = document.getElementById('group-link').innerText;
+        navigator.clipboard.writeText(linkText).then(() => {
+            alert("Linken er kopiert til utklippstavlen!");
+        });
+    }
+
     function updateMode(mode) {
         currentMode = mode;
         const prize = document.getElementById('prize').value;
-        
         fetch('/api/update_group_settings', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                group_id: '{{ group[0] }}', 
-                mode: mode, 
-                prize_info: prize
-            })
+            body: JSON.stringify({group_id: '{{ group[0] }}', mode: mode, prize_info: prize})
         }).then(() => {
-            // Oppdater fargene på knappene med en gang
             document.getElementById('m-multi').classList.toggle('active', mode === 'multi');
             document.getElementById('m-single').classList.toggle('active', mode === 'single');
         });
