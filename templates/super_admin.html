@@ -12,7 +12,9 @@
         .card { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; padding: 25px; }
         .logo-sm { width: 30px; height: 30px; object-fit: contain; margin: 0 10px; }
         .match-row { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; align-items: center; }
-        .btn-api { background: #1a1a1a; color: white; border-radius: 8px; padding: 10px 20px; font-weight: bold; border: none; margin-left: 10px; }
+        .btn-api { background: #1a1a1a; color: white; border-radius: 8px; padding: 10px 20px; font-weight: bold; border: none; margin-left: 10px; transition: 0.3s; }
+        .btn-api:hover { background: #cc0000; }
+        .badge-date { background: #f8f9fa; color: #666; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -31,24 +33,35 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="fw-bold">System-kontroll</h2>
         <div>
-            <button class="btn-api" onclick="importLeague(39)">Hent Premier League (API)</button>
-            <button class="btn-api" onclick="importLeague(103)">Hent Eliteserien (API)</button>
+            <button class="btn-api" onclick="importLeague('PL')">Hent Premier League</button>
+            <button class="btn-api" onclick="importLeague('CL')">Hent Champions League</button>
+            <button class="btn-api" onclick="importLeague('BL1')">Hent Bundesliga</button>
         </div>
     </div>
 
     <div class="card">
-        <h4 class="fw-bold mb-3">Kamper i databasen</h4>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold m-0">Kamper i databasen</h4>
+            <span class="badge bg-primary">{{ kamper|length }} kamper totalt</span>
+        </div>
+        
         <div id="match-list">
             {% if kamper|length == 0 %}
-                <p class="text-center text-muted py-5">Ingen kamper i databasen ennå. Trykk på knappene over for å hente fra API.</p>
+                <p class="text-center text-muted py-5">Ingen kamper i databasen ennå. Bruk knappene over for å hente data fra 2026-sesongen!</p>
             {% endif %}
 
             {% for k in kamper %}
             <div class="match-row">
-                <div class="col-2 text-muted small">{{ k[6][:10] }}</div>
-                <div class="col-4 text-end fw-bold">{{ k[2] }} <img src="{{ k[4] }}" class="logo-sm"></div>
+                <div class="col-2">
+                    <span class="badge-date">{{ k[6][:10] }}</span>
+                </div>
+                <div class="col-4 text-end fw-bold">
+                    {{ k[2] }} <img src="{{ k[4] }}" class="logo-sm" onerror="this.src='https://via.placeholder.com/30?text=?'">
+                </div>
                 <div class="col-1 text-center text-danger fw-bold">VS</div>
-                <div class="col-4 text-start fw-bold"><img src="{{ k[5] }}" class="logo-sm"> {{ k[3] }}</div>
+                <div class="col-4 text-start fw-bold">
+                    <img src="{{ k[5] }}" class="logo-sm" onerror="this.src='https://via.placeholder.com/30?text=?'"> {{ k[3] }}
+                </div>
                 <div class="col-1 text-center">
                     <button class="btn btn-sm btn-outline-success">Aktiver</button>
                 </div>
@@ -59,13 +72,24 @@
 </div>
 
 <script>
-    function importLeague(id) {
-        if(confirm("Hente kamper fra API?")) {
-            fetch('/api/import_league/' + id)
+    function importLeague(code) {
+        if(confirm("Vil du hente kommende kamper for " + code + "?")) {
+            // Viser en enkel laste-melding
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerText = "Henter...";
+            btn.disabled = true;
+
+            fetch('/api/import_league/' + code)
                 .then(res => res.json())
                 .then(data => {
                     alert(data.status);
                     window.location.reload();
+                })
+                .catch(err => {
+                    alert("Noe gikk galt: " + err);
+                    btn.innerText = originalText;
+                    btn.disabled = false;
                 });
         }
     }
