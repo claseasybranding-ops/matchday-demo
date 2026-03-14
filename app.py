@@ -12,7 +12,6 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('CREATE TABLE IF NOT EXISTS fixtures (id INTEGER PRIMARY KEY, league_id TEXT, h_navn TEXT, b_navn TEXT, h_logo TEXT, b_logo TEXT, date TEXT, status TEXT)')
-    # Lagt til 'mode' her for å skille mellom multi og single
     c.execute('CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, slug TEXT UNIQUE, admin_name TEXT, mode TEXT DEFAULT "multi")')
     c.execute('CREATE TABLE IF NOT EXISTS group_selections (group_id INTEGER, fixture_id INTEGER, PRIMARY KEY(group_id, fixture_id))')
     conn.commit()
@@ -55,6 +54,42 @@ def group_view(slug):
     conn.close()
     return render_template('group_view.html', group=group, matches=matches)
 
+@app.route('/api/import_league/<string:league_code>')
+def import_league(league_code):
+    url = f"https://api.football-data.org/v4/competitions/{league_code}/matches?status=SCHEDULED"
+    headers = { 'X-Auth-Token': API_KEY }
+    try:
+        response = requests.get(url, headers=headers)
+        res = response.json()
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        for m in res.get('matches', []):
+            c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)", 
+                      (m['id'], league_code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], 
+                       m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "Suksess"})
+    except Exception as e:
+        return jsonify({"status": str(e)}), 500
+
+@app.route('/api/create_group', methods=['POST'])
+def create_group():
+    data = request.json
+    name = data.get('name')
+    admin = data.get('admin_name')
+    slug = name.lower().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    try:
+        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (name, slug, admin))
+        conn.commit()
+        return jsonify({"status": "Suksess"})
+    except:
+        return jsonify({"status": "Navnet er opptatt"}), 400
+    finally:
+        conn.close()
+
 @app.route('/api/set_mode', methods=['POST'])
 def set_mode():
     data = request.json
@@ -70,39 +105,16 @@ def toggle_match():
     data = request.json
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+    c.execute("SELECT mode FROM groups WHERE id = ?", (data['group_id'],))
+    mode = c.fetchone()[0]
+    
     c.execute("SELECT * FROM group_selections WHERE group_id = ? AND fixture_id = ?", (data['group_id'], data['fixture_id']))
     if c.fetchone():
         c.execute("DELETE FROM group_selections WHERE group_id = ? AND fixture_id = ?", (data['group_id'], data['fixture_id']))
     else:
-        # Hvis det er single-game, sletter vi andre valg først så det bare er én kamp
-        c.execute("SELECT mode FROM groups WHERE id = ?", (data['group_id'],))
-        if c.fetchone()[0] == 'single':
+        if mode == 'single':
             c.execute("DELETE FROM group_selections WHERE group_id = ?", (data['group_id'],))
-        c.execute("INSERT INTO group_selections VALUES (?, ?)", (data['group_id'], data['fixture_id']))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
-
-@app.route('/api/create_group', methods=['POST'])
-def create_group():
-    data = request.json
-    slug = data['name'].lower().replace(" ", "-")
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (data['name'], slug, data['admin_name']))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
-
-@app.route('/api/import_league/<string:code>')
-def import_league(code):
-    url = f"https://api.football-data.org/v4/competitions/{code}/matches?status=SCHEDULED"
-    headers = { 'X-Auth-Token': API_KEY }
-    res = requests.get(url, headers=headers).json()
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    for m in res.get('matches', []):
-        c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)", (m['id'], code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
+        c.execute("INSERT INTO group_selections (group_id, fixture_id) VALUES (?, ?)", (data['group_id'], data['fixture_id']))
     conn.commit()
     conn.close()
     return jsonify({"status": "ok"})
