@@ -5,8 +5,6 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__)
 DB_PATH = "matchday_pro.db"
-
-# Her er din korrekte nøkkel lagt inn fast:
 API_KEY = "c06ecd6de7644023a13c7b881248e5bc"
 
 def init_db():
@@ -24,6 +22,7 @@ init_db()
 def super_admin():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+    # Henter alle kamper sortert på tid
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
     alle_kamper = c.fetchall()
     conn.close()
@@ -31,25 +30,29 @@ def super_admin():
 
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
-    # Vi henter fra i dag og 7 dager frem i tid
-    today = datetime.now().strftime('%Y-%m-%d')
-    next_week = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
-    
-    # VIKTIG: Vi fjerner season-filteret helt for å unngå dato-krøll i 2026
-    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&from={today}&to={next_week}&timezone=Europe/Oslo"
-    
     headers = {
         'x-apisports-key': API_KEY,
         'x-rapidapi-host': 'v3.football.api-sports.io'
     }
     
+    # Vi prøver den absolutt enkleste metoden for gratiskontoer: 
+    # Hent de neste 10 kampene i ligaen uavhengig av dato-intervall
+    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&next=10&timezone=Europe/Oslo"
+    
     try:
         response = requests.get(url, headers=headers)
         res = response.json()
+        
+        # Hvis 'next' blir blokkert, prøver vi for i dag (lørdag 14. mars)
+        if res.get('errors') and 'plan' in str(res.get('errors')):
+            today = datetime.now().strftime('%Y-%m-%d')
+            url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&date={today}&timezone=Europe/Oslo"
+            res = requests.get(url, headers=headers).json()
+
         data = res.get('response', [])
         
         if not data:
-            return jsonify({"status": f"Fant ingen kamper i perioden {today} til {next_week}. API svar: {res}"})
+            return jsonify({"status": f"API fant ingen kamper. Svar: {res}"})
 
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -60,9 +63,10 @@ def import_league(league_id):
                        f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
         conn.commit()
         conn.close()
-        return jsonify({"status": f"Suksess! Hentet {len(data)} kamper."})
+        return jsonify({"status": f"Suksess! Importerte {len(data)} kamper."})
+        
     except Exception as e:
-        return jsonify({"status": f"Feil: {str(e)}"})
+        return jsonify({"status": f"Systemfeil: {str(e)}"})
 
 if __name__ == '__main__':
     app.run(debug=True)
