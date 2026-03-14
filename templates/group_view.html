@@ -6,43 +6,122 @@
     <title>{{ group[1] }} | MatchDay</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #1a1a1a; color: white; font-family: sans-serif; }
-        .container { max-width: 500px; padding-top: 50px; }
-        .match-card { background: #252525; border-radius: 15px; padding: 20px; margin-bottom: 15px; border: 1px solid #333; }
-        .logo-lg { width: 50px; height: 50px; object-fit: contain; }
-        .team-name { font-size: 0.9rem; margin-top: 10px; font-weight: bold; }
-        .vs-badge { background: #cc0000; padding: 5px 10px; border-radius: 5px; font-size: 0.7rem; font-weight: bold; }
+        body { background: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .header-card { background: #cc0000; color: white; border-radius: 0 0 40px 40px; padding: 50px 20px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .match-card { background: white; border-radius: 20px; padding: 25px; margin-bottom: 20px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .single-game-border { border: 3px solid #cc0000 !important; position: relative; }
+        .single-game-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #cc0000; color: white; padding: 2px 15px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
+        
+        .score-control { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 10px 0; }
+        .btn-qty { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #eee; background: white; font-weight: bold; color: #cc0000; transition: 0.2s; }
+        .btn-qty:active { background: #cc0000; color: white; }
+        .score-display { font-size: 1.8rem; font-weight: 800; width: 40px; text-align: center; color: #333; }
+        
+        .extra-question { background: #fff5f5; border-radius: 12px; padding: 15px; margin-top: 20px; border-left: 4px solid #cc0000; }
+        .logo-img { width: 60px; height: 60px; object-fit: contain; }
+        .team-name { font-size: 1rem; font-weight: bold; margin-top: 10px; color: #1a1a1a; }
+        
+        .submit-section { background: white; border-radius: 20px; padding: 25px; margin-bottom: 50px; }
     </style>
 </head>
 <body>
 
-<div class="container text-center">
-    <h2 class="fw-bold mb-1 text-danger">MatchDay.</h2>
-    <h4 class="mb-4">{{ group[1] }}</h4>
-    <p class="text-white-50 small mb-5">Her er rundens utvalgte kamper. Bli med og tipp!</p>
+<div class="header-card text-center">
+    <h1 class="fw-bold m-0">{{ group[1] }}</h1>
+    <p class="opacity-75">Velkommen til ukens kupong</p>
+</div>
 
+<div class="container" style="max-width: 550px;">
     {% for m in matches %}
-    <div class="match-card">
-        <div class="row align-items-center">
+    <div class="match-card {% if m[8] == 1 %}single-game-border{% endif %}">
+        {% if m[8] == 1 %}<div class="single-game-badge">Hovedkamp</div>{% endif %}
+        
+        <div class="row align-items-center text-center">
             <div class="col-4">
-                <img src="{{ m[4] }}" class="logo-lg">
+                <img src="{{ m[4] }}" class="logo-img">
                 <div class="team-name">{{ m[2] }}</div>
             </div>
+            
             <div class="col-4">
-                <span class="vs-badge">VS</span>
-                <div class="small text-white-50 mt-2">{{ m[6][11:16] }}</div>
+                <div class="score-control">
+                    <button class="btn-qty" onclick="change('h-{{ m[0] }}', 1)">+</button>
+                    <div class="score-display" id="h-{{ m[0] }}">0</div>
+                    <button class="btn-qty" onclick="change('h-{{ m[0] }}', -1)">-</button>
+                </div>
+                <div class="text-muted small fw-bold">VS</div>
+                <div class="score-control">
+                    <button class="btn-qty" onclick="change('b-{{ m[0] }}', 1)">+</button>
+                    <div class="score-display" id="b-{{ m[0] }}">0</div>
+                    <button class="btn-qty" onclick="change('b-{{ m[0] }}', -1)">-</button>
+                </div>
             </div>
+
             <div class="col-4">
-                <img src="{{ m[5] }}" class="logo-lg">
+                <img src="{{ m[5] }}" class="logo-img">
                 <div class="team-name">{{ m[3] }}</div>
             </div>
         </div>
-        <button class="btn btn-outline-danger btn-sm w-100 mt-3">Gi ditt tips</button>
+
+        {% if m[8] == 1 %}
+        <div class="extra-question mt-4">
+            <h6 class="fw-bold mb-3 text-danger">Ekstra vinnersjanser:</h6>
+            
+            <div class="mb-3">
+                <label class="small fw-bold">Hvem scorer første mål?</label>
+                <input type="text" class="form-control form-control-sm" placeholder="Spillernavn...">
+            </div>
+            
+            <div class="mb-3">
+                <label class="small fw-bold">Blir det straffespark i kampen?</label>
+                <select class="form-select form-select-sm">
+                    <option value="nei">Nei</option>
+                    <option value="ja">Ja</option>
+                </select>
+            </div>
+
+            <div class="mb-0">
+                <label class="small fw-bold">Når kommer første mål?</label>
+                <select class="form-select form-select-sm">
+                    <option>0 - 15 min</option>
+                    <option>16 - 30 min</option>
+                    <option>31 - 45 min</option>
+                    <option>46+ min</option>
+                    <option>Ingen mål</option>
+                </select>
+            </div>
+        </div>
+        {% endif %}
     </div>
-    {% else %}
-        <p class="text-muted mt-5">Ingen kamper er lagt ut på kuppongen ennå.</p>
     {% endfor %}
+
+    <div class="submit-section text-center">
+        <label class="fw-bold mb-2">Klar til å levere?</label>
+        <input type="text" id="userName" class="form-control mb-3 text-center py-2" placeholder="Skriv ditt navn her">
+        <button class="btn btn-danger btn-lg w-100 fw-bold shadow" onclick="submitKupong()">SEND INN KUPONG</button>
+        <p class="text-muted small mt-3">Lykke til!</p>
+    </div>
 </div>
+
+<script>
+    function change(id, delta) {
+        const el = document.getElementById(id);
+        let val = parseInt(el.innerText) + delta;
+        if (val < 0) val = 0;
+        if (val > 15) val = 15; // Sikkerhet
+        el.innerText = val;
+    }
+
+    function submitKupong() {
+        const name = document.getElementById('userName').value;
+        if(!name) {
+            alert("Du må skrive navnet ditt før du sender inn!");
+            return;
+        }
+        
+        // Her legger vi inn API-kallet i neste steg for å lagre i databasen
+        alert("Kjempebra " + name + "! Kupongen din er registrert.");
+    }
+</script>
 
 </body>
 </html>
