@@ -11,14 +11,30 @@ API_KEY = "58f8589c07824c2495869fa6b7b815e5"
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('CREATE TABLE IF NOT EXISTS fixtures (id INTEGER PRIMARY KEY, league_id TEXT, h_navn TEXT, b_navn TEXT, h_logo TEXT, b_logo TEXT, date TEXT, status TEXT)')
-    # Lagt til prize_info her
-    c.execute('CREATE TABLE IF NOT EXISTS groups (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, slug TEXT UNIQUE, admin_name TEXT, mode TEXT DEFAULT "multi", prize_info TEXT)')
-    c.execute('CREATE TABLE IF NOT EXISTS group_selections (group_id INTEGER, fixture_id INTEGER, PRIMARY KEY(group_id, fixture_id))')
+    # Hovedtabeller
+    c.execute('''CREATE TABLE IF NOT EXISTS fixtures 
+                 (id INTEGER PRIMARY KEY, league_id TEXT, h_navn TEXT, b_navn TEXT, 
+                  h_logo TEXT, b_logo TEXT, date TEXT, status TEXT)''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS groups 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, slug TEXT UNIQUE, 
+                  admin_name TEXT, mode TEXT DEFAULT "multi", prize_info TEXT)''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS group_selections 
+                 (group_id INTEGER, fixture_id INTEGER, PRIMARY KEY(group_id, fixture_id))''')
+    
+    # Sjekk om prize_info kolonnen eksisterer (sikkerhet ved oppgradering)
+    try:
+        c.execute("ALTER TABLE groups ADD COLUMN prize_info TEXT")
+    except:
+        pass
+
     conn.commit()
     conn.close()
 
 init_db()
+
+# --- RUTENE ---
 
 @app.route('/')
 def super_admin():
@@ -37,11 +53,16 @@ def group_admin(slug):
     c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
     group = c.fetchone()
+    if not group:
+        return "Gruppe ikke funnet", 404
+        
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
     all_f = c.fetchall()
+    
     c.execute("SELECT fixture_id FROM group_selections WHERE group_id = ?", (group[0],))
     sel_ids = [r[0] for r in c.fetchall()]
     conn.close()
+    
     return render_template('group_admin.html', group=group, all_fixtures=all_f, selected_ids=sel_ids)
 
 @app.route('/group/<slug>')
@@ -50,10 +71,20 @@ def group_view(slug):
     c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
     group = c.fetchone()
-    c.execute('SELECT f.* FROM fixtures f JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?', (group[0],))
+    if not group:
+        return "Denne gruppen eksisterer ikke", 404
+
+    # Henter valgte kamper
+    c.execute('''SELECT f.* FROM fixtures f 
+                 JOIN group_selections gs ON f.id = gs.fixture_id 
+                 WHERE gs.group_id = ?''', (group[0],))
     matches = c.fetchall()
     conn.close()
-    return render_template('group_view.html', group=group, matches=matches)
+    
+    # Her sender vi med 'mode' så HTML-en vet om den skal vise Straffe/Rødt kort-spørsmål
+    return render_template('group_view.html', group=group, matches=matches, mode=group[4])
+
+# --- API ENDEPUNKTER ---
 
 @app.route('/api/update_group_settings', methods=['POST'])
 def update_group_settings():
@@ -71,15 +102,25 @@ def toggle_match():
     data = request.json
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
+    
+    # Finn modus for gruppen
     c.execute("SELECT mode FROM groups WHERE id = ?", (data['group_id'],))
     mode = c.fetchone()[0]
-    c.execute("SELECT * FROM group_selections WHERE group_id = ? AND fixture_id = ?", (data['group_id'], data['fixture_id']))
+    
+    c.execute("SELECT * FROM group_selections WHERE group_id = ? AND fixture_id = ?", 
+              (data['group_id'], data['fixture_id']))
+    
     if c.fetchone():
-        c.execute("DELETE FROM group_selections WHERE group_id = ? AND fixture_id = ?", (data['group_id'], data['fixture_id']))
+        c.execute("DELETE FROM group_selections WHERE group_id = ? AND fixture_id = ?", 
+                  (data['group_id'], data['fixture_id']))
     else:
-        if mode == 'single': # Single mode tillater bare én kamp
+        if mode == 'single':
+            # Hvis single-mode, slett alle andre valg først
             c.execute("DELETE FROM group_selections WHERE group_id = ?", (data['group_id'],))
-        c.execute("INSERT INTO group_selections VALUES (?, ?)", (data['group_id'], data['fixture_id']))
+        
+        c.execute("INSERT INTO group_selections (group_id, fixture_id) VALUES (?, ?)", 
+                  (data['group_id'], data['fixture_id']))
+    
     conn.commit()
     conn.close()
     return jsonify({"status": "ok"})
@@ -87,23 +128,33 @@ def toggle_match():
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     data = request.json
-    slug = data['name'].lower().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
+    # Bedre slug-håndtering
+    slug = data['name'].lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
+    
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (data['name'], slug, data['admin_name']))
-    conn.commit()
+    try:
+        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", 
+                  (data['name'], slug, data['admin_name']))
+        conn.commit()
+        status = "Suksess"
+    except sqlite3.IntegrityError:
+        status = "Navnet er opptatt"
     conn.close()
-    return jsonify({"status": "Suksess"})
+    return jsonify({"status": status})
 
 @app.route('/api/import_league/<string:code>')
 def import_league(code):
     url = f"https://api.football-data.org/v4/competitions/{code}/matches?status=SCHEDULED"
     headers = { 'X-Auth-Token': API_KEY }
     res = requests.get(url, headers=headers).json()
+    
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     for m in res.get('matches', []):
-        c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)", (m['id'], code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
+        c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)", 
+                  (m['id'], code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], 
+                   m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
     conn.commit()
     conn.close()
     return jsonify({"status": "Suksess"})
