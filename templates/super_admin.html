@@ -9,12 +9,12 @@
         body { background: #f0f2f5; font-family: sans-serif; }
         .sidebar { background: #1a1a1a; color: white; min-height: 100vh; padding: 20px; position: fixed; width: 250px; }
         .main-content { margin-left: 260px; padding: 40px; }
-        .card { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; padding: 25px; }
+        .card { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; padding: 25px; margin-bottom: 30px; }
         .logo-sm { width: 30px; height: 30px; object-fit: contain; margin: 0 10px; }
         .match-row { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; align-items: center; }
-        .btn-api { background: #1a1a1a; color: white; border-radius: 8px; padding: 10px 20px; font-weight: bold; border: none; margin-left: 10px; transition: 0.3s; }
+        .btn-api { background: #1a1a1a; color: white; border-radius: 8px; padding: 10px 20px; font-weight: bold; border: none; transition: 0.3s; }
         .btn-api:hover { background: #cc0000; }
-        .badge-date { background: #f8f9fa; color: #666; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; }
+        .group-tag { background: #e9ecef; border-radius: 5px; padding: 5px 12px; margin: 5px; display: inline-block; font-size: 0.9rem; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
@@ -30,40 +30,57 @@
 </div>
 
 <div class="main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">System-kontroll</h2>
-        <div>
-            <button class="btn-api" onclick="importLeague('PL')">Hent Premier League</button>
-            <button class="btn-api" onclick="importLeague('CL')">Hent Champions League</button>
-            <button class="btn-api" onclick="importLeague('BL1')">Hent Bundesliga</button>
+    <h2 class="fw-bold mb-4">System-kontroll</h2>
+
+    <div class="card">
+        <h4 class="fw-bold mb-3">Opprett Ny Gruppe</h4>
+        <div class="row g-3">
+            <div class="col-md-5">
+                <input type="text" id="groupName" class="form-control" placeholder="Gruppens navn (f.eks. Kåres Pub)">
+            </div>
+            <div class="col-md-4">
+                <input type="text" id="adminName" class="form-control" placeholder="Admin navn (f.eks. Kåre)">
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-danger w-100 fw-bold" onclick="createNewGroup()">Opprett Gruppe</button>
+            </div>
+        </div>
+        <div class="mt-4">
+            <h6 class="text-muted fw-bold small">AKTIVE GRUPPER:</h6>
+            <div id="active-groups">
+                {% for g in grupper %}
+                    <div class="group-tag">
+                        <strong>{{ g[1] }}</strong> <span class="text-muted">({{ g[2] }})</span>
+                    </div>
+                {% else %}
+                    <span class="text-muted small italic">Ingen grupper opprettet ennå.</span>
+                {% endfor %}
+            </div>
         </div>
     </div>
 
     <div class="card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="fw-bold m-0">Kamper i databasen</h4>
-            <span class="badge bg-primary">{{ kamper|length }} kamper totalt</span>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold m-0">Kamp-lageret (Buffé)</h4>
+            <div>
+                <button class="btn-api" onclick="importLeague('PL')">Hent Premier League</button>
+                <button class="btn-api" onclick="importLeague('CL')">Hent Champions League</button>
+            </div>
         </div>
         
         <div id="match-list">
-            {% if kamper|length == 0 %}
-                <p class="text-center text-muted py-5">Ingen kamper i databasen ennå. Bruk knappene over for å hente data fra 2026-sesongen!</p>
-            {% endif %}
-
             {% for k in kamper %}
             <div class="match-row">
-                <div class="col-2">
-                    <span class="badge-date">{{ k[6][:10] }}</span>
-                </div>
+                <div class="col-2 text-muted small">{{ k[6][:10] }}</div>
                 <div class="col-4 text-end fw-bold">
-                    {{ k[2] }} <img src="{{ k[4] }}" class="logo-sm" onerror="this.src='https://via.placeholder.com/30?text=?'">
+                    {{ k[2] }} <img src="{{ k[4] }}" class="logo-sm">
                 </div>
                 <div class="col-1 text-center text-danger fw-bold">VS</div>
                 <div class="col-4 text-start fw-bold">
-                    <img src="{{ k[5] }}" class="logo-sm" onerror="this.src='https://via.placeholder.com/30?text=?'"> {{ k[3] }}
+                    <img src="{{ k[5] }}" class="logo-sm"> {{ k[3] }}
                 </div>
                 <div class="col-1 text-center">
-                    <button class="btn btn-sm btn-outline-success">Aktiver</button>
+                    <span class="text-success small fw-bold">Klar</span>
                 </div>
             </div>
             {% endfor %}
@@ -72,26 +89,34 @@
 </div>
 
 <script>
-    function importLeague(code) {
-        if(confirm("Vil du hente kommende kamper for " + code + "?")) {
-            // Viser en enkel laste-melding
-            const btn = event.target;
-            const originalText = btn.innerText;
-            btn.innerText = "Henter...";
-            btn.disabled = true;
+    function createNewGroup() {
+        const name = document.getElementById('groupName').value;
+        const admin = document.getElementById('adminName').value;
 
-            fetch('/api/import_league/' + code)
-                .then(res => res.json())
-                .then(data => {
-                    alert(data.status);
-                    window.location.reload();
-                })
-                .catch(err => {
-                    alert("Noe gikk galt: " + err);
-                    btn.innerText = originalText;
-                    btn.disabled = false;
-                });
+        if(!name || !admin) {
+            alert("Vennligst fyll ut både gruppenavn og admin-navn.");
+            return;
         }
+
+        fetch('/api/create_group', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, admin_name: admin })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert(data.status);
+            window.location.reload();
+        });
+    }
+
+    function importLeague(code) {
+        fetch('/api/import_league/' + code)
+            .then(res => res.json())
+            .then(data => {
+                alert(data.status);
+                window.location.reload();
+            });
     }
 </script>
 
