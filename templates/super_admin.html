@@ -66,7 +66,7 @@
     </div>
 
     <div id="investor-panel" class="investor-drawer">
-        <h6 class="fw-bold text-danger mb-3 text-uppercase" style="font-size: 0.75rem;">Demo-kontroll: Push resultater</h6>
+        <h6 class="fw-bold text-danger mb-3 text-uppercase">Demo-kontroll: Push resultater</h6>
         <div class="bg-white rounded border p-2 mb-3">
             <table class="table table-sm table-borderless m-0">
                 <tbody id="push-list">
@@ -80,7 +80,7 @@
                 </tbody>
             </table>
         </div>
-        <button class="btn btn-danger w-100 fw-bold" onclick="pushResults()">PUSH RESULTATER TIL ALLE KUNDER</button>
+        <button class="btn btn-danger w-100 fw-bold" onclick="pushResults()">PUSH RESULTATER</button>
     </div>
 </div>
 
@@ -94,11 +94,15 @@
         const name = document.getElementById('g-name').value;
         const admin = document.getElementById('g-admin').value;
         if(!name || !admin) return alert("Fyll ut begge felt");
+        
         fetch('/api/create_group', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({name: name, admin_name: admin})
-        }).then(res => res.json()).then(data => { alert(data.status); location.reload(); });
+        }).then(res => res.json()).then(data => { 
+            alert(data.status); 
+            location.reload(); 
+        });
     }
 
     function importLeague(code) {
@@ -114,7 +118,7 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({scores: sc})
-        }).then(() => { alert("Resultater pushet live!"); location.reload(); });
+        }).then(() => { alert("Pushet!"); location.reload(); });
     }
 </script>
 </body>
