@@ -10,7 +10,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "matchday_pro.db")
 API_KEY = "58f8589c07824c2495869fa6b7b815e5"
 
-# Global variabel for å huske når vi sist hentet fra API (Caching)
 last_api_update = 0
 
 def init_db():
@@ -35,11 +34,7 @@ init_db()
 def update_scores_from_api():
     global last_api_update
     now = time.time()
-    
-    # Sjekk om det er mindre enn 300 sekunder (5 min) siden sist
-    if now - last_api_update < 300:
-        return # Vi venter litt til før vi maser på API-et
-
+    if now - last_api_update < 300: return
     url = "https://api.football-data.org/v4/matches"
     headers = { 'X-Auth-Token': API_KEY }
     try:
@@ -52,13 +47,11 @@ def update_scores_from_api():
                           (m['score']['fullTime']['home'], m['score']['fullTime']['away'], m['status'], m['id']))
         conn.commit()
         conn.close()
-        last_api_update = now # Oppdater tidspunkt for siste suksessfulle henting
-    except:
-        print("Kunne ikke nå API, bruker gamle tall.")
+        last_api_update = now
+    except: pass
 
 def get_leaderboard_data(group_id):
-    update_scores_from_api() # Prøver å oppdatere (serveren styrer 5-minutters regelen)
-    
+    update_scores_from_api()
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT player_name, match_data FROM bets WHERE group_id = ? ORDER BY timestamp DESC", (group_id,))
@@ -66,29 +59,22 @@ def get_leaderboard_data(group_id):
     c.execute('''SELECT f.id, f.h_score, f.b_score FROM fixtures f 
                  JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group_id,))
     res = {r[0]: {'h': r[1], 'b': r[2]} for r in c.fetchall()}
-    
     lb = []
     for name, m_json in bets:
         pts = 0
-        user_tips = json.loads(m_json)
-        for tip in user_tips:
-            m_id = int(tip['match_id'])
-            if m_id in res and res[m_id]['h'] is not None:
-                ah, ab = res[m_id]['h'], res[m_id]['b']
-                th, ta = int(tip['h']), int(tip['a'])
-                
-                # 3 poeng for rett score
-                if th == ah and ta == ab: pts += 3
-                # 1 poeng for rett HUB
-                elif (th > ta and ah > ab) or (th < ta and ah < ab) or (th == ta and ah == ab): pts += 1
-                
-                # Her kan vi legge til bonuspoeng for storkamp senere (straffe/rødt/GG)
-        
+        try:
+            user_tips = json.loads(m_json)
+            for tip in user_tips:
+                m_id = int(tip['match_id'])
+                if m_id in res and res[m_id]['h'] is not None:
+                    ah, ab = res[m_id]['h'], res[m_id]['b']
+                    th, ta = int(tip['h']), int(tip['a'])
+                    if th == ah and ta == ab: pts += 3
+                    elif (th > ta and ah > ab) or (th < ta and ah < ab) or (th == ta and ah == ab): pts += 1
+        except: pass
         lb.append({'name': name, 'points': pts})
     conn.close()
     return sorted(lb, key=lambda x: x['points'], reverse=True)
-
-# --- ROUTES ---
 
 @app.route('/')
 def super_admin():
@@ -137,6 +123,17 @@ def submit_bet():
     conn.close()
     return jsonify({"status": "ok"})
 
+# NY RUTЕ: Sletter spillerens tips før nytt legges inn
+@app.route('/api/delete_bet', methods=['POST'])
+def delete_bet():
+    data = request.json
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("DELETE FROM bets WHERE group_id = ? AND player_name = ?", (data['group_id'], data['player_name']))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
 @app.route('/api/admin_push_scores', methods=['POST'])
 def admin_push_scores():
     data = request.json
@@ -146,7 +143,6 @@ def admin_push_scores():
         c.execute("UPDATE fixtures SET h_score = ?, b_score = ? WHERE id = ?", (m['h'], m['b'], m['match_id']))
     conn.commit()
     conn.close()
-    # Ved manuell push nullstiller vi timeren så endringene synes med en gang
     global last_api_update
     last_api_update = 0 
     return jsonify({"status": "ok"})
@@ -154,13 +150,11 @@ def admin_push_scores():
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     data = request.json
-    name = data.get('name')
-    admin = data.get('admin_name')
-    slug = name.lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
+    slug = data['name'].lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     try:
-        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (name, slug, admin))
+        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (data['name'], slug, data['admin_name']))
         conn.commit()
         return jsonify({"status": "Suksess"})
     except: return jsonify({"status": "Feil"})
@@ -201,5 +195,4 @@ def toggle_match():
     return jsonify({"status": "ok"})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=5000)
