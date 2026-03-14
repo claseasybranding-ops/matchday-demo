@@ -17,7 +17,7 @@
         .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
         .team-logo { width: 45px; height: 45px; object-fit: contain; margin-bottom: 8px; }
         .score-val { font-size: 2.2rem; font-weight: 800; width: 40px; }
-        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #ddd; }
         .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; margin-top: 10px; }
         .lb-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.2s; }
         .lb-row:hover { background: #f8fafc; }
@@ -77,6 +77,7 @@
         {% endfor %}
         <input type="text" id="player-name" class="input-name" placeholder="Ditt navn...">
         <button class="btn-submit" onclick="submitTicket()">LEVER KUPONG</button>
+        <button class="btn btn-link w-100 text-muted mt-2" onclick="showLeaderboard()">Se Leaderboard uten å tippe</button>
     </div>
 
     <div id="screen-leaderboard" class="d-none">
@@ -87,7 +88,7 @@
 
         <div class="leaderboard-card">
             {% if not leaderboard %}
-                <div class="p-4 text-center text-muted">Ingen har tippet enda. Bli den første!</div>
+                <div class="p-4 text-center text-muted">Ingen har tippet enda.</div>
             {% endif %}
             {% for entry in leaderboard %}
             <div class="lb-row {% if loop.index == 1 %}rank-1{% endif %}" onclick='showUserTips("{{ entry.name }}", {{ entry.tips | tojson }})'>
@@ -98,7 +99,10 @@
             {% endfor %}
         </div>
         
-        <button id="reset-btn" class="btn btn-link w-100 text-danger mt-4 fw-bold" onclick="resetSubmission()">Endre min kupong</button>
+        <div class="d-flex flex-column gap-2 mt-4">
+            <button id="reset-btn" class="btn btn-outline-danger w-100 fw-bold" onclick="resetSubmission()">Endre min kupong</button>
+            <button class="btn btn-link w-100 text-muted" onclick="showCoupon()">Tilbake til tipping</button>
+        </div>
     </div>
 </div>
 
@@ -123,7 +127,7 @@
     const tipsModal = new bootstrap.Modal(document.getElementById('tipsModal'));
 
     window.onload = function() {
-        // Sjekk om brukeren har tippet før
+        // Enkel sjekk: Hvis du har tippet før, gå til leaderboard. Hvis ikke, vis kupongen.
         if(localStorage.getItem(storageKey) === "true") {
             showLeaderboard();
         } else {
@@ -139,10 +143,10 @@
     function showLeaderboard() {
         document.getElementById('screen-coupon').classList.add('d-none');
         document.getElementById('screen-leaderboard').classList.remove('d-none');
-        const myName = localStorage.getItem(nameKey) || "Gjest";
+        const myName = localStorage.getItem(nameKey) || "Ikke tippet";
         document.getElementById('my-name-display').innerText = "Spiller: " + myName;
-        
-        // Deadline-sjekk (Skjul endre-knapp etter kl 21:00)
+
+        // Skjul endre-knapp etter kl 21:00
         const now = new Date();
         if (now.getHours() >= 21) {
             const btn = document.getElementById('reset-btn');
@@ -168,8 +172,8 @@
             headers: {'Content-Type':'application/json'}, 
             body: JSON.stringify(d) 
         })
-        .then(response => {
-            if(response.ok) {
+        .then(res => {
+            if(res.ok) {
                 localStorage.setItem(storageKey, "true");
                 localStorage.setItem(nameKey, n);
                 location.reload();
@@ -181,7 +185,6 @@
         document.getElementById('modalTitle').innerText = name + " sine tips";
         let html = '<table class="table table-borderless m-0">';
         
-        // Finn lagnavn fra kortene som er på siden
         const matchNames = {};
         document.querySelectorAll('.match-card').forEach(c => {
             matchNames[c.getAttribute('data-match-id')] = {
@@ -212,7 +215,7 @@
             return;
         }
 
-        if(confirm("Vil du slette leveringen og tippe på nytt?")) {
+        if(confirm("Vil du slette din kupong og tippe på nytt?")) {
             fetch('/api/delete_bet', {
                 method: 'POST',
                 headers: {'Content-Type':'application/json'},
@@ -230,8 +233,7 @@
         const side = btn.closest('.team-side');
         const isHome = side === card.querySelector('.team-side:first-child');
         const target = card.querySelector(isHome ? '.h-val' : '.a-val');
-        let current = parseInt(target.innerText);
-        target.innerText = Math.max(0, current + val);
+        target.innerText = Math.max(0, parseInt(target.innerText) + val);
     }
 </script>
 </body>
