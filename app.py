@@ -3,7 +3,6 @@ from flask import Flask, render_template, request, jsonify
 import requests
 import os
 import json
-from datetime import datetime
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -29,8 +28,8 @@ def init_db():
 
 init_db()
 
-def update_scores_from_api():
-    """Henter live-resultater fra API-et for alle aktive kamper."""
+def update_from_api():
+    """Sømløs oppdatering fra API for kundene."""
     url = "https://api.football-data.org/v4/matches"
     headers = { 'X-Auth-Token': API_KEY }
     try:
@@ -38,37 +37,33 @@ def update_scores_from_api():
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         for m in res.get('matches', []):
-            # Oppdaterer kun hvis kampen faktisk har en score
             if m['score']['fullTime']['home'] is not None:
-                c.execute("UPDATE fixtures SET h_score = ?, b_score = ?, status = ? WHERE id = ?", 
-                          (m['score']['fullTime']['home'], m['score']['fullTime']['away'], m['status'], m['id']))
+                c.execute("UPDATE fixtures SET h_score = ?, b_score = ? WHERE id = ?", 
+                          (m['score']['fullTime']['home'], m['score']['fullTime']['away'], m['id']))
         conn.commit()
         conn.close()
-    except:
-        print("API-oppdatering feilet, bruker eksisterende data.")
+    except: pass
 
-def calculate_leaderboard(group_id):
-    update_scores_from_api() # Sjekker API-et hver gang leaderboard lastes
+def get_lb(group_id):
+    update_from_api() # Alltid ferske data
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT player_name, match_data FROM bets WHERE group_id = ?", (group_id,))
-    all_bets = c.fetchall()
+    bets = c.fetchall()
     c.execute('''SELECT f.id, f.h_score, f.b_score FROM fixtures f 
                  JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group_id,))
-    results = {r[0]: {'h': r[1], 'b': r[2]} for r in c.fetchall()}
+    res = {r[0]: {'h': r[1], 'b': r[2]} for r in c.fetchall()}
     lb = []
-    for name, m_json in all_bets:
-        points = 0
-        user_tips = json.loads(m_json)
-        for tip in user_tips:
+    for name, m_json in bets:
+        pts = 0
+        for tip in json.loads(m_json):
             m_id = int(tip['match_id'])
-            if m_id in results and results[m_id]['h'] is not None:
-                act_h, act_b = results[m_id]['h'], results[m_id]['b']
-                tip_h, tip_b = int(tip['h']), int(tip['a'])
-                if tip_h == act_h and tip_b == act_b: points += 3
-                elif (tip_h > tip_b and act_h > act_b) or (tip_h < tip_b and act_h < act_b) or (tip_h == tip_b and act_h == act_b):
-                    points += 1
-        lb.append({'name': name, 'points': points})
+            if m_id in res and res[m_id]['h'] is not None:
+                ah, ab = res[m_id]['h'], res[m_id]['b']
+                th, ta = int(tip['h']), int(tip['a'])
+                if th == ah and ta == ab: pts += 3
+                elif (th > ta and ah > ab) or (th < ta and ah < ab) or (th == ta and ah == ab): pts += 1
+        lb.append({'name': name, 'points': pts})
     conn.close()
     return sorted(lb, key=lambda x: x['points'], reverse=True)
 
@@ -89,14 +84,12 @@ def group_admin(slug):
     c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
     group = c.fetchone()
-    c.execute('''SELECT f.* FROM fixtures f JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group[0],))
-    sel_fixtures = c.fetchall()
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
     all_f = c.fetchall()
     c.execute("SELECT fixture_id FROM group_selections WHERE group_id = ?", (group[0],))
     sel_ids = [r[0] for r in c.fetchall()]
     conn.close()
-    return render_template('group_admin.html', group=group, all_fixtures=all_f, selected_ids=sel_ids, selected_fixtures=sel_fixtures)
+    return render_template('group_admin.html', group=group, all_fixtures=all_f, selected_ids=sel_ids)
 
 @app.route('/group/<slug>')
 def group_view(slug):
@@ -106,9 +99,9 @@ def group_view(slug):
     group = c.fetchone()
     c.execute('''SELECT f.* FROM fixtures f JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group[0],))
     matches = c.fetchall()
-    lb_data = calculate_leaderboard(group[0])
+    lb = get_lb(group[0])
     conn.close()
-    return render_template('group_view.html', group=group, matches=matches, leaderboard=lb_data)
+    return render_template('group_view.html', group=group, matches=matches, leaderboard=lb)
 
 @app.route('/api/submit_bet', methods=['POST'])
 def submit_bet():
@@ -123,6 +116,7 @@ def submit_bet():
 
 @app.route('/api/admin_push_scores', methods=['POST'])
 def admin_push_scores():
+    # KUN for deg (System Admin)
     data = request.json
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -148,39 +142,12 @@ def toggle_match():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT mode FROM groups WHERE id = ?", (data['group_id'],))
-    mode = c.fetchone()[0]
-    if mode == 'single':
+    if c.fetchone()[0] == 'single':
         c.execute("DELETE FROM group_selections WHERE group_id = ?", (data['group_id'],))
     c.execute("INSERT INTO group_selections (group_id, fixture_id) VALUES (?, ?)", (data['group_id'], data['fixture_id']))
     conn.commit()
     conn.close()
     return jsonify({"status": "ok"})
 
-@app.route('/api/create_group', methods=['POST'])
-def create_group():
-    data = request.json
-    slug = data['name'].lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (data['name'], slug, data['admin_name']))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "Suksess"})
-
-@app.route('/api/import_league/<string:code>')
-def import_league(code):
-    url = f"https://api.football-data.org/v4/competitions/{code}/matches?status=SCHEDULED"
-    headers = { 'X-Auth-Token': API_KEY }
-    res = requests.get(url, headers=headers).json()
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    for m in res.get('matches', []):
-        c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, h_navn, b_navn, h_logo, b_logo, date, status) VALUES (?,?,?,?,?,?,?,?)", 
-                  (m['id'], code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "Suksess"})
-
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=5000)
