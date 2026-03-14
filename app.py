@@ -28,7 +28,7 @@ def init_db():
 
 init_db()
 
-def get_leaderboard_data(group_id):
+def get_lb(group_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT player_name, match_data FROM bets WHERE group_id = ?", (group_id,))
@@ -40,8 +40,7 @@ def get_leaderboard_data(group_id):
     for name, m_json in bets:
         pts = 0
         try:
-            user_tips = json.loads(m_json)
-            for tip in user_tips:
+            for tip in json.loads(m_json):
                 m_id = int(tip['match_id'])
                 if m_id in res and res[m_id]['h'] is not None:
                     ah, ab = res[m_id]['h'], res[m_id]['b']
@@ -58,11 +57,11 @@ def super_admin():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
-    f_data = c.fetchall()
+    kamper = c.fetchall()
     c.execute("SELECT * FROM groups")
-    g_data = c.fetchall()
+    grupper = c.fetchall()
     conn.close()
-    return render_template('super_admin.html', kamper=f_data, grupper=g_data)
+    return render_template('super_admin.html', kamper=kamper, grupper=grupper)
 
 @app.route('/group/<slug>/admin')
 def group_admin(slug):
@@ -70,7 +69,6 @@ def group_admin(slug):
     c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
     group = c.fetchone()
-    if not group: return "Fant ikke gruppen", 404
     c.execute("SELECT fixture_id FROM group_selections WHERE group_id = ?", (group[0],))
     sel_ids = [r[0] for r in c.fetchall()]
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
@@ -84,46 +82,11 @@ def group_view(slug):
     c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
     group = c.fetchone()
-    if not group: return "Fant ikke gruppen", 404
     c.execute('''SELECT f.* FROM fixtures f JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group[0],))
     matches = c.fetchall()
-    lb = get_leaderboard_data(group[0])
+    leaderboard = get_lb(group[0])
     conn.close()
-    return render_template('group_view.html', group=group, matches=matches, leaderboard=lb)
-
-@app.route('/api/create_group', methods=['POST'])
-def create_group():
-    data = request.json
-    name = data.get('name')
-    admin = data.get('admin_name')
-    slug = name.lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    try:
-        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (name, slug, admin))
-        conn.commit()
-        return jsonify({"status": "Suksess"})
-    except:
-        return jsonify({"status": "Feil: Navnet er opptatt"})
-    finally:
-        conn.close()
-
-@app.route('/api/import_league/<string:code>')
-def import_league(code):
-    url = f"https://api.football-data.org/v4/competitions/{code}/matches?status=SCHEDULED"
-    headers = { 'X-Auth-Token': API_KEY }
-    try:
-        res = requests.get(url, headers=headers).json()
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        for m in res.get('matches', []):
-            c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, h_navn, b_navn, h_logo, b_logo, date, status) VALUES (?,?,?,?,?,?,?,?)", 
-                      (m['id'], code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
-        conn.commit()
-        conn.close()
-        return jsonify({"status": "Suksess"})
-    except:
-        return jsonify({"status": "Feil ved henting"})
+    return render_template('group_view.html', group=group, matches=matches, leaderboard=leaderboard)
 
 @app.route('/api/admin_push_scores', methods=['POST'])
 def admin_push_scores():
@@ -136,15 +99,33 @@ def admin_push_scores():
     conn.close()
     return jsonify({"status": "ok"})
 
-@app.route('/api/update_group_settings', methods=['POST'])
-def update_group_settings():
+@app.route('/api/create_group', methods=['POST'])
+def create_group():
     data = request.json
+    slug = data['name'].lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data['mode'], data['prize_info'], data['group_id']))
+    try:
+        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (data['name'], slug, data['admin_name']))
+        conn.commit()
+        return jsonify({"status": "Suksess"})
+    except:
+        return jsonify({"status": "Navnet er opptatt"})
+    finally: conn.close()
+
+@app.route('/api/import_league/<string:code>')
+def import_league(code):
+    url = f"https://api.football-data.org/v4/competitions/{code}/matches?status=SCHEDULED"
+    headers = { 'X-Auth-Token': API_KEY }
+    res = requests.get(url, headers=headers).json()
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    for m in res.get('matches', []):
+        c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, h_navn, b_navn, h_logo, b_logo, date, status) VALUES (?,?,?,?,?,?,?,?)", 
+                  (m['id'], code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
     conn.commit()
     conn.close()
-    return jsonify({"status": "ok"})
+    return jsonify({"status": "Suksess"})
 
 @app.route('/api/toggle_match', methods=['POST'])
 def toggle_match():
@@ -165,12 +146,10 @@ def submit_bet():
     data = request.json
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT INTO bets (group_id, player_name, match_data) VALUES (?, ?, ?)", 
-              (data['group_id'], data['player_name'], json.dumps(data['matches'])))
+    c.execute("INSERT INTO bets (group_id, player_name, match_data) VALUES (?, ?, ?)", (data['group_id'], data['player_name'], json.dumps(data['matches'])))
     conn.commit()
     conn.close()
     return jsonify({"status": "ok"})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=5000)
