@@ -5,25 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MatchDay | {{ group[1] }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --md-red: #cc0000;
-            --md-bg: #f8fafc;
+            --md-bg: #f5f7fa;
             --md-card: #ffffff;
-            --md-text: #0f172a;
-            --md-border: #e2e8f0;
+            --md-text: #1a1a1a;
+            --md-border: #e1e8ed;
         }
 
         body { 
             background-color: var(--md-bg); 
             color: var(--md-text); 
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            padding-bottom: 40px;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.01em;
+            padding-bottom: 50px;
         }
 
         .header-section {
-            padding: 30px 20px;
+            padding: 25px 0;
             text-align: center;
             background: white;
             border-bottom: 1px solid var(--md-border);
@@ -33,101 +34,111 @@
         .logo-text { 
             color: var(--md-red); 
             font-weight: 800; 
-            font-size: 1.8rem; 
+            font-size: 1.6rem; 
             margin-bottom: 0; 
             letter-spacing: -1px;
         }
 
-        /* Premie-kort */
-        .prize-banner {
-            background: linear-gradient(135deg, var(--md-red) 0%, #a30000 100%);
-            color: white;
-            border-radius: 16px;
-            padding: 15px;
-            margin-bottom: 25px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(204, 0, 0, 0.15);
-        }
-
-        /* Kamp-kort */
+        /* Kamp-kort - Minimalistisk */
         .match-card {
             background: var(--md-card);
             border: 1px solid var(--md-border);
-            border-radius: 20px;
+            border-radius: 16px;
             padding: 20px;
-            margin-bottom: 20px;
-            position: relative;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            margin-bottom: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
         }
 
-        .single-game-border {
-            border: 2px solid var(--md-red);
+        /* GRID-LAYOUT FOR PERFEKT SYMETRI */
+        .match-grid {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr; /* Venstre - Senter - Høyre */
+            align-items: center;
+            gap: 10px;
         }
 
-        .badge-mode {
-            background: var(--md-red);
-            color: white;
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 4px 12px;
-            border-radius: 50px;
-            font-size: 0.65rem;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-
-        /* Score-input */
-        .score-input {
-            width: 60px;
-            height: 60px;
-            background: #f1f5f9;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
+        /* Lag-blokker */
+        .team-block {
             text-align: center;
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--md-text);
-            transition: all 0.2s;
+            width: 100%;
         }
-
-        .score-input:focus {
-            background: white;
-            border-color: var(--md-red);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.1);
-        }
-
-        .team-logo-large {
-            width: 55px;
-            height: 55px;
+        .team-logo-pro {
+            width: 40px; /* Mindre logoer */
+            height: 40px;
             object-fit: contain;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
-
-        .team-name-label {
-            font-size: 0.75rem;
+        .team-name-pro {
+            font-size: 0.7rem; /* Mindre skrift */
             font-weight: 700;
             text-transform: uppercase;
-            color: #475569;
+            letter-spacing: 0.03em;
+            color: #444;
+            display: block;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; /* Forhindrer urolig layout med lange navn */
         }
 
-        /* Tilleggsspørsmål (Single Game) */
-        .bonus-section {
-            background: #f8fafc;
+        /* Resultat-senter */
+        .score-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .score-display {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--md-text);
+            width: 35px;
+            text-align: center;
+        }
+        .score-divider {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #aaa;
+        }
+
+        /* Pluss/Minus knapper */
+        .btn-score {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid var(--md-border);
+            background: white;
+            color: #888;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            line-height: 0;
+            padding: 0;
+        }
+        .btn-score:hover {
+            border-color: #aaa;
+            color: #333;
+            background: #f8f8f8;
+        }
+        .btn-score:active { transform: scale(0.95); }
+
+        /* Inputs for navn */
+        .input-custom-pro {
+            background: white;
+            border: 1px solid var(--md-border);
             border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-            border: 1px solid #e2e8f0;
+            padding: 14px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 15px;
         }
 
-        .form-switch .form-check-input:checked {
-            background-color: var(--md-red);
-            border-color: var(--md-red);
-        }
-
-        .btn-submit {
+        /* Leveringsknapp */
+        .btn-submit-pro {
             background: var(--md-red);
             color: white;
             border: none;
@@ -135,98 +146,91 @@
             padding: 16px;
             border-radius: 14px;
             font-weight: 800;
-            font-size: 1.1rem;
-            box-shadow: 0 4px 15px rgba(204, 0, 0, 0.2);
-            transition: 0.2s;
-        }
-
-        .btn-submit:active { transform: scale(0.98); }
-
-        .name-input {
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            font-weight: 600;
-            margin-bottom: 15px;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            box-shadow: 0 4px 10px rgba(204, 0, 0, 0.15);
         }
     </style>
 </head>
 <body>
 
 <div class="header-section">
-    <h1 class="logo-text">MatchDay.</h1>
-    <p class="text-muted small fw-bold text-uppercase m-0">{{ group[1] }}</p>
+    <div class="container">
+        <h1 class="logo-text">MatchDay.</h1>
+        <p class="text-muted small fw-bold text-uppercase m-0">{{ group[1] }}</p>
+    </div>
 </div>
 
-<div class="container" style="max-width: 500px;">
+<div class="container" style="max-width: 450px;">
     
-    {% if group[5] %}
-    <div class="prize-banner">
-        <div class="small fw-bold text-uppercase opacity-75" style="font-size: 0.6rem;">Dagens Premie</div>
-        <div class="h5 fw-bold m-0">🏆 {{ group[5] }}</div>
-    </div>
-    {% endif %}
-
     <div id="coupon">
         {% for m in matches %}
-        <div class="match-card {% if group[4] == 'single' %}single-game-border{% endif %}">
-            {% if group[4] == 'single' %}<div class="badge-mode">Hovedkamp</div>{% endif %}
-            
-            <div class="row align-items-center text-center">
-                <div class="col-4">
-                    <img src="{{ m[4] }}" class="team-logo-large" onerror="this.src='https://via.placeholder.com/50'">
-                    <div class="team-name-label">{{ m[2] }}</div>
+        <div class="match-card" data-match-id="{{ m[0] }}">
+            <div class="match-grid">
+                <div class="team-block">
+                    <img src="{{ m[4] }}" class="team-logo-pro" onerror="this.src='https://via.placeholder.com/40'">
+                    <span class="team-name-pro">{{ m[2] }}</span>
+                    <div class="d-flex justify-content-center gap-1 mt-1">
+                        <button class="btn-score minus" onclick="adjustScore(this, -1)">-</button>
+                        <button class="btn-score plus" onclick="adjustScore(this, 1)">+</button>
+                    </div>
                 </div>
                 
-                <div class="col-4 px-0 d-flex justify-content-center align-items-center">
-                    <input type="number" class="score-input h-score" placeholder="0" inputmode="numeric">
-                    <span class="mx-1 fw-bold text-muted">-</span>
-                    <input type="number" class="score-input a-score" placeholder="0" inputmode="numeric">
+                <div class="score-center">
+                    <span class="score-display home-display">0</span>
+                    <span class="score-divider">-</span>
+                    <span class="score-display away-display">0</span>
                 </div>
 
-                <div class="col-4">
-                    <img src="{{ m[5] }}" class="team-logo-large" onerror="this.src='https://via.placeholder.com/50'">
-                    <div class="team-name-label">{{ m[3] }}</div>
-                </div>
-            </div>
-
-            {% if group[4] == 'single' %}
-            <div class="bonus-section">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="small fw-bold">Straffespark i kampen?</span>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="pen-{{ m[0] }}">
+                <div class="team-block">
+                    <img src="{{ m[5] }}" class="team-logo-pro" onerror="this.src='https://via.placeholder.com/40'">
+                    <span class="team-name-pro">{{ m[3] }}</span>
+                    <div class="d-flex justify-content-center gap-1 mt-1">
+                        <button class="btn-score minus" onclick="adjustScore(this, -1)">-</button>
+                        <button class="btn-score plus" onclick="adjustScore(this, 1)">+</button>
                     </div>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="small fw-bold">Rødt kort i kampen?</span>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="red-{{ m[0] }}">
-                    </div>
-                </div>
-                <label class="small fw-bold text-muted">Golden Goal (minutt):</label>
-                <input type="number" class="form-control border-0 bg-white mt-1" style="border-radius: 8px;" placeholder="F.eks. 34" inputmode="numeric">
             </div>
-            {% endif %}
         </div>
         {% endfor %}
 
         <div class="mt-4">
-            <input type="text" id="p-name" class="form-control name-input w-100" placeholder="Skriv navnet ditt her...">
-            <button class="btn-submit" onclick="submitTicket()">LEVER KUPONG</button>
+            <input type="text" id="p-name" class="form-control input-custom-pro w-100" placeholder="Skriv navnet ditt...">
+            <button class="btn-submit-pro" onclick="submitTicket()">LEVER KUPONG</button>
         </div>
     </div>
 </div>
 
 <script>
+    function adjustScore(btn, amount) {
+        const teamBlock = btn.closest('.team-block');
+        const card = btn.closest('.match-card');
+        
+        // Finn ut om det er hjemme eller borte basert på grid-posisjon
+        const isHome = teamBlock === card.querySelector('.team-block:first-child');
+        const display = card.querySelector(isHome ? '.home-display' : '.away-display');
+        
+        let currentScore = parseInt(display.innerText);
+        currentScore = Math.max(0, currentScore + amount); // Kan ikke være mindre enn 0
+        display.innerText = currentScore;
+    }
+
     function submitTicket() {
         const name = document.getElementById('p-name').value;
         if(!name) { alert("Vennligst skriv navnet ditt"); return; }
         
-        // Her legger vi til API-kall for å lagre
-        alert("Kupongen din er registrert, " + name + "!");
+        const matches = [];
+        document.querySelectorAll('.match-card').forEach(card => {
+            matches.push({
+                id: card.getAttribute('data-match-id'),
+                h: card.querySelector('.home-display').innerText,
+                a: card.querySelector('.away-display').innerText
+            });
+        });
+
+        console.log("Leverer for:", name, matches);
+        alert("Kupongen din er registrert!");
     }
 </script>
 
