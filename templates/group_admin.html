@@ -7,118 +7,18 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --md-red: #cc0000;
-            --md-bg: #f3f4f6;
-            --md-card: #ffffff;
-            --md-text: #111827;
-            --md-border: #e5e7eb;
-        }
-
-        body { 
-            background-color: var(--md-bg); 
-            color: var(--md-text); 
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            padding-bottom: 100px;
-        }
-
-        .admin-header {
-            background: white;
-            padding: 20px;
-            border-bottom: 1px solid var(--md-border);
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .card-custom {
-            background: var(--md-card);
-            border: 1px solid var(--md-border);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-
-        .label-style {
-            font-size: 0.7rem;
-            font-weight: 800;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 12px;
-            display: block;
-        }
-
-        .mode-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 15px;
-        }
-        .mode-card {
-            border: 2px solid #e5e7eb;
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .mode-card.active {
-            border-color: var(--md-red);
-            background: #fff1f2;
-            color: var(--md-red);
-        }
-
-        /* Kamp-liste */
-        .match-row {
-            display: flex;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f3f4f6;
-        }
-        .team-logo-small {
-            width: 24px;
-            height: 24px;
-            object-fit: contain;
-            margin-right: 10px;
-        }
-
-        .btn-select {
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            padding: 6px 15px;
-        }
-
-        /* Sticky bunnknapp */
-        .sticky-bottom-nav {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: white;
-            padding: 15px;
-            border-top: 1px solid var(--md-border);
-            z-index: 1000;
-        }
-        
-        .btn-main {
-            background: var(--md-red);
-            color: white;
-            border: none;
-            width: 100%;
-            padding: 14px;
-            border-radius: 12px;
-            font-weight: 700;
-        }
-
-        .single-info-box {
-            background: #fef2f2;
-            border: 1px solid #fee2e2;
-            color: #991b1b;
-            padding: 12px;
-            border-radius: 10px;
-            font-size: 0.75rem;
-            margin-top: 10px;
-        }
+        :root { --md-red: #cc0000; --md-bg: #f3f4f6; --md-card: #ffffff; --md-text: #111827; --md-border: #e5e7eb; }
+        body { background-color: var(--md-bg); color: var(--md-text); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 100px; }
+        .admin-header { background: white; padding: 20px; border-bottom: 1px solid var(--md-border); margin-bottom: 20px; text-align: center; }
+        .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .label-style { font-size: 0.7rem; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: block; }
+        .mode-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        .mode-card { border: 2px solid #e5e7eb; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .mode-card.active { border-color: var(--md-red); background: #fff1f2; color: var(--md-red); }
+        .match-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .team-logo-small { width: 24px; height: 24px; object-fit: contain; margin-right: 10px; }
+        .btn-main { background: var(--md-red); color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; }
+        .push-table input { width: 60px; text-align: center; font-weight: bold; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -131,47 +31,37 @@
 <div class="container" style="max-width: 500px;">
     <div class="card-custom">
         <label class="label-style">Hva er premien?</label>
-        <input type="text" id="prize" class="form-control" style="border-radius: 10px; padding: 12px;" 
-               placeholder="F.eks. En stor pizza" value="{{ group[5] or '' }}">
-    </div>
-
-    <div class="card-custom">
+        <input type="text" id="prize" class="form-control mb-3" placeholder="Eks: En pizza" value="{{ group[5] or '' }}">
         <label class="label-style">Spill-modus</label>
         <div class="mode-container">
-            <div id="m-multi" class="mode-card {% if group[4] == 'multi' %}active{% endif %}" onclick="setMode('multi')">
-                <div class="fw-bold">RUNDE</div>
-                <small>Flere kamper</small>
-            </div>
-            <div id="m-single" class="mode-card {% if group[4] == 'single' %}active{% endif %}" onclick="setMode('single')">
-                <div class="fw-bold">STORKAMP</div>
-                <small>1 kamp + ekstra</small>
-            </div>
+            <div id="m-multi" class="mode-card {% if group[4] == 'multi' %}active{% endif %}" onclick="setMode('multi')">RUNDE</div>
+            <div id="m-single" class="mode-card {% if group[4] == 'single' %}active{% endif %}" onclick="setMode('single')">STORKAMP</div>
         </div>
-        
-        <div id="single-info" class="single-info-box {% if group[4] != 'single' %}d-none{% endif %}">
-            <strong>🔥 STORKAMP AKTIV:</strong><br>
-            Når du velger én kamp under, vil supporterne også få tippe på Straffe, Rødt kort og Golden Goal.
-        </div>
+        <button class="btn btn-dark w-100 fw-bold" onclick="saveSettings()">LAGRE INNSTILLINGER</button>
+    </div>
 
-        <button class="btn btn-dark w-100 mt-3" style="border-radius: 10px; font-weight: 700;" onclick="saveSettings()">LAGRE INNSTILLINGER</button>
+    <div class="card-custom border-danger">
+        <label class="label-style text-danger">Investor Modus: Push resultater</label>
+        <div class="push-table">
+            {% for m in selected_fixtures %}
+            <div class="d-flex justify-content-between align-items-center mb-2 result-row" data-id="{{ m[0] }}">
+                <span class="small fw-bold">{{ m[2] }} - {{ m[3] }}</span>
+                <div class="d-flex gap-1">
+                    <input type="number" class="h-score" value="{{ m[8] or 0 }}">
+                    <input type="number" class="b-score" value="{{ m[9] or 0 }}">
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button class="btn btn-danger w-100 fw-bold mt-2" onclick="pushResults()">OPPDATER TABELL LIVE</button>
     </div>
 
     <div class="card-custom">
-        <label class="label-style">Velg kamp(er)</label>
+        <label class="label-style">Velg kamper fra lageret</label>
         {% for m in all_fixtures %}
         <div class="match-row">
-            <div class="flex-grow-1">
-                <div class="d-flex align-items-center mb-1">
-                    <img src="{{ m[4] }}" class="team-logo-small" onerror="this.src='https://via.placeholder.com/24'">
-                    <span class="small fw-bold">{{ m[2] }}</span>
-                </div>
-                <div class="d-flex align-items-center">
-                    <img src="{{ m[5] }}" class="team-logo-small" onerror="this.src='https://via.placeholder.com/24'">
-                    <span class="small fw-bold">{{ m[3] }}</span>
-                </div>
-            </div>
-            <button class="btn btn-select {% if m[0] in selected_ids %}btn-success{% else %}btn-outline-secondary{% endif %}" 
-                    onclick="toggleMatch('{{ m[0] }}')">
+            <div class="flex-grow-1 small fw-bold">{{ m[2] }} - {{ m[3] }}</div>
+            <button class="btn btn-sm {% if m[0] in selected_ids %}btn-success{% else %}btn-outline-secondary{% endif %}" onclick="toggleMatch('{{ m[0] }}')">
                 {% if m[0] in selected_ids %}VALGT{% else %}VELG{% endif %}
             </button>
         </div>
@@ -179,26 +69,14 @@
     </div>
 </div>
 
-<div class="sticky-bottom-nav">
-    <div class="container" style="max-width: 500px;">
-        <a href="/group/{{ group[2] }}" target="_blank" class="btn btn-main">ÅPNE KUPONG (LIVE)</a>
-    </div>
-</div>
-
 <script>
     let currentMode = '{{ group[4] }}';
-
-    function setMode(mode) {
-        currentMode = mode;
+    function setMode(m) {
+        currentMode = m;
         document.getElementById('m-multi').classList.remove('active');
         document.getElementById('m-single').classList.remove('active');
-        document.getElementById('m-' + mode).classList.add('active');
-        
-        const info = document.getElementById('single-info');
-        if(mode === 'single') info.classList.remove('d-none');
-        else info.classList.add('d-none');
+        document.getElementById('m-' + m).classList.add('active');
     }
-
     function saveSettings() {
         const prize = document.getElementById('prize').value;
         fetch('/api/update_group_settings', {
@@ -207,13 +85,27 @@
             body: JSON.stringify({group_id: '{{ group[0] }}', mode: currentMode, prize_info: prize})
         }).then(() => location.reload());
     }
-
     function toggleMatch(fid) {
         fetch('/api/toggle_match', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({group_id: '{{ group[0] }}', fixture_id: fid})
         }).then(() => location.reload());
+    }
+    function pushResults() {
+        const scores = [];
+        document.querySelectorAll('.result-row').forEach(row => {
+            scores.push({
+                match_id: row.getAttribute('data-id'),
+                h: row.querySelector('.h-score').value,
+                b: row.querySelector('.b-score').value
+            });
+        });
+        fetch('/api/admin_push_scores', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({scores: scores})
+        }).then(() => alert("Tabell oppdatert!"));
     }
 </script>
 </body>
