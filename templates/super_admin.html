@@ -3,43 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super-Admin | MatchDay Pro</title>
+    <title>System-Admin | MatchDay Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #f0f2f5; font-family: sans-serif; }
-        .sidebar { background: #1a1a1a; color: white; min-height: 100vh; padding: 20px; position: fixed; width: 250px; }
-        .main-content { margin-left: 260px; padding: 40px; }
-        .card { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white; padding: 25px; margin-bottom: 30px; }
+        body { background: #f0f2f5; font-family: 'Inter', sans-serif; }
+        .sidebar { background: #1a1a1a; color: white; min-height: 100vh; padding: 25px; position: fixed; width: 260px; }
+        .main-content { margin-left: 270px; padding: 40px; }
+        .card { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: white; padding: 25px; margin-bottom: 30px; }
         .logo-sm { width: 30px; height: 30px; object-fit: contain; margin: 0 10px; }
-        .match-row { border-bottom: 1px solid #eee; padding: 15px 0; display: flex; align-items: center; }
-        .btn-api { background: #1a1a1a; color: white; border-radius: 8px; padding: 10px 20px; font-weight: bold; border: none; transition: 0.3s; }
-        .btn-api:hover { background: #cc0000; }
-        .group-item { background: #f8f9fa; border: 1px solid #ddd; border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .match-row { border-bottom: 1px solid #eee; padding: 12px 0; display: flex; align-items: center; font-size: 0.9rem; }
+        .btn-api { background: #1a1a1a; color: white; border-radius: 8px; padding: 8px 16px; font-weight: 600; border: none; transition: 0.3s; }
+        .btn-api:hover { background: #cc0000; color: white; }
+        .group-item { background: #f8f9fa; border: 1px solid #eef0f2; border-radius: 12px; padding: 15px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .status-badge { font-size: 0.7rem; padding: 4px 8px; border-radius: 20px; text-transform: uppercase; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <h3 class="fw-bold text-danger">MatchDay.</h3>
-    <hr>
-    <nav class="nav flex-column">
-        <a class="nav-link text-white fw-bold" href="/super_admin_dashboard">Dashboard</a>
-        <a class="nav-link text-white-50" href="#">Grupper / Kunder</a>
-        <a class="nav-link text-white-50" href="#">Økonomi</a>
+    <h2 class="fw-bold text-danger mb-4">MatchDay.</h2>
+    <nav class="nav flex-column gap-2">
+        <a class="nav-link text-white fw-bold bg-danger rounded" href="/">Dashboard</a>
+        <a class="nav-link text-white-50" href="#">Alle Kunder</a>
+        <a class="nav-link text-white-50" href="#">API-Status</a>
+        <hr class="text-white-50">
+        <a class="nav-link text-white-50 small" href="https://matchday-demo.onrender.com" target="_blank">Gå til Live Side</a>
     </nav>
 </div>
 
 <div class="main-content">
-    <h2 class="fw-bold mb-4">System-kontroll</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">System Kontrollpanel</h2>
+        <span class="badge bg-success shadow-sm">Server Online</span>
+    </div>
 
     <div class="card">
-        <h4 class="fw-bold mb-3">Opprett Ny Gruppe</h4>
+        <h5 class="fw-bold mb-3">Opprett Ny Gruppe / Kunde</h5>
         <div class="row g-3">
             <div class="col-md-5">
-                <input type="text" id="groupName" class="form-control" placeholder="Gruppens navn (f.eks. Kåres Pub)">
+                <input type="text" id="groupName" class="form-control" placeholder="Navn (f.eks. Liverbirds Fredrikstad)">
             </div>
             <div class="col-md-4">
-                <input type="text" id="adminName" class="form-control" placeholder="Admin navn (f.eks. Kåre)">
+                <input type="text" id="adminName" class="form-control" placeholder="Admin (f.eks. Kåre)">
             </div>
             <div class="col-md-3">
                 <button class="btn btn-danger w-100 fw-bold" onclick="createNewGroup()">Opprett Gruppe</button>
@@ -53,15 +58,15 @@
                     <div class="group-item">
                         <div>
                             <h6 class="m-0 fw-bold">{{ g[1] }}</h6>
-                            <small class="text-muted">ID: {{ g[2] }} | Admin: {{ g[3] }}</small>
+                            <small class="text-muted">Slug: /group/{{ g[2] }} | Leder: {{ g[3] }}</small>
                         </div>
-                        <div>
-                            <a href="/group/{{ g[2] }}/admin" class="btn btn-sm btn-dark me-2">Plukk kamper</a>
-                            <a href="/group/{{ g[2] }}" target="_blank" class="btn btn-sm btn-outline-danger">Se live vegg</a>
+                        <div class="d-flex gap-2">
+                            <a href="/group/{{ g[2] }}/admin" class="btn btn-sm btn-dark px-3">Plukk kamper</a>
+                            <a href="/group/{{ g[2] }}" target="_blank" class="btn btn-sm btn-outline-danger px-3">Se live vegg</a>
                         </div>
                     </div>
                 {% else %}
-                    <p class="text-muted small italic">Ingen grupper opprettet ennå.</p>
+                    <div class="text-center py-4 text-muted small">Ingen grupper er opprettet ennå.</div>
                 {% endfor %}
             </div>
         </div>
@@ -69,17 +74,20 @@
 
     <div class="card">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold m-0">Kamp-lageret (Buffé)</h4>
             <div>
-                <button class="btn-api btn-sm" onclick="importLeague('PL')">Hent Premier League</button>
-                <button class="btn-api btn-sm" onclick="importLeague('CL')">Hent Champions League</button>
+                <h5 class="fw-bold m-0">Kamp-lageret (Buffé)</h5>
+                <small class="text-muted">Importerte kamper som gruppeledere kan velge fra.</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn-api" onclick="importLeague('PL')">Hent Premier League</button>
+                <button class="btn-api" onclick="importLeague('CL')">Hent Champions League</button>
             </div>
         </div>
         
-        <div id="match-list">
+        <div id="match-list" class="mt-3">
             {% for k in kamper %}
-            <div class="match-row">
-                <div class="col-2 text-muted small">{{ k[6][:10] }}</div>
+            <div class="match-row row">
+                <div class="col-2 text-muted">{{ k[6][:10] }}</div>
                 <div class="col-4 text-end fw-bold">
                     {{ k[2] }} <img src="{{ k[4] }}" class="logo-sm">
                 </div>
@@ -87,8 +95,8 @@
                 <div class="col-4 text-start fw-bold">
                     <img src="{{ k[5] }}" class="logo-sm"> {{ k[3] }}
                 </div>
-                <div class="col-1 text-center">
-                    <span class="badge bg-light text-success border">Klar</span>
+                <div class="col-1 text-end">
+                    <span class="status-badge bg-light text-success border">Klar</span>
                 </div>
             </div>
             {% endfor %}
@@ -102,7 +110,7 @@
         const admin = document.getElementById('adminName').value;
 
         if(!name || !admin) {
-            alert("Vennligst fyll ut både gruppenavn og admin-navn.");
+            alert("Vennligst fyll ut alle felt.");
             return;
         }
 
@@ -113,17 +121,29 @@
         })
         .then(res => res.json())
         .then(data => {
-            window.location.reload();
+            if(data.status === "Suksess") {
+                location.reload();
+            } else {
+                alert(data.status);
+            }
         });
     }
 
     function importLeague(code) {
         const btn = event.target;
-        btn.innerText = "Henter...";
+        const originalText = btn.innerText;
+        btn.innerText = "Henter data...";
+        btn.disabled = true;
+
         fetch('/api/import_league/' + code)
             .then(res => res.json())
             .then(data => {
-                window.location.reload();
+                location.reload();
+            })
+            .catch(err => {
+                alert("Feil ved henting av data.");
+                btn.innerText = originalText;
+                btn.disabled = false;
             });
     }
 </script>
