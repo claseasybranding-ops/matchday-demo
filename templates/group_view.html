@@ -4,52 +4,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #1a1a1a; color: white; }
-        .card { background: #2d2d2d; border: none; border-radius: 20px; color: white; }
-        .btn-check-custom { background: #3d3d3d; color: white; border: 1px solid #555; width: 100%; margin-bottom: 5px; }
+        body { background: #121212; color: white; padding-bottom: 50px; }
+        .prize-banner { background: #cc0000; color: white; padding: 15px; border-radius: 15px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 10px rgba(204, 0, 0, 0.3); }
+        .match-card { background: #1e1e1e; border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid #333; }
+        .score-input { background: #2a2a2a; border: 1px solid #444; color: white; text-align: center; font-size: 1.5rem; font-weight: bold; border-radius: 10px; }
+        .single-bonus { background: #252525; padding: 15px; border-radius: 12px; margin-top: 15px; border-left: 4px solid #cc0000; }
+        .btn-action { background: #333; color: white; border: 1px solid #444; width: 100%; margin-top: 5px; }
     </style>
 </head>
-<body class="p-3">
-    <div class="container" style="max-width: 500px;">
-        <h3 class="text-center fw-bold text-danger">MatchDay.</h3>
-        <p class="text-center opacity-50">{{ group[1] }}</p>
+<body class="container py-4">
+    <h2 class="text-center fw-bold text-danger mb-1">MatchDay.</h2>
+    <p class="text-center small text-muted mb-4">{{ group[1] }}</p>
 
-        {% for m in matches %}
-        <div class="card p-4 mb-3 text-center">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="text-center" style="width: 40%"><img src="{{ m[4] }}" width="50"><br><small>{{ m[2] }}</small></div>
-                <div class="fw-bold h4">VS</div>
-                <div class="text-center" style="width: 40%"><img src="{{ m[5] }}" width="50"><br><small>{{ m[3] }}</small></div>
-            </div>
+    {% if group[5] %}
+    <div class="prize-banner">
+        <small class="fw-bold opacity-75">PREMIE I DENNE RUNDEN:</small>
+        <div class="h5 m-0 fw-bold">🏆 {{ group[5] }}</div>
+    </div>
+    {% endif %}
 
-            {% if group[4] == 'single' %}
-            <div class="text-start mt-3 border-top pt-3">
-                <label class="small fw-bold text-danger">SLUTTRESULTAT:</label>
-                <div class="d-flex gap-2 mb-3">
-                    <input type="number" class="form-control bg-dark text-white border-secondary" placeholder="H">
-                    <input type="number" class="form-control bg-dark text-white border-secondary" placeholder="B">
-                </div>
-
-                <label class="small fw-bold text-danger">HENDELSER I KAMPEN:</label>
-                <div class="row g-2 mb-3">
-                    <div class="col-6"><button class="btn btn-check-custom">Straffespark?</button></div>
-                    <div class="col-6"><button class="btn btn-check-custom">Rødt kort?</button></div>
-                </div>
-
-                <label class="small fw-bold text-danger">GOLDEN GOAL (Minutt første mål):</label>
-                <input type="number" class="form-control bg-dark text-white border-secondary" placeholder="F.eks. 24">
-            </div>
-            {% else %}
-            <div class="d-flex gap-2">
-                <input type="number" class="form-control bg-dark text-white border-secondary text-center" placeholder="H">
-                <input type="number" class="form-control bg-dark text-white border-secondary text-center" placeholder="B">
-            </div>
-            {% endif %}
+    {% for m in matches %}
+    <div class="match-card">
+        <div class="row align-items-center text-center">
+            <div class="col-4"><img src="{{ m[4] }}" width="45"><br><small class="fw-bold d-block mt-1">{{ m[2] }}</small></div>
+            <div class="col-4 text-muted fw-bold">VS</div>
+            <div class="col-4"><img src="{{ m[5] }}" width="45"><br><small class="fw-bold d-block mt-1">{{ m[3] }}</small></div>
         </div>
-        {% endfor %}
 
-        <input type="text" class="form-control mb-3" placeholder="Ditt navn">
-        <button class="btn btn-danger w-100 fw-bold py-3 rounded-pill shadow">LEVER KUPONG</button>
+        <div class="row g-2 mt-3">
+            <div class="col-6"><input type="number" class="form-control score-input" placeholder="0"></div>
+            <div class="col-6"><input type="number" class="form-control score-input" placeholder="0"></div>
+        </div>
+
+        {% if group[4] == 'single' %}
+        <div class="single-bonus">
+            <label class="small fw-bold text-danger mb-2">EKSTRA SPØRSMÅL:</label>
+            <button class="btn btn-action" onclick="this.classList.toggle('btn-danger')">Blir det straffespark?</button>
+            <button class="btn btn-action" onclick="this.classList.toggle('btn-danger')">Blir det rødt kort?</button>
+            <input type="number" class="form-control bg-dark text-white border-secondary mt-2" placeholder="Golden Goal (Minutt)">
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="mt-4">
+        <input type="text" class="form-control form-control-lg bg-dark text-white border-secondary text-center mb-3" placeholder="Ditt navn">
+        <button class="btn btn-danger btn-lg w-100 fw-bold py-3 shadow">LEVER KUPONG</button>
     </div>
 </body>
 </html>
