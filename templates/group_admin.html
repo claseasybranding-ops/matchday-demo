@@ -3,218 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Admin | {{ group[1] }}</title>
+    <title>Admin | MatchDay</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --md-red: #cc0000;
-            --md-bg: #0f0f0f;
-            --md-card: #1a1a1a;
-            --md-border: #333;
-            --md-text: #e0e0e0;
+            --md-bg: #f3f4f6;
+            --md-card: #ffffff;
+            --md-text: #111827;
         }
 
         body { 
             background-color: var(--md-bg); 
             color: var(--md-text); 
-            font-family: 'Inter', -apple-system, sans-serif;
-            padding-bottom: 100px; 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding-bottom: 100px;
         }
 
-        /* Overskrift */
         .admin-header {
-            padding: 20px 0;
-            border-bottom: 2px solid var(--md-red);
-            margin-bottom: 25px;
+            background: white;
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 20px;
         }
 
-        /* Kort-design */
-        .admin-card { 
-            background: var(--md-card); 
-            border: 1px solid var(--md-border);
-            border-radius: 16px; 
-            padding: 20px; 
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        .card-custom {
+            background: var(--md-card);
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .label-style {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 800;
-            color: #888;
+            color: #6b7280;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
             display: block;
-            margin-bottom: 10px;
-        }
-
-        /* Inputs */
-        .form-control {
-            background: #111;
-            border: 1px solid var(--md-border);
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-        }
-        .form-control:focus {
-            background: #000;
-            border-color: var(--md-red);
-            color: white;
-            box-shadow: none;
         }
 
         /* Modus-velger */
-        .mode-btn { 
-            border: 1px solid var(--md-border); 
-            padding: 20px 10px; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            text-align: center; 
-            font-weight: bold;
-            transition: all 0.3s ease;
-            background: #222;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+        .mode-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
         }
-        .mode-btn small { font-weight: normal; font-size: 0.7rem; opacity: 0.6; }
-        .active-mode { 
-            border-color: var(--md-red); 
-            background: rgba(204, 0, 0, 0.1); 
+        .mode-card {
+            border: 2px solid #e5e7eb;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mode-card.active {
+            border-color: var(--md-red);
+            background: #fff1f2;
             color: var(--md-red);
-            box-shadow: 0 0 15px rgba(204, 0, 0, 0.2);
         }
+        .mode-card fw-bold { display: block; }
+        .mode-card small { font-size: 0.7rem; opacity: 0.7; }
 
         /* Kamp-liste */
-        .match-item { 
-            padding: 15px; 
-            border-bottom: 1px solid var(--md-border); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: transparent;
+        .match-row {
+            display: flex;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
         }
-        .match-item:last-child { border-bottom: none; }
-        .selected-match { background: rgba(255,255,255,0.03); }
-
-        /* Knapper */
-        .btn-md {
-            background: var(--md-red);
-            border: none;
-            font-weight: bold;
-            padding: 12px;
-            border-radius: 8px;
-            color: white;
-        }
-        .btn-outline-md {
-            border: 1px solid var(--md-border);
-            color: #ccc;
-            background: transparent;
-        }
-        .btn-selected {
-            background: #28a745;
-            color: white;
-            border: none;
+        .match-row:last-child { border-bottom: none; }
+        
+        .team-logo-small {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            margin-right: 8px;
         }
 
-        /* Sticky bunn */
-        .fixed-bottom-bar {
-            background: rgba(26, 26, 26, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid var(--md-border);
+        .btn-select {
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 6px 15px;
+        }
+
+        /* Sticky bunnknapp */
+        .sticky-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
             padding: 15px;
+            border-top: 1px solid #e5e7eb;
+            z-index: 1000;
+        }
+        
+        .btn-main {
+            background: var(--md-red);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 700;
         }
     </style>
 </head>
-<body class="container">
+<body>
 
-    <div class="admin-header">
-        <h2 class="h4 fw-bold m-0">Kontrollpanel</h2>
-        <span class="text-muted small">Gruppe: {{ group[1] }}</span>
+<div class="admin-header">
+    <div class="container">
+        <h1 class="h5 fw-bold m-0">Kontrollpanel</h1>
+        <p class="text-muted small m-0">{{ group[1] }}</p>
     </div>
+</div>
 
-    <div class="admin-card">
+<div class="container">
+    <div class="card-custom">
         <label class="label-style">Hva er premien?</label>
-        <input type="text" id="prize" class="form-control mb-4" placeholder="F.eks. Heder, ære og en kald pizza" value="{{ group[5] or '' }}">
-        
+        <input type="text" id="prize" class="form-control" style="border-radius: 10px; padding: 12px;" 
+               placeholder="F.eks. En stor pizza" value="{{ group[5] or '' }}">
+    </div>
+
+    <div class="card-custom">
         <label class="label-style">Spill-modus</label>
-        <div class="row g-2 mb-4">
-            <div class="col-6">
-                <div id="btn-multi" class="mode-btn {% if group[4] == 'multi' %}active-mode{% endif %}" onclick="setMode('multi')">
-                    RUNDE
-                    <small>Flere kamper (Hub)</small>
-                </div>
+        <div class="mode-container">
+            <div id="m-multi" class="mode-card {% if group[4] == 'multi' %}active{% endif %}" onclick="setMode('multi')">
+                <div class="fw-bold">RUNDE</div>
+                <small>Flere kamper</small>
             </div>
-            <div class="col-6">
-                <div id="btn-single" class="mode-btn {% if group[4] == 'single' %}active-mode{% endif %}" onclick="setMode('single')">
-                    STORKAMP
-                    <small>1 kamp + spesialmål</small>
-                </div>
+            <div id="m-single" class="mode-card {% if group[4] == 'single' %}active{% endif %}" onclick="setMode('single')">
+                <div class="fw-bold">STORKAMP</div>
+                <small>1 kamp + ekstra</small>
             </div>
         </div>
-        <button class="btn btn-md w-100" onclick="saveSettings()">LAGRE INNSTILLINGER</button>
+        <button class="btn btn-dark w-100" style="border-radius: 10px; font-weight: 700;" onclick="saveSettings()">LAGRE INNSTILLINGER</button>
     </div>
 
-    <div class="admin-card p-0 overflow-hidden">
-        <div class="p-3 border-bottom border-secondary fw-bold bg-dark">
-            <label class="label-style m-0">Velg kamp(er) fra terminlisten:</label>
-        </div>
-        <div style="max-height: 400px; overflow-y: auto;">
-            {% for m in all_fixtures %}
-            <div class="match-item {% if m[0] in selected_ids %}selected-match{% endif %}">
-                <div>
-                    <div class="fw-bold small">{{ m[2] }} vs {{ m[3] }}</div>
-                    <div class="text-muted" style="font-size: 0.7rem;">{{ m[6][:10] }}</div>
+    <div class="card-custom">
+        <label class="label-style">Velg kamp(er)</label>
+        {% for m in all_fixtures %}
+        <div class="match-row">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-1">
+                    <img src="{{ m[4] }}" class="team-logo-small" onerror="this.src='https://via.placeholder.com/24'">
+                    <span class="small fw-bold">{{ m[2] }}</span>
                 </div>
-                <button id="m-btn-{{ m[0] }}" class="btn btn-sm {% if m[0] in selected_ids %}btn-selected{% else %}btn-outline-md{% endif %}" 
-                        onclick="toggleMatch('{{ m[0] }}')">
-                    {% if m[0] in selected_ids %}VALGT{% else %}VELG{% endif %}
-                </button>
+                <div class="d-flex align-items-center">
+                    <img src="{{ m[5] }}" class="team-logo-small" onerror="this.src='https://via.placeholder.com/24'">
+                    <span class="small fw-bold">{{ m[3] }}</span>
+                </div>
             </div>
-            {% endfor %}
+            <button class="btn btn-select {% if m[0] in selected_ids %}btn-success{% else %}btn-outline-secondary{% endif %}" 
+                    onclick="toggleMatch('{{ m[0] }}')">
+                {% if m[0] in selected_ids %}VALGT{% else %}VELG{% endif %}
+            </button>
         </div>
+        {% endfor %}
     </div>
+</div>
 
-    <div class="fixed-bottom fixed-bottom-bar">
-        <a href="/group/{{ group[2] }}" target="_blank" class="btn btn-md w-100" style="background: #333; border: 1px solid #444;">
-            ÅPNE KUPONG (LIVE)
-        </a>
+<div class="sticky-bottom-nav">
+    <div class="container">
+        <a href="/group/{{ group[2] }}" target="_blank" class="btn btn-main">ÅPNE KUPONG (LIVE)</a>
     </div>
+</div>
 
-    <script>
-        let currentMode = '{{ group[4] }}';
+<script>
+    let currentMode = '{{ group[4] }}';
 
-        function setMode(mode) {
-            currentMode = mode;
-            document.getElementById('btn-multi').classList.remove('active-mode');
-            document.getElementById('btn-single').classList.remove('active-mode');
-            document.getElementById('btn-' + mode).classList.add('active-mode');
-        }
+    function setMode(mode) {
+        currentMode = mode;
+        document.getElementById('m-multi').classList.remove('active');
+        document.getElementById('m-single').classList.remove('active');
+        document.getElementById('m-' + mode).classList.add('active');
+    }
 
-        function saveSettings() {
-            const prize = document.getElementById('prize').value;
-            fetch('/api/update_group_settings', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    group_id: '{{ group[0] }}', 
-                    mode: currentMode, 
-                    prize_info: prize
-                })
-            }).then(() => {
-                alert("Innstillingene er lagret!");
-                location.reload();
-            });
-        }
+    function saveSettings() {
+        const prize = document.getElementById('prize').value;
+        fetch('/api/update_group_settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({group_id: '{{ group[0] }}', mode: currentMode, prize_info: prize})
+        }).then(() => location.reload());
+    }
 
-        function toggleMatch(fid) {
-            fetch('/api/toggle_match', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({group_id: '{{ group[0] }}', fixture_id: fid})
-            }).then(() => location.reload());
-        }
-    </script>
+    function toggleMatch(fid) {
+        fetch('/api/toggle_match', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({group_id: '{{ group[0] }}', fixture_id: fid})
+        }).then(() => location.reload());
+    }
+</script>
+
 </body>
 </html>
