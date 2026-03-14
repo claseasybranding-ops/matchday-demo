@@ -16,19 +16,15 @@
         .prize-container { background: white; margin: 15px auto; max-width: 450px; border-radius: 12px; border: 2px solid var(--md-red); padding: 12px; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 4px 10px rgba(204, 0, 0, 0.1); }
         .prize-badge { background: var(--md-red); color: white; font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; }
 
-        /* Kupong Design */
         .match-card { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; }
         .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
         .team-logo { width: 45px; height: 45px; object-fit: contain; margin-bottom: 8px; }
         .score-val { font-size: 2.2rem; font-weight: 800; width: 40px; }
-        
         .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
 
-        /* Storkamp tillegg */
         .bonus-box { background: #f8fafc; border-radius: 12px; padding: 15px; margin-top: 15px; border: 1px solid var(--md-border); }
         .bonus-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 
-        /* Leaderboard Design */
         .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; margin-top: 10px; }
         .lb-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; }
         .lb-rank { width: 30px; font-weight: 800; color: #94a3b8; }
@@ -87,18 +83,9 @@
 
             {% if group[4] == 'single' %}
             <div class="bonus-box">
-                <div class="bonus-row">
-                    <span class="small fw-bold">Straffespark?</span>
-                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="straffe"></div>
-                </div>
-                <div class="bonus-row">
-                    <span class="small fw-bold">Rødt kort?</span>
-                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="rodt"></div>
-                </div>
-                <div class="mt-2">
-                    <label class="small fw-bold mb-1">Golden Goal (Minutt):</label>
-                    <input type="number" id="gg" class="form-control text-center fw-bold" placeholder="Eks: 34">
-                </div>
+                <div class="bonus-row"><span class="small fw-bold">Straffespark?</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="straffe"></div></div>
+                <div class="bonus-row"><span class="small fw-bold">Rødt kort?</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="rodt"></div></div>
+                <div class="mt-2"><label class="small fw-bold mb-1">Golden Goal (Minutt):</label><input type="number" id="gg" class="form-control text-center fw-bold" placeholder="Eks: 34"></div>
             </div>
             {% endif %}
         </div>
@@ -110,7 +97,7 @@
     <div id="screen-leaderboard" class="d-none">
         <div class="text-center mb-3">
             <h4 class="fw-bold m-0">Leaderboard</h4>
-            <small class="text-muted">Poeng beregnes live fra API</small>
+            <small class="text-muted">Kupongen din er mottatt!</small>
         </div>
         <div class="leaderboard-card">
             {% for entry in leaderboard %}
@@ -121,21 +108,24 @@
             </div>
             {% endfor %}
         </div>
-        <button class="btn btn-link w-100 text-danger mt-4 fw-bold" onclick="showCoupon()">Tipp på nytt</button>
     </div>
 </div>
 
 <script>
-    // Logikk for å bytte skjerm
+    // Sjekk om de har tippet før
+    const groupKey = "voted_{{ group[2] }}";
+    if(localStorage.getItem(groupKey)) {
+        document.getElementById('screen-coupon').classList.add('d-none');
+        document.getElementById('screen-leaderboard').classList.remove('d-none');
+    }
+
     function submitTicket() {
         const n = document.getElementById('player-name').value;
-        if(!n) return alert("Navn!");
+        if(!n || n.length < 2) return alert("Skriv navnet ditt først!");
 
         const d = { group_id: "{{ group[0] }}", player_name: n, matches: [] };
         document.querySelectorAll('.match-card').forEach(c => {
             const bet = { match_id: c.getAttribute('data-match-id'), h: c.querySelector('.h-val').innerText, a: c.querySelector('.a-val').innerText };
-            
-            // Hent storkamp-data hvis de finnes
             const gg = document.getElementById('gg');
             if(gg) {
                 bet.straffe = document.getElementById('straffe').checked;
@@ -147,16 +137,11 @@
 
         fetch('/api/submit_bet', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(d) })
         .then(() => { 
-            // Skjul kupong, vis leaderboard
-            document.getElementById('screen-coupon').classList.add('d-none');
-            document.getElementById('screen-leaderboard').classList.remove('d-none');
-            window.scrollTo(0,0);
+            // LÅS SIDEN: Lagre i telefonen at de har stemt
+            localStorage.setItem(groupKey, "true");
+            // Tving frem en oppdatering av siden for å se det ferske leaderboardet
+            location.reload();
         });
-    }
-
-    function showCoupon() {
-        document.getElementById('screen-coupon').classList.remove('d-none');
-        document.getElementById('screen-leaderboard').classList.add('d-none');
     }
 
     function adj(btn, val) {
