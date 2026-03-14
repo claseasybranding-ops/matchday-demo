@@ -35,7 +35,13 @@
         .team-name { font-size: 0.7rem; font-weight: 700; color: #444; display: block; }
         .score-center { display: flex; align-items: center; gap: 8px; }
         .score-val { font-size: 1.8rem; font-weight: 800; width: 25px; }
-        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.1s; }
+        .btn-adj:active { transform: scale(0.9); background: #eee; }
+
+        /* Storkamp tillegg */
+        .bonus-box { background: #f8fafc; border-radius: 10px; padding: 15px; margin-top: 15px; border: 1px solid var(--md-border); }
+        .bonus-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .bonus-label { font-size: 0.8rem; font-weight: 600; color: #475569; }
 
         /* Leaderboard Design */
         .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; margin-top: 10px; }
@@ -52,11 +58,9 @@
         .rank-3 { border-left: 4px solid var(--bronze); }
         .rank-3 .lb-rank { color: var(--bronze); }
 
-        /* Skjuling/Vising */
+        .btn-submit { background: var(--md-red); color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; text-transform: uppercase; margin-top: 10px; box-shadow: 0 4px 12px rgba(204, 0, 0, 0.2); }
+        .input-name { border: 1px solid var(--md-border); border-radius: 12px; padding: 15px; text-align: center; width: 100%; margin-top: 15px; font-size: 1rem; font-weight: 600; }
         .d-none { display: none !important; }
-        
-        .btn-submit { background: var(--md-red); color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; text-transform: uppercase; margin-top: 10px; }
-        .input-name { border: 1px solid var(--md-border); border-radius: 12px; padding: 15px; text-align: center; width: 100%; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -77,7 +81,7 @@
 
     <div id="screen-coupon">
         {% for m in matches %}
-        <div class="match-card">
+        <div class="match-card" data-match-id="{{ m[0] }}">
             <div class="match-grid">
                 <div class="team-side">
                     <img src="{{ m[4] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/35'">
@@ -101,6 +105,23 @@
                     </div>
                 </div>
             </div>
+
+            {% if group[4] == 'single' %}
+            <div class="bonus-box">
+                <div class="bonus-row">
+                    <span class="bonus-label">Straffespark i kampen?</span>
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox"></div>
+                </div>
+                <div class="bonus-row">
+                    <span class="bonus-label">Rødt kort i kampen?</span>
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox"></div>
+                </div>
+                <div class="mt-1">
+                    <label class="bonus-label mb-1">Golden Goal (Minutt):</label>
+                    <input type="number" class="form-control form-control-sm text-center fw-bold" placeholder="Eks: 34">
+                </div>
+            </div>
+            {% endif %}
         </div>
         {% endfor %}
         <input type="text" id="player-name" class="input-name" placeholder="Ditt Navn">
@@ -110,30 +131,19 @@
     <div id="screen-leaderboard" class="d-none">
         <div class="text-center mb-3">
             <h5 class="fw-bold m-0">Leaderboard</h5>
-            <small class="text-muted">Poeng oppdateres live under kampen</small>
+            <small class="text-muted">Lykke til! Her ser du hvem du kjemper mot:</small>
         </div>
         
         <div class="leaderboard-card">
-            <div class="lb-row rank-1">
-                <div class="lb-rank">1.</div>
-                <div class="lb-name">Clas T. (Deg)</div>
+            {% for bet in leaderboard %}
+            <div class="lb-row {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% endif %}">
+                <div class="lb-rank">{{ loop.index }}.</div>
+                <div class="lb-name">{{ bet[0] }}</div>
                 <div class="lb-points">0p</div>
             </div>
-            <div class="lb-row rank-2">
-                <div class="lb-rank">2.</div>
-                <div class="lb-name">Kåre Gruppeleder</div>
-                <div class="lb-points">0p</div>
-            </div>
-            <div class="lb-row rank-3">
-                <div class="lb-rank">3.</div>
-                <div class="lb-name">Supporter-Svein</div>
-                <div class="lb-points">0p</div>
-            </div>
-            <div class="lb-row">
-                <div class="lb-rank">4.</div>
-                <div class="lb-name">Heia-Hanna</div>
-                <div class="lb-points">0p</div>
-            </div>
+            {% else %}
+            <div class="p-4 text-center text-muted small">Ingen har levert ennå. Bli den første!</div>
+            {% endfor %}
         </div>
 
         <button class="btn btn-link w-100 text-muted mt-3 small" onclick="location.reload()">Endre min kupong</button>
@@ -154,12 +164,41 @@
         const name = document.getElementById('player-name').value;
         if(!name) { alert("Vennligst skriv navnet ditt"); return; }
         
-        // Skjul kupong, vis leaderboard
-        document.getElementById('screen-coupon').classList.add('d-none');
-        document.getElementById('screen-leaderboard').classList.remove('d-none');
-        
-        // Scroll til toppen så de ser tabellen
-        window.scrollTo(0, 0);
+        const betData = {
+            group_id: "{{ group[0] }}",
+            player_name: name,
+            matches: []
+        };
+
+        document.querySelectorAll('.match-card').forEach(card => {
+            const matchBet = {
+                match_id: card.getAttribute('data-match-id'),
+                h: card.querySelector('.h-val').innerText,
+                a: card.querySelector('.a-val').innerText
+            };
+            
+            const ggInput = card.querySelector('input[type="number"]');
+            if (ggInput) {
+                matchBet.straffe = card.querySelectorAll('input[type="checkbox"]')[0].checked;
+                matchBet.rodt_kort = card.querySelectorAll('input[type="checkbox"]')[1].checked;
+                matchBet.golden_goal = ggInput.value || 0;
+            }
+            betData.matches.push(matchBet);
+        });
+
+        fetch('/api/submit_bet', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(betData)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'ok') {
+                document.getElementById('screen-coupon').classList.add('d-none');
+                document.getElementById('screen-leaderboard').classList.remove('d-none');
+                window.scrollTo(0, 0);
+            }
+        });
     }
 </script>
 
