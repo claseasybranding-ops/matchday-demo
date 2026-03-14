@@ -1,62 +1,214 @@
 <!DOCTYPE html>
-<html>
+<html lang="no">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin | {{ group[1] }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #f4f4f9; padding-bottom: 50px; }
-        .admin-card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .mode-btn { border: 2px solid #ddd; padding: 15px; border-radius: 12px; cursor: pointer; text-align: center; font-weight: bold; }
-        .active-mode { border-color: #cc0000; background: #fff5f5; color: #cc0000; }
-        .match-item { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .selected { background: #e8f5e9; }
+        :root {
+            --md-red: #cc0000;
+            --md-bg: #0f0f0f;
+            --md-card: #1a1a1a;
+            --md-border: #333;
+            --md-text: #e0e0e0;
+        }
+
+        body { 
+            background-color: var(--md-bg); 
+            color: var(--md-text); 
+            font-family: 'Inter', -apple-system, sans-serif;
+            padding-bottom: 100px; 
+        }
+
+        /* Overskrift */
+        .admin-header {
+            padding: 20px 0;
+            border-bottom: 2px solid var(--md-red);
+            margin-bottom: 25px;
+        }
+
+        /* Kort-design */
+        .admin-card { 
+            background: var(--md-card); 
+            border: 1px solid var(--md-border);
+            border-radius: 16px; 
+            padding: 20px; 
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .label-style {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        /* Inputs */
+        .form-control {
+            background: #111;
+            border: 1px solid var(--md-border);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .form-control:focus {
+            background: #000;
+            border-color: var(--md-red);
+            color: white;
+            box-shadow: none;
+        }
+
+        /* Modus-velger */
+        .mode-btn { 
+            border: 1px solid var(--md-border); 
+            padding: 20px 10px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            text-align: center; 
+            font-weight: bold;
+            transition: all 0.3s ease;
+            background: #222;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .mode-btn small { font-weight: normal; font-size: 0.7rem; opacity: 0.6; }
+        .active-mode { 
+            border-color: var(--md-red); 
+            background: rgba(204, 0, 0, 0.1); 
+            color: var(--md-red);
+            box-shadow: 0 0 15px rgba(204, 0, 0, 0.2);
+        }
+
+        /* Kamp-liste */
+        .match-item { 
+            padding: 15px; 
+            border-bottom: 1px solid var(--md-border); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            background: transparent;
+        }
+        .match-item:last-child { border-bottom: none; }
+        .selected-match { background: rgba(255,255,255,0.03); }
+
+        /* Knapper */
+        .btn-md {
+            background: var(--md-red);
+            border: none;
+            font-weight: bold;
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+        }
+        .btn-outline-md {
+            border: 1px solid var(--md-border);
+            color: #ccc;
+            background: transparent;
+        }
+        .btn-selected {
+            background: #28a745;
+            color: white;
+            border: none;
+        }
+
+        /* Sticky bunn */
+        .fixed-bottom-bar {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--md-border);
+            padding: 15px;
+        }
     </style>
 </head>
-<body class="container py-4">
-    <h4 class="fw-bold mb-3">Admin: {{ group[1] }}</h4>
+<body class="container">
+
+    <div class="admin-header">
+        <h2 class="h4 fw-bold m-0">Kontrollpanel</h2>
+        <span class="text-muted small">Gruppe: {{ group[1] }}</span>
+    </div>
 
     <div class="admin-card">
-        <label class="small fw-bold text-muted">HVA ER PREMIEN?</label>
-        <input type="text" id="prize" class="form-control mb-3" placeholder="F.eks. En stor pizza eller heder og gloria" value="{{ group[5] or '' }}">
+        <label class="label-style">Hva er premien?</label>
+        <input type="text" id="prize" class="form-control mb-4" placeholder="F.eks. Heder, ære og en kald pizza" value="{{ group[5] or '' }}">
         
-        <label class="small fw-bold text-muted">VELG MODUS:</label>
-        <div class="row g-2 mb-3">
+        <label class="label-style">Spill-modus</label>
+        <div class="row g-2 mb-4">
             <div class="col-6">
-                <div id="btn-multi" class="mode-btn {% if group[4] == 'multi' %}active-mode{% endif %}" onclick="updateSettings('multi')">Runde (Multi)</div>
+                <div id="btn-multi" class="mode-btn {% if group[4] == 'multi' %}active-mode{% endif %}" onclick="setMode('multi')">
+                    RUNDE
+                    <small>Flere kamper (Hub)</small>
+                </div>
             </div>
             <div class="col-6">
-                <div id="btn-single" class="mode-btn {% if group[4] == 'single' %}active-mode{% endif %}" onclick="updateSettings('single')">Storkamp (Single)</div>
+                <div id="btn-single" class="mode-btn {% if group[4] == 'single' %}active-mode{% endif %}" onclick="setMode('single')">
+                    STORKAMP
+                    <small>1 kamp + spesialmål</small>
+                </div>
             </div>
         </div>
-        <button class="btn btn-dark btn-sm w-100" onclick="updateSettings('{{ group[4] }}')">Lagre innstillinger</button>
+        <button class="btn btn-md w-100" onclick="saveSettings()">LAGRE INNSTILLINGER</button>
     </div>
 
     <div class="admin-card p-0 overflow-hidden">
-        <div class="p-3 border-bottom fw-bold bg-light">Velg kamp(er):</div>
-        {% for m in all_fixtures %}
-        <div class="match-item {% if m[0] in selected_ids %}selected{% endif %}">
-            <span class="small">{{ m[2] }} - {{ m[3] }}</span>
-            <button class="btn btn-sm {% if m[0] in selected_ids %}btn-success{% else %}btn-outline-dark{% endif %}" onclick="toggleM('{{ m[0] }}')">
-                {% if m[0] in selected_ids %}Valgt{% else %}Velg{% endif %}
-            </button>
+        <div class="p-3 border-bottom border-secondary fw-bold bg-dark">
+            <label class="label-style m-0">Velg kamp(er) fra terminlisten:</label>
         </div>
-        {% endfor %}
+        <div style="max-height: 400px; overflow-y: auto;">
+            {% for m in all_fixtures %}
+            <div class="match-item {% if m[0] in selected_ids %}selected-match{% endif %}">
+                <div>
+                    <div class="fw-bold small">{{ m[2] }} vs {{ m[3] }}</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">{{ m[6][:10] }}</div>
+                </div>
+                <button id="m-btn-{{ m[0] }}" class="btn btn-sm {% if m[0] in selected_ids %}btn-selected{% else %}btn-outline-md{% endif %}" 
+                        onclick="toggleMatch('{{ m[0] }}')">
+                    {% if m[0] in selected_ids %}VALGT{% else %}VELG{% endif %}
+                </button>
+            </div>
+            {% endfor %}
+        </div>
     </div>
 
-    <div class="fixed-bottom p-3 bg-white border-top shadow text-center">
-        <a href="/group/{{ group[2] }}" target="_blank" class="btn btn-danger fw-bold w-100">SE LIVE KUPONG</a>
+    <div class="fixed-bottom fixed-bottom-bar">
+        <a href="/group/{{ group[2] }}" target="_blank" class="btn btn-md w-100" style="background: #333; border: 1px solid #444;">
+            ÅPNE KUPONG (LIVE)
+        </a>
     </div>
 
     <script>
-        function updateSettings(mode) {
+        let currentMode = '{{ group[4] }}';
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('btn-multi').classList.remove('active-mode');
+            document.getElementById('btn-single').classList.remove('active-mode');
+            document.getElementById('btn-' + mode).classList.add('active-mode');
+        }
+
+        function saveSettings() {
             const prize = document.getElementById('prize').value;
             fetch('/api/update_group_settings', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({group_id: '{{ group[0] }}', mode: mode, prize_info: prize})
-            }).then(() => location.reload());
+                body: JSON.stringify({
+                    group_id: '{{ group[0] }}', 
+                    mode: currentMode, 
+                    prize_info: prize
+                })
+            }).then(() => {
+                alert("Innstillingene er lagret!");
+                location.reload();
+            });
         }
-        function toggleM(fid) {
+
+        function toggleMatch(fid) {
             fetch('/api/toggle_match', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
