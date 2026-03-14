@@ -31,7 +31,8 @@ init_db()
 def get_lb(group_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT player_name, match_data FROM bets WHERE group_id = ?", (group_id,))
+    # Henter alle bets sortert på tid, slik at de nyeste er med
+    c.execute("SELECT player_name, match_data FROM bets WHERE group_id = ? ORDER BY timestamp DESC", (group_id,))
     bets = c.fetchall()
     c.execute('''SELECT f.id, f.h_score, f.b_score FROM fixtures f 
                  JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group_id,))
@@ -40,7 +41,8 @@ def get_lb(group_id):
     for name, m_json in bets:
         pts = 0
         try:
-            for tip in json.loads(m_json):
+            user_tips = json.loads(m_json)
+            for tip in user_tips:
                 m_id = int(tip['match_id'])
                 if m_id in res and res[m_id]['h'] is not None:
                     ah, ab = res[m_id]['h'], res[m_id]['b']
@@ -50,6 +52,7 @@ def get_lb(group_id):
         except: pass
         lb.append({'name': name, 'points': pts})
     conn.close()
+    # Sorterer slik at de med mest poeng er øverst, ellers de nyeste
     return sorted(lb, key=lambda x: x['points'], reverse=True)
 
 @app.route('/')
@@ -88,21 +91,41 @@ def group_view(slug):
     conn.close()
     return render_template('group_view.html', group=group, matches=matches, leaderboard=leaderboard)
 
-# --- DENNE HER FIKSER OPPRETT-KNAPPEN ---
+@app.route('/api/submit_bet', methods=['POST'])
+def submit_bet():
+    data = request.json
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    # Lagrer tipset
+    c.execute("INSERT INTO bets (group_id, player_name, match_data) VALUES (?, ?, ?)", 
+              (data['group_id'], data['player_name'], json.dumps(data['matches'])))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
+# ... Resten av API-rutene (push_scores, create_group etc) er de samme ...
+@app.route('/api/admin_push_scores', methods=['POST'])
+def admin_push_scores():
+    data = request.json
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    for m in data['scores']:
+        c.execute("UPDATE fixtures SET h_score = ?, b_score = ? WHERE id = ?", (m['h'], m['b'], m['match_id']))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     data = request.json
-    name = data.get('name')
-    admin = data.get('admin_name')
-    slug = name.lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
+    slug = data['name'].lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     try:
-        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (name, slug, admin))
+        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (data['name'], slug, data['admin_name']))
         conn.commit()
         return jsonify({"status": "Suksess"})
-    except Exception as e:
-        return jsonify({"status": "Feil: " + str(e)})
+    except: return jsonify({"status": "Feil"})
     finally: conn.close()
 
 @app.route('/api/import_league/<string:code>')
@@ -134,32 +157,7 @@ def toggle_match():
     data = request.json
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT * FROM group_selections WHERE group_id = ? AND fixture_id = ?", (data['group_id'], data['fixture_id']))
-    if c.fetchone():
-        c.execute("DELETE FROM group_selections WHERE group_id = ? AND fixture_id = ?", (data['group_id'], data['fixture_id']))
-    else:
-        c.execute("INSERT INTO group_selections (group_id, fixture_id) VALUES (?, ?)", (data['group_id'], data['fixture_id']))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
-
-@app.route('/api/submit_bet', methods=['POST'])
-def submit_bet():
-    data = request.json
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO bets (group_id, player_name, match_data) VALUES (?, ?, ?)", (data['group_id'], data['player_name'], json.dumps(data['matches'])))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
-
-@app.route('/api/admin_push_scores', methods=['POST'])
-def admin_push_scores():
-    data = request.json
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    for m in data['scores']:
-        c.execute("UPDATE fixtures SET h_score = ?, b_score = ? WHERE id = ?", (m['h'], m['b'], m['match_id']))
+    c.execute("INSERT INTO group_selections (group_id, fixture_id) VALUES (?, ?)", (data['group_id'], data['fixture_id']))
     conn.commit()
     conn.close()
     return jsonify({"status": "ok"})
