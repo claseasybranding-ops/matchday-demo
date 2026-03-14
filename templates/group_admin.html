@@ -2,81 +2,96 @@
 <html lang="no">
 <head>
     <meta charset="UTF-8">
-    <title>Administrer {{ group[1] }} | MatchDay</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin: {{ group[1] }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #f8f9fa; font-family: sans-serif; }
-        .nav-header { background: #1a1a1a; color: white; padding: 20px; margin-bottom: 30px; }
-        .card { border-radius: 15px; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .match-card { border-bottom: 1px solid #eee; padding: 15px; transition: 0.2s; }
-        .match-card:hover { background: #fffcfc; }
-        .logo-sm { width: 30px; height: 30px; object-fit: contain; }
-        .btn-select { width: 120px; border-radius: 20px; font-weight: bold; }
-        .selected { background-color: #d1e7dd !important; }
+        body { background: #f8f9fa; }
+        .match-row { 
+            background: white; 
+            border-radius: 10px; 
+            padding: 15px; 
+            margin-bottom: 10px; 
+            border: 1px solid #ddd;
+            transition: 0.3s;
+        }
+        .is-selected { border-left: 8px solid #198754; background-color: #f0fff4; }
+        .is-single { border-right: 8px solid #dc3545; }
+        .btn-toggle { min-width: 100px; }
+        .logo-sm { width: 30px; height: 30px; object-fit: contain; margin: 0 5px; }
     </style>
 </head>
 <body>
 
-<div class="nav-header">
-    <div class="container d-flex justify-content-between align-items-center">
+<div class="container py-5" style="max-width: 800px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="m-0">{{ group[1] }}</h2>
-            <small class="text-white-50">Admin-panel for gruppeleder ({{ group[3] }})</small>
+            <h1 class="fw-bold h2 mb-1">{{ group[1] }}</h1>
+            <p class="text-muted">Admin-panel for gruppeleder ({{ group[3] }})</p>
         </div>
-        <a href="/super_admin_dashboard" class="btn btn-outline-light btn-sm">Tilbake til Super-Admin</a>
+        <a href="/group/{{ group[2] }}" target="_blank" class="btn btn-danger fw-bold">Se Live Kupong</a>
     </div>
-</div>
 
-<div class="container">
-    <div class="card p-4">
-        <h4 class="fw-bold mb-4">Plukk kamper til din kuppong</h4>
-        <p class="text-muted">Velg de kampene du vil at medlemmene i <strong>{{ group[1] }}</strong> skal kunne se og tippe på.</p>
+    <div class="card shadow-sm border-0 p-4">
+        <h5 class="fw-bold mb-4">Velg kamper og sett status:</h5>
+        
+        <div id="fixture-list">
+            {% for m in all_fixtures %}
+            <div class="match-row d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="me-3 text-muted small">{{ m[6][:10] }}</div>
+                    <div class="fw-bold">
+                        <img src="{{ m[4] }}" class="logo-sm"> {{ m[2] }}
+                        <span class="mx-1">-</span>
+                        {{ m[3] }} <img src="{{ m[5] }}" class="logo-sm">
+                    </div>
+                </div>
 
-        <div id="all-matches">
-            {% for k in all_fixtures %}
-            <div class="match-card d-flex align-items-center {% if k[0] in selected_ids %}selected{% endif %}" id="row-{{ k[0] }}">
-                <div class="col-2 text-muted small">{{ k[6][:10] }}</div>
-                <div class="col-4 text-end fw-bold">
-                    {{ k[2] }} <img src="{{ k[4] }}" class="logo-sm ms-2">
-                </div>
-                <div class="col-1 text-center text-danger fw-bold">VS</div>
-                <div class="col-4 text-start fw-bold">
-                    <img src="{{ k[5] }}" class="logo-sm me-2"> {{ k[3] }}
-                </div>
-                <div class="col-1 text-end">
-                    <button 
-                        class="btn btn-sm btn-select {% if k[0] in selected_ids %}btn-success{% else %}btn-outline-dark{% endif %}" 
-                        onclick="toggleMatch({{ group[0] }}, {{ k[0] }}, this)">
-                        {% if k[0] in selected_ids %}Valgt{% else %}Legg til{% endif %}
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm {% if m[0] in selected_ids %}btn-success{% else %}btn-outline-secondary{% endif %} btn-toggle" 
+                            onclick="toggleMatch('{{ group[0] }}', '{{ m[0] }}')">
+                        {% if m[0] in selected_ids %}Valgt{% else %}Legg til{% endif %}
                     </button>
+
+                    {% if m[0] in selected_ids %}
+                    <button class="btn btn-sm btn-outline-danger" 
+                            onclick="toggleSingle('{{ group[0] }}', '{{ m[0] }}')">
+                        ⭐ Hovedkamp
+                    </button>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
+    
+    <div class="mt-4 text-center">
+        <a href="/" class="text-decoration-none text-muted small">← Tilbake til System-Admin</a>
+    </div>
 </div>
 
 <script>
-    function toggleMatch(groupId, fixtureId, btn) {
+    function toggleMatch(groupId, fixtureId) {
         fetch('/api/toggle_match', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ group_id: groupId, fixture_id: fixtureId })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({group_id: groupId, fixture_id: fixtureId})
         })
         .then(res => res.json())
         .then(data => {
-            const row = document.getElementById('row-' + fixtureId);
-            if (data.action === "lagt til") {
-                btn.innerText = "Valgt";
-                btn.classList.remove('btn-outline-dark');
-                btn.classList.add('btn-success');
-                row.classList.add('selected');
-            } else {
-                btn.innerText = "Legg til";
-                btn.classList.remove('btn-success');
-                btn.classList.add('btn-outline-dark');
-                row.classList.remove('selected');
-            }
+            location.reload();
+        });
+    }
+
+    function toggleSingle(groupId, fixtureId) {
+        fetch('/api/toggle_single_game', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({group_id: groupId, fixture_id: fixtureId})
+        })
+        .then(res => res.json())
+        .then(data => {
+            location.reload();
         });
     }
 </script>
