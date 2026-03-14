@@ -3,11 +3,15 @@ from flask import Flask, render_template, request, jsonify
 import requests
 import os
 import json
+import time
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "matchday_pro.db")
 API_KEY = "58f8589c07824c2495869fa6b7b815e5"
+
+# Global variabel for å huske når vi sist hentet fra API (Caching)
+last_api_update = 0
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -28,32 +32,63 @@ def init_db():
 
 init_db()
 
-def get_lb(group_id):
+def update_scores_from_api():
+    global last_api_update
+    now = time.time()
+    
+    # Sjekk om det er mindre enn 300 sekunder (5 min) siden sist
+    if now - last_api_update < 300:
+        return # Vi venter litt til før vi maser på API-et
+
+    url = "https://api.football-data.org/v4/matches"
+    headers = { 'X-Auth-Token': API_KEY }
+    try:
+        res = requests.get(url, headers=headers).json()
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        for m in res.get('matches', []):
+            if m['score']['fullTime']['home'] is not None:
+                c.execute("UPDATE fixtures SET h_score = ?, b_score = ?, status = ? WHERE id = ?", 
+                          (m['score']['fullTime']['home'], m['score']['fullTime']['away'], m['status'], m['id']))
+        conn.commit()
+        conn.close()
+        last_api_update = now # Oppdater tidspunkt for siste suksessfulle henting
+    except:
+        print("Kunne ikke nå API, bruker gamle tall.")
+
+def get_leaderboard_data(group_id):
+    update_scores_from_api() # Prøver å oppdatere (serveren styrer 5-minutters regelen)
+    
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    # Henter alle bets sortert på tid, slik at de nyeste er med
     c.execute("SELECT player_name, match_data FROM bets WHERE group_id = ? ORDER BY timestamp DESC", (group_id,))
     bets = c.fetchall()
     c.execute('''SELECT f.id, f.h_score, f.b_score FROM fixtures f 
                  JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group_id,))
     res = {r[0]: {'h': r[1], 'b': r[2]} for r in c.fetchall()}
+    
     lb = []
     for name, m_json in bets:
         pts = 0
-        try:
-            user_tips = json.loads(m_json)
-            for tip in user_tips:
-                m_id = int(tip['match_id'])
-                if m_id in res and res[m_id]['h'] is not None:
-                    ah, ab = res[m_id]['h'], res[m_id]['b']
-                    th, ta = int(tip['h']), int(tip['a'])
-                    if th == ah and ta == ab: pts += 3
-                    elif (th > ta and ah > ab) or (th < ta and ah < ab) or (th == ta and ah == ab): pts += 1
-        except: pass
+        user_tips = json.loads(m_json)
+        for tip in user_tips:
+            m_id = int(tip['match_id'])
+            if m_id in res and res[m_id]['h'] is not None:
+                ah, ab = res[m_id]['h'], res[m_id]['b']
+                th, ta = int(tip['h']), int(tip['a'])
+                
+                # 3 poeng for rett score
+                if th == ah and ta == ab: pts += 3
+                # 1 poeng for rett HUB
+                elif (th > ta and ah > ab) or (th < ta and ah < ab) or (th == ta and ah == ab): pts += 1
+                
+                # Her kan vi legge til bonuspoeng for storkamp senere (straffe/rødt/GG)
+        
         lb.append({'name': name, 'points': pts})
     conn.close()
-    # Sorterer slik at de med mest poeng er øverst, ellers de nyeste
     return sorted(lb, key=lambda x: x['points'], reverse=True)
+
+# --- ROUTES ---
 
 @app.route('/')
 def super_admin():
@@ -87,23 +122,21 @@ def group_view(slug):
     group = c.fetchone()
     c.execute('''SELECT f.* FROM fixtures f JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group[0],))
     matches = c.fetchall()
-    leaderboard = get_lb(group[0])
+    lb = get_leaderboard_data(group[0])
     conn.close()
-    return render_template('group_view.html', group=group, matches=matches, leaderboard=leaderboard)
+    return render_template('group_view.html', group=group, matches=matches, leaderboard=lb)
 
 @app.route('/api/submit_bet', methods=['POST'])
 def submit_bet():
     data = request.json
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    # Lagrer tipset
     c.execute("INSERT INTO bets (group_id, player_name, match_data) VALUES (?, ?, ?)", 
               (data['group_id'], data['player_name'], json.dumps(data['matches'])))
     conn.commit()
     conn.close()
     return jsonify({"status": "ok"})
 
-# ... Resten av API-rutene (push_scores, create_group etc) er de samme ...
 @app.route('/api/admin_push_scores', methods=['POST'])
 def admin_push_scores():
     data = request.json
@@ -113,16 +146,21 @@ def admin_push_scores():
         c.execute("UPDATE fixtures SET h_score = ?, b_score = ? WHERE id = ?", (m['h'], m['b'], m['match_id']))
     conn.commit()
     conn.close()
+    # Ved manuell push nullstiller vi timeren så endringene synes med en gang
+    global last_api_update
+    last_api_update = 0 
     return jsonify({"status": "ok"})
 
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     data = request.json
-    slug = data['name'].lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
+    name = data.get('name')
+    admin = data.get('admin_name')
+    slug = name.lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     try:
-        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (data['name'], slug, data['admin_name']))
+        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (name, slug, admin))
         conn.commit()
         return jsonify({"status": "Suksess"})
     except: return jsonify({"status": "Feil"})
@@ -163,4 +201,5 @@ def toggle_match():
     return jsonify({"status": "ok"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
