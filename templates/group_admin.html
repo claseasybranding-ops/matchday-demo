@@ -13,13 +13,12 @@
         .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .label-style { font-size: 0.7rem; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: block; }
         .mode-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .mode-card { border: 2px solid #e5e7eb; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .mode-card { border: 2px solid #e5e7eb; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; font-weight: 700; }
         .mode-card.active { border-color: var(--md-red); background: #fff1f2; color: var(--md-red); }
         .match-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f3f4f6; justify-content: space-between; }
         .team-logo-small { width: 24px; height: 24px; object-fit: contain; margin-right: 8px; }
         .btn-select { border-radius: 50px; font-size: 0.75rem; font-weight: 700; padding: 6px 15px; }
-        .sticky-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; border-top: 1px solid var(--md-border); z-index: 1000; }
-        .btn-main { background: var(--md-red); color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; }
+        .btn-main { background: var(--md-red); color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -31,13 +30,14 @@
 
 <div class="container" style="max-width: 500px;">
     <div class="card-custom">
-        <label class="label-style">Instillinger</label>
+        <label class="label-style">Instillinger for runden</label>
         <input type="text" id="prize" class="form-control mb-3" placeholder="Hva er premien?" value="{{ group[5] or '' }}">
+        
         <div class="mode-container mb-3">
-            <div id="m-multi" class="mode-card {% if group[4] == 'multi' %}active{% endif %}" onclick="setMode('multi')">RUNDE</div>
-            <div id="m-single" class="mode-card {% if group[4] == 'single' %}active{% endif %}" onclick="setMode('single')">STORKAMP</div>
+            <div id="m-multi" class="mode-card {% if group[4] == 'multi' %}active{% endif %}" onclick="updateMode('multi')">RUNDE</div>
+            <div id="m-single" class="mode-card {% if group[4] == 'single' %}active{% endif %}" onclick="updateMode('single')">STORKAMP</div>
         </div>
-        <button class="btn btn-dark w-100 fw-bold" onclick="saveSettings()">LAGRE INNSTILLINGER</button>
+        <button class="btn btn-dark w-100 fw-bold" onclick="saveAll()">LAGRE INNSTILLINGER</button>
     </div>
 
     <div class="card-custom">
@@ -57,7 +57,7 @@
     </div>
 </div>
 
-<div class="sticky-bottom-nav text-center">
+<div class="fixed-bottom p-3 bg-white border-top">
     <div class="container" style="max-width: 500px;">
         <a href="/group/{{ group[2] }}" target="_blank" class="btn btn-main">ÅPNE KUPONG (LIVE)</a>
     </div>
@@ -65,20 +65,32 @@
 
 <script>
     let currentMode = '{{ group[4] }}';
-    function setMode(m) {
-        currentMode = m;
-        document.getElementById('m-multi').classList.remove('active');
-        document.getElementById('m-single').classList.remove('active');
-        document.getElementById('m-' + m).classList.add('active');
-    }
-    function saveSettings() {
-        const p = document.getElementById('prize').value;
+
+    // Denne funksjonen sender modusen til databasen med en gang
+    function updateMode(mode) {
+        currentMode = mode;
+        const prize = document.getElementById('prize').value;
+        
         fetch('/api/update_group_settings', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({group_id: '{{ group[0] }}', mode: currentMode, prize_info: p})
-        }).then(() => location.reload());
+            body: JSON.stringify({
+                group_id: '{{ group[0] }}', 
+                mode: mode, 
+                prize_info: prize
+            })
+        }).then(() => {
+            // Oppdater fargene på knappene med en gang
+            document.getElementById('m-multi').classList.toggle('active', mode === 'multi');
+            document.getElementById('m-single').classList.toggle('active', mode === 'single');
+        });
     }
+
+    function saveAll() {
+        updateMode(currentMode);
+        alert("Lagret!");
+    }
+
     function toggleMatch(fid) {
         fetch('/api/toggle_match', {
             method: 'POST',
