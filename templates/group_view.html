@@ -17,7 +17,7 @@
         .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
         .team-logo { width: 45px; height: 45px; object-fit: contain; margin-bottom: 8px; }
         .score-val { font-size: 2.2rem; font-weight: 800; width: 40px; }
-        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #ddd; }
+        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #ddd; cursor: pointer;}
         .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; margin-top: 10px; }
         .lb-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.2s; }
         .lb-row:hover { background: #f8fafc; }
@@ -28,6 +28,17 @@
         .btn-submit { background: var(--md-red); color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; text-transform: uppercase; margin-top: 10px; }
         .input-name { border: 1px solid var(--md-border); border-radius: 12px; padding: 15px; text-align: center; width: 100%; margin-top: 15px; font-weight: 600; }
         .d-none { display: none !important; }
+
+        /* NYTT DESIGN FOR TIPS-MODAL */
+        #tipsModal .modal-content { border-radius: 24px; border: none; background-color: var(--md-bg); }
+        #tipsModal .modal-header { background: white; border-bottom: 1px solid var(--md-border); border-radius: 24px 24px 0 0; padding: 20px; }
+        #tipsModal .modal-title { font-weight: 800; letter-spacing: -0.5px; }
+        #tipsModal .modal-body { padding: 20px; }
+        .tip-match-card { background: white; border: 1px solid var(--md-border); border-radius: 16px; padding: 15px; margin-bottom: 10px; }
+        .tip-match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; gap: 10px; }
+        .tip-team-logo { width: 30px; height: 30px; object-fit: contain; }
+        .tip-team-name { font-size: 0.85rem; fw-bold; }
+        .tip-score-box { background: #f1f5f9; border-radius: 8px; padding: 8px 12px; font-weight: 800; font-size: 1.1rem; min-width: 60px;}
     </style>
 </head>
 <body>
@@ -49,7 +60,7 @@
     <div id="screen-coupon">
         <h4 class="fw-bold text-center mb-3">Lever din kupong</h4>
         {% for m in matches %}
-        <div class="match-card" data-match-id="{{ m[0] }}" data-h-name="{{ m[2] }}" data-a-name="{{ m[3] }}">
+        <div class="match-card" data-match-id="{{ m[0] }}" data-h-name="{{ m[2] }}" data-a-name="{{ m[3] }}" data-h-logo="{{ m[4] }}" data-a-logo="{{ m[5] }}">
             <div class="match-grid">
                 <div class="team-side">
                     <img src="{{ m[4] }}" class="team-logo">
@@ -107,14 +118,15 @@
 </div>
 
 <div class="modal fade" id="tipsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="border-radius: 20px; border: none;">
+    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+        <div class="modal-content">
             <div class="modal-header border-0">
-                <h5 class="modal-title fw-800" id="modalTitle">Tips</h5>
+                <h5 class="modal-title" id="modalTitle">Tips</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div id="modalContent"></div>
+                <div id="modalContent">
+                    </div>
             </div>
         </div>
     </div>
@@ -127,7 +139,6 @@
     const tipsModal = new bootstrap.Modal(document.getElementById('tipsModal'));
 
     window.onload = function() {
-        // Enkel sjekk: Hvis du har tippet før, gå til leaderboard. Hvis ikke, vis kupongen.
         if(localStorage.getItem(storageKey) === "true") {
             showLeaderboard();
         } else {
@@ -146,7 +157,6 @@
         const myName = localStorage.getItem(nameKey) || "Ikke tippet";
         document.getElementById('my-name-display').innerText = "Spiller: " + myName;
 
-        // Skjul endre-knapp etter kl 21:00
         const now = new Date();
         if (now.getHours() >= 21) {
             const btn = document.getElementById('reset-btn');
@@ -183,26 +193,40 @@
 
     function showUserTips(name, tips) {
         document.getElementById('modalTitle').innerText = name + " sine tips";
-        let html = '<table class="table table-borderless m-0">';
+        let html = '';
         
-        const matchNames = {};
+        const matchDataMap = {};
         document.querySelectorAll('.match-card').forEach(c => {
-            matchNames[c.getAttribute('data-match-id')] = {
+            matchDataMap[c.getAttribute('data-match-id')] = {
                 h: c.getAttribute('data-h-name'),
-                a: c.getAttribute('data-a-name')
+                a: c.getAttribute('data-a-name'),
+                hLogo: c.getAttribute('data-h-logo'),
+                aLogo: c.getAttribute('data-a-logo')
             };
         });
 
         tips.forEach(t => {
-            const names = matchNames[t.match_id] || {h: "Kamp", a: ""};
+            const m = matchDataMap[t.match_id];
+            if (!m) return; // Hopp over hvis kampen ikke finnes
+
             html += `
-                <tr class="border-bottom">
-                    <td class="small fw-bold text-end" style="width: 40%">${names.h}</td>
-                    <td class="text-center bg-light rounded px-2 fw-800" style="width: 20%">${t.h} - ${t.a}</td>
-                    <td class="small fw-bold text-start" style="width: 40%">${names.a}</td>
-                </tr>`;
+                <div class="tip-match-card">
+                    <div class="tip-match-grid">
+                        <div class="text-end">
+                            <img src="${m.hLogo}" class="tip-team-logo mb-1">
+                            <div class="tip-team-name fw-bold">${m.h}</div>
+                        </div>
+                        <div class="tip-score-box text-center">
+                            ${t.h} - ${t.a}
+                        </div>
+                        <div class="text-start">
+                            <img src="${m.aLogo}" class="tip-team-logo mb-1">
+                            <div class="tip-team-name fw-bold">${m.a}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
         });
-        html += '</table>';
         document.getElementById('modalContent').innerHTML = html;
         tipsModal.show();
     }
