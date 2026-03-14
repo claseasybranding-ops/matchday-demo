@@ -62,7 +62,6 @@ def super_admin():
     c.execute("SELECT * FROM groups")
     g_data = c.fetchall()
     conn.close()
-    # VIKTIG: Her må navnene kamper og grupper stemme med HTML
     return render_template('super_admin.html', kamper=f_data, grupper=g_data)
 
 @app.route('/group/<slug>/admin')
