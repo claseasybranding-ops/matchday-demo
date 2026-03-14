@@ -5,7 +5,9 @@ import os
 
 app = Flask(__name__)
 
-# Finn ut hvor vi er i filsystemet
+# Tvinger Flask til å forstå porten fra Render med en gang
+port = int(os.environ.get("PORT", 5000))
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "matchday_pro.db")
 API_KEY = "58f8589c07824c2495869fa6b7b815e5"
@@ -25,7 +27,6 @@ def init_db():
 
 init_db()
 
-# SETTER SUPER-ADMIN TIL SELVE FORSIDEN
 @app.route('/')
 def super_admin():
     conn = sqlite3.connect(DB_PATH)
@@ -37,7 +38,6 @@ def super_admin():
     conn.close()
     return render_template('super_admin.html', kamper=kamper, grupper=grupper)
 
-# Side for å plukke kamper
 @app.route('/group/<slug>/admin')
 def group_admin(slug):
     conn = sqlite3.connect(DB_PATH)
@@ -54,7 +54,6 @@ def group_admin(slug):
     conn.close()
     return render_template('group_admin.html', group=group, all_fixtures=all_fixtures, selected_ids=selected_ids)
 
-# Publikumsveggen
 @app.route('/group/<slug>')
 def group_view(slug):
     conn = sqlite3.connect(DB_PATH)
@@ -118,5 +117,5 @@ def import_league(league_code):
     return jsonify({"status": "Importert!"})
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    # Vi kjører på 0.0.0.0 for å være synlig for Render
     app.run(host='0.0.0.0', port=port)
