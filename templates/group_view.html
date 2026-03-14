@@ -9,32 +9,25 @@
     <style>
         :root { --md-red: #cc0000; --md-bg: #f2f4f7; --md-card: #ffffff; --md-text: #1a1a1a; --md-border: #e2e8f0; --gold: #ffd700; --silver: #c0c0c0; --bronze: #cd7f32; }
         body { background-color: var(--md-bg); color: var(--md-text); font-family: 'Inter', sans-serif; margin: 0; padding-bottom: 40px; }
-        
         .app-header { background: white; padding: 15px 0; text-align: center; border-bottom: 1px solid var(--md-border); position: sticky; top: 0; z-index: 1000; }
         .logo-text { color: var(--md-red); font-weight: 800; font-size: 1.4rem; margin: 0; letter-spacing: -1px; }
-
         .prize-container { background: white; margin: 15px auto; max-width: 450px; border-radius: 12px; border: 2px solid var(--md-red); padding: 12px; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 4px 10px rgba(204, 0, 0, 0.1); }
         .prize-badge { background: var(--md-red); color: white; font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; }
-
         .match-card { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; }
         .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
         .team-logo { width: 45px; height: 45px; object-fit: contain; margin-bottom: 8px; }
         .score-val { font-size: 2.2rem; font-weight: 800; width: 40px; }
         .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
-
         .bonus-box { background: #f8fafc; border-radius: 12px; padding: 15px; margin-top: 15px; border: 1px solid var(--md-border); text-align: left; }
         .bonus-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-
         .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; margin-top: 10px; }
         .lb-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; }
         .lb-rank { width: 30px; font-weight: 800; color: #94a3b8; }
         .lb-name { flex-grow: 1; font-weight: 600; font-size: 0.95rem; }
         .lb-points { font-weight: 800; color: var(--md-red); }
         .rank-1 { border-left: 4px solid var(--gold); background: #fffdf0; }
-
         .btn-submit { background: var(--md-red); color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; text-transform: uppercase; margin-top: 10px; }
         .input-name { border: 1px solid var(--md-border); border-radius: 12px; padding: 15px; text-align: center; width: 100%; margin-top: 15px; font-weight: 600; }
-        
         .d-none { display: none !important; }
     </style>
 </head>
@@ -106,7 +99,7 @@
     <div id="screen-leaderboard" class="d-none">
         <div class="text-center mb-3">
             <h4 class="fw-bold m-0">Leaderboard</h4>
-            <small class="text-muted">Poeng beregnes live</small>
+            <small class="text-muted">Kupongen din er mottatt!</small>
         </div>
         <div class="leaderboard-card">
             {% for entry in leaderboard %}
@@ -117,16 +110,18 @@
             </div>
             {% endfor %}
         </div>
+        <input type="hidden" id="submitted-name">
         <button class="btn btn-link w-100 text-danger mt-4 fw-bold" onclick="resetSubmission()">Endre min kupong</button>
     </div>
 </div>
 
 <script>
     const storageKey = "md_voted_{{ group[2] }}";
+    const nameKey = "md_name_{{ group[2] }}";
 
-    // SJEKKER STATUS NÅR SIDEN ÅPNES
     window.onload = function() {
         if(localStorage.getItem(storageKey)) {
+            document.getElementById('submitted-name').value = localStorage.getItem(nameKey);
             showLeaderboard();
         }
     };
@@ -150,7 +145,6 @@
                 a: c.querySelector('.a-val').innerText 
             };
             
-            // Hent storkamp-felt hvis de finnes
             const ggInput = document.getElementById('gg');
             if(ggInput) {
                 bet.straffe = document.getElementById('straffe').checked;
@@ -167,14 +161,27 @@
         })
         .then(() => { 
             localStorage.setItem(storageKey, "true");
-            location.reload(); // Nå relaster vi kun etter suksessfull levering
+            localStorage.setItem(nameKey, n);
+            location.reload();
         });
     }
 
     function resetSubmission() {
+        const playerName = localStorage.getItem(nameKey);
         if(confirm("Vil du slette leveringen og tippe på nytt?")) {
-            localStorage.removeItem(storageKey);
-            location.reload();
+            // Kall API-et for å slette fra databasen
+            fetch('/api/delete_bet', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({
+                    group_id: "{{ group[0] }}",
+                    player_name: playerName
+                })
+            }).then(() => {
+                localStorage.removeItem(storageKey);
+                localStorage.removeItem(nameKey);
+                location.reload();
+            });
         }
     }
 
