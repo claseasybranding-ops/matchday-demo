@@ -2,6 +2,7 @@ import sqlite3
 from flask import Flask, render_template, request, jsonify
 import requests
 import os
+import json
 
 app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,8 +23,16 @@ def init_db():
     
     c.execute('''CREATE TABLE IF NOT EXISTS group_selections 
                  (group_id INTEGER, fixture_id INTEGER, PRIMARY KEY(group_id, fixture_id))''')
+
+    # NY TABELL: bets (Lagrer supporterens tips)
+    c.execute('''CREATE TABLE IF NOT EXISTS bets 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                  group_id INTEGER, 
+                  player_name TEXT, 
+                  match_data TEXT, 
+                  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
     
-    # Sjekk om prize_info kolonnen eksisterer (sikkerhet ved oppgradering)
+    # Sikkerhetssjekk for prize_info
     try:
         c.execute("ALTER TABLE groups ADD COLUMN prize_info TEXT")
     except:
@@ -34,7 +43,7 @@ def init_db():
 
 init_db()
 
-# --- RUTENE ---
+# --- HOVEDSIDER ---
 
 @app.route('/')
 def super_admin():
@@ -53,8 +62,7 @@ def group_admin(slug):
     c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
     group = c.fetchone()
-    if not group:
-        return "Gruppe ikke funnet", 404
+    if not group: return "Gruppe ikke funnet", 404
         
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
     all_f = c.fetchall()
@@ -62,7 +70,6 @@ def group_admin(slug):
     c.execute("SELECT fixture_id FROM group_selections WHERE group_id = ?", (group[0],))
     sel_ids = [r[0] for r in c.fetchall()]
     conn.close()
-    
     return render_template('group_admin.html', group=group, all_fixtures=all_f, selected_ids=sel_ids)
 
 @app.route('/group/<slug>')
@@ -71,20 +78,38 @@ def group_view(slug):
     c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
     group = c.fetchone()
-    if not group:
-        return "Denne gruppen eksisterer ikke", 404
+    if not group: return "Gruppe ikke funnet", 404
 
-    # Henter valgte kamper
     c.execute('''SELECT f.* FROM fixtures f 
                  JOIN group_selections gs ON f.id = gs.fixture_id 
                  WHERE gs.group_id = ?''', (group[0],))
     matches = c.fetchall()
+    
+    # Hent alle eksisterende bets for leaderboardet
+    c.execute("SELECT player_name, match_data FROM bets WHERE group_id = ? ORDER BY timestamp DESC", (group[0],))
+    existing_bets = c.fetchall()
     conn.close()
     
-    # Her sender vi med 'mode' så HTML-en vet om den skal vise Straffe/Rødt kort-spørsmål
-    return render_template('group_view.html', group=group, matches=matches, mode=group[4])
+    return render_template('group_view.html', group=group, matches=matches, leaderboard=existing_bets)
 
 # --- API ENDEPUNKTER ---
+
+@app.route('/api/submit_bet', methods=['POST'])
+def submit_bet():
+    data = request.json
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    
+    # Vi lagrer match_data som en JSON-streng for å være fleksible
+    # Dette inneholder score, straffer, rødt kort og golden goal
+    match_json = json.dumps(data['matches'])
+    
+    c.execute("INSERT INTO bets (group_id, player_name, match_data) VALUES (?, ?, ?)", 
+              (data['group_id'], data['player_name'], match_json))
+    
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok", "message": "Tips lagret!"})
 
 @app.route('/api/update_group_settings', methods=['POST'])
 def update_group_settings():
@@ -102,10 +127,11 @@ def toggle_match():
     data = request.json
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    
-    # Finn modus for gruppen
     c.execute("SELECT mode FROM groups WHERE id = ?", (data['group_id'],))
     mode = c.fetchone()[0]
+    
+    if mode == 'single':
+        c.execute("DELETE FROM group_selections WHERE group_id = ?", (data['group_id'],))
     
     c.execute("SELECT * FROM group_selections WHERE group_id = ? AND fixture_id = ?", 
               (data['group_id'], data['fixture_id']))
@@ -114,10 +140,6 @@ def toggle_match():
         c.execute("DELETE FROM group_selections WHERE group_id = ? AND fixture_id = ?", 
                   (data['group_id'], data['fixture_id']))
     else:
-        if mode == 'single':
-            # Hvis single-mode, slett alle andre valg først
-            c.execute("DELETE FROM group_selections WHERE group_id = ?", (data['group_id'],))
-        
         c.execute("INSERT INTO group_selections (group_id, fixture_id) VALUES (?, ?)", 
                   (data['group_id'], data['fixture_id']))
     
@@ -128,9 +150,7 @@ def toggle_match():
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     data = request.json
-    # Bedre slug-håndtering
     slug = data['name'].lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
-    
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     try:
@@ -138,8 +158,8 @@ def create_group():
                   (data['name'], slug, data['admin_name']))
         conn.commit()
         status = "Suksess"
-    except sqlite3.IntegrityError:
-        status = "Navnet er opptatt"
+    except:
+        status = "Feil: Navnet er opptatt"
     conn.close()
     return jsonify({"status": status})
 
@@ -148,7 +168,6 @@ def import_league(code):
     url = f"https://api.football-data.org/v4/competitions/{code}/matches?status=SCHEDULED"
     headers = { 'X-Auth-Token': API_KEY }
     res = requests.get(url, headers=headers).json()
-    
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     for m in res.get('matches', []):
