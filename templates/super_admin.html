@@ -3,20 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MatchDay | System Admin</title>
+    <title>System Admin | MatchDay</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-card: #ffffff; --md-text: #1a1a1a; --md-border: #e2e8f0; }
-        body { background-color: var(--md-bg); color: var(--md-text); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 60px; }
+        :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-card: #ffffff; --md-border: #e2e8f0; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 60px; }
         .navbar-custom { background: white; padding: 15px 0; border-bottom: 1px solid var(--md-border); margin-bottom: 30px; }
-        .logo-brand { font-weight: 800; font-size: 1.6rem; color: var(--md-red); text-decoration: none; letter-spacing: -1px; }
-        .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 12px; padding: 25px; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .section-label { color: #64748b; font-weight: 700; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 15px; display: block; }
-        .form-control-custom { background: #ffffff; border: 1px solid #cbd5e1; padding: 12px 16px; border-radius: 8px; width: 100%; }
-        .btn-main { background: var(--md-red); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; transition: 0.2s; width: 100%; }
-        .investor-box { background: #fff1f2; border: 2px solid var(--md-red); border-radius: 12px; padding: 20px; margin-bottom: 30px; }
-        .group-row { background: #ffffff; border: 1px solid var(--md-border); border-radius: 10px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .logo-brand { font-weight: 800; font-size: 1.6rem; color: var(--md-red); text-decoration: none; }
+        .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .btn-main { background: var(--md-red); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; }
+        .investor-drawer { background: #fff1f2; border: 1px dashed var(--md-red); border-radius: 12px; padding: 20px; display: none; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -24,70 +21,75 @@
 <nav class="navbar-custom">
     <div class="container d-flex justify-content-between align-items-center">
         <a href="/" class="logo-brand">MatchDay.</a>
-        <span class="badge bg-danger">SYSTEM ADMIN</span>
+        <button class="btn btn-sm btn-outline-danger fw-bold" onclick="toggleInvestor()">INVESTOR MODUS</button>
     </div>
 </nav>
 
 <div class="container" style="max-width: 900px;">
     
-    <div class="investor-box">
-        <h6 class="fw-bold text-danger mb-3">DEMO-KONTROLL: PUSH RESULTATER</h6>
-        <div class="table-responsive bg-white rounded p-2 mb-3 border">
-            <table class="table table-sm table-borderless m-0">
-                <tbody id="push-list">
-                    {% for k in kamper %}
-                    <tr data-id="{{ k[0] }}">
-                        <td><small class="fw-bold">{{ k[2] }} - {{ k[3] }}</small></td>
-                        <td><input type="number" class="h-score form-control form-control-sm" style="width:50px" value="{{ k[8] or 0 }}"></td>
-                        <td><input type="number" class="b-score form-control form-control-sm" style="width:50px" value="{{ k[9] or 0 }}"></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <button class="btn btn-danger w-100 fw-bold" onclick="pushResults()">PUSH RESULTATER TIL ALLE GRUPPER</button>
-    </div>
-
     <div class="card-custom">
-        <span class="section-label">Opprett ny kunde</span>
-        <div class="row g-3">
-            <div class="col-md-5"><input type="text" id="g-name" class="form-control-custom" placeholder="Liverbirds Fredrikstad"></div>
-            <div class="col-md-4"><input type="text" id="g-admin" class="form-control-custom" placeholder="Clas T"></div>
-            <div class="col-md-3"><button class="btn-main" onclick="createGroup()">Opprett nå</button></div>
+        <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Opprett ny kunde</label>
+        <div class="row g-2">
+            <div class="col-md-5"><input type="text" id="g-name" class="form-control" placeholder="Liverbirds Fredrikstad"></div>
+            <div class="col-md-4"><input type="text" id="g-admin" class="form-control" placeholder="Clas T"></div>
+            <div class="col-md-3"><button class="btn-main w-100" onclick="createGroup()">Opprett nå</button></div>
         </div>
     </div>
 
     <div class="card-custom">
-        <span class="section-label">Aktive Supporterklubber</span>
+        <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Aktive Supporterklubber</label>
         {% for g in grupper %}
-        <div class="group-row">
-            <div><div class="fw-bold">{{ g[1] }}</div><div class="text-muted small">URL: /group/{{ g[2] }}</div></div>
-            <a href="/group/{{ g[2] }}/admin" class="btn btn-outline-dark btn-sm fw-bold">KONTROLLPANEL</a>
+        <div class="d-flex justify-content-between align-items-center border-bottom py-3">
+            <div><div class="fw-bold">{{ g[1] }}</div><small class="text-muted">URL: /group/{{ g[2] }}</small></div>
+            <a href="/group/{{ g[2] }}/admin" class="btn btn-sm btn-outline-dark fw-bold">KONTROLLPANEL</a>
         </div>
         {% else %}
-        <p class="text-center text-muted py-3 m-0">Ingen aktive grupper ennå.</p>
+        <p class="text-center text-muted m-0 py-3">Ingen aktive grupper ennå.</p>
         {% endfor %}
     </div>
 
     <div class="card-custom">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <span class="section-label m-0">Kamp-lageret</span>
-            <button class="btn btn-outline-dark btn-sm fw-bold" onclick="importLeague('PL')">Hent Premier League</button>
+            <label class="small fw-bold text-muted text-uppercase m-0">Kamp-lageret (Buffé)</label>
+            <button class="btn btn-sm btn-dark" onclick="importLeague('PL')">Hent Premier League</button>
         </div>
         <div class="table-responsive rounded border">
             <table class="table table-hover m-0">
-                <thead class="table-light"><tr><th>Dato</th><th>Hjemme - Borte</th><th>Status</th></tr></thead>
+                <thead class="table-light"><tr><th class="small">Dato</th><th class="small">Kamp</th><th class="small text-end">Status</th></tr></thead>
                 <tbody>
                     {% for k in kamper %}
-                    <tr><td class="small text-muted">{{ k[6][:10] }}</td><td class="fw-bold small">{{ k[2] }} - {{ k[3] }}</td><td><span class="badge bg-light text-success border">Klar</span></td></tr>
+                    <tr><td class="small text-muted">{{ k[6][:10] }}</td><td class="small fw-bold">{{ k[2] }} - {{ k[3] }}</td><td class="small text-end"><span class="badge bg-light text-success border">Klar</span></td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
+    <div id="investor-panel" class="investor-drawer">
+        <h6 class="fw-bold text-danger mb-3 text-uppercase" style="font-size: 0.75rem;">Demo-kontroll: Push resultater</h6>
+        <div class="bg-white rounded border p-2 mb-3">
+            <table class="table table-sm table-borderless m-0">
+                <tbody id="push-list">
+                    {% for k in kamper %}
+                    <tr data-id="{{ k[0] }}">
+                        <td class="small">{{ k[2] }} - {{ k[3] }}</td>
+                        <td><input type="number" class="h-score form-control form-control-sm" style="width:55px" value="{{ k[8] or 0 }}"></td>
+                        <td><input type="number" class="b-score form-control form-control-sm" style="width:55px" value="{{ k[9] or 0 }}"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <button class="btn btn-danger w-100 fw-bold" onclick="pushResults()">PUSH RESULTATER TIL ALLE KUNDER</button>
+    </div>
 </div>
 
 <script>
+    function toggleInvestor() {
+        const panel = document.getElementById('investor-panel');
+        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
+    }
+
     function createGroup() {
         const name = document.getElementById('g-name').value;
         const admin = document.getElementById('g-admin').value;
@@ -112,7 +114,7 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({scores: sc})
-        }).then(() => alert("Pushet!"));
+        }).then(() => { alert("Resultater pushet live!"); location.reload(); });
     }
 </script>
 </body>
