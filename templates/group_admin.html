@@ -10,11 +10,16 @@
         :root { --md-red: #cc0000; --md-bg: #f3f4f6; --md-card: #ffffff; --md-text: #111827; --md-border: #e5e7eb; }
         body { background-color: var(--md-bg); color: var(--md-text); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 100px; }
         .admin-header { background: white; padding: 20px; border-bottom: 1px solid var(--md-border); margin-bottom: 20px; text-align: center; }
-        .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; }
+        .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .label-style { font-size: 0.7rem; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: block; }
+        .mode-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .mode-card { border: 2px solid #e5e7eb; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; }
         .mode-card.active { border-color: var(--md-red); background: #fff1f2; color: var(--md-red); }
-        .match-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+        .match-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f3f4f6; justify-content: space-between; }
+        .team-logo-small { width: 24px; height: 24px; object-fit: contain; margin-right: 8px; }
+        .btn-select { border-radius: 50px; font-size: 0.75rem; font-weight: 700; padding: 6px 15px; }
+        .sticky-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; border-top: 1px solid var(--md-border); z-index: 1000; }
+        .btn-main { background: var(--md-red); color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -26,11 +31,11 @@
 
 <div class="container" style="max-width: 500px;">
     <div class="card-custom">
-        <label class="label-style">Instillinger for runden</label>
+        <label class="label-style">Instillinger</label>
         <input type="text" id="prize" class="form-control mb-3" placeholder="Hva er premien?" value="{{ group[5] or '' }}">
-        <div class="row g-2 mb-3">
-            <div class="col-6"><div id="m-multi" class="mode-card {% if group[4] == 'multi' %}active{% endif %}" onclick="setMode('multi')">RUNDE</div></div>
-            <div class="col-6"><div id="m-single" class="mode-card {% if group[4] == 'single' %}active{% endif %}" onclick="setMode('single')">STORKAMP</div></div>
+        <div class="mode-container mb-3">
+            <div id="m-multi" class="mode-card {% if group[4] == 'multi' %}active{% endif %}" onclick="setMode('multi')">RUNDE</div>
+            <div id="m-single" class="mode-card {% if group[4] == 'single' %}active{% endif %}" onclick="setMode('single')">STORKAMP</div>
         </div>
         <button class="btn btn-dark w-100 fw-bold" onclick="saveSettings()">LAGRE INNSTILLINGER</button>
     </div>
@@ -39,12 +44,22 @@
         <label class="label-style">Velg kamper fra terminlisten</label>
         {% for m in all_fixtures %}
         <div class="match-row">
-            <span class="small fw-bold">{{ m[2] }} - {{ m[3] }}</span>
-            <button class="btn btn-sm {% if m[0] in selected_ids %}btn-success{% else %}btn-outline-secondary{% endif %}" onclick="toggleMatch('{{ m[0] }}')">
+            <div class="d-flex align-items-center">
+                <img src="{{ m[4] }}" class="team-logo-small" onerror="this.src='https://via.placeholder.com/24'">
+                <span class="small fw-bold">{{ m[2] }} - {{ m[3] }}</span>
+                <img src="{{ m[5] }}" class="team-logo-small ms-2" onerror="this.src='https://via.placeholder.com/24'">
+            </div>
+            <button class="btn btn-select {% if m[0] in selected_ids %}btn-success{% else %}btn-outline-secondary{% endif %}" onclick="toggleMatch('{{ m[0] }}')">
                 {% if m[0] in selected_ids %}VALGT{% else %}VELG{% endif %}
             </button>
         </div>
         {% endfor %}
+    </div>
+</div>
+
+<div class="sticky-bottom-nav text-center">
+    <div class="container" style="max-width: 500px;">
+        <a href="/group/{{ group[2] }}" target="_blank" class="btn btn-main">ÅPNE KUPONG (LIVE)</a>
     </div>
 </div>
 
@@ -58,10 +73,18 @@
     }
     function saveSettings() {
         const p = document.getElementById('prize').value;
-        fetch('/api/update_group_settings', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({group_id:'{{group[0]}}', mode:currentMode, prize_info:p})}).then(()=>location.reload());
+        fetch('/api/update_group_settings', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({group_id: '{{ group[0] }}', mode: currentMode, prize_info: p})
+        }).then(() => location.reload());
     }
     function toggleMatch(fid) {
-        fetch('/api/toggle_match', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({group_id:'{{group[0]}}', fixture_id:fid})}).then(()=>location.reload());
+        fetch('/api/toggle_match', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({group_id: '{{ group[0] }}', fixture_id: fid})
+        }).then(() => location.reload());
     }
 </script>
 </body>
