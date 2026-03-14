@@ -5,164 +5,229 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MatchDay | {{ group[1] }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-dark: #0f0f0f; --md-card: #1a1a1a; --md-border: #333; }
-        body { background-color: var(--md-dark); color: #e0e0e0; font-family: 'Inter', -apple-system, sans-serif; padding-bottom: 50px; }
-        
-        .header-section { padding: 30px 20px; text-align: center; }
-        .logo-text { color: var(--md-red); font-weight: 900; font-size: 2.2rem; margin-bottom: 0; letter-spacing: -1px; }
-        
-        .prize-card { 
-            background: linear-gradient(135deg, var(--md-red) 0%, #800000 100%);
-            border-radius: 16px; padding: 15px; margin-bottom: 25px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4); border: none;
+        :root {
+            --md-red: #cc0000;
+            --md-bg: #f8fafc;
+            --md-card: #ffffff;
+            --md-text: #0f172a;
+            --md-border: #e2e8f0;
         }
 
-        .match-card { 
-            background: var(--md-card); border-radius: 20px; padding: 20px; 
-            margin-bottom: 20px; border: 1px solid var(--md-border); position: relative;
-        }
-        .single-game-active { border: 1px solid var(--md-red); box-shadow: 0 0 20px rgba(204, 0, 0, 0.15); }
-        
-        .badge-main { 
-            background: var(--md-red); position: absolute; top: -12px; left: 50%; 
-            transform: translateX(-50%); padding: 4px 12px; border-radius: 8px; 
-            font-size: 0.65rem; font-weight: 800; letter-spacing: 0.5px;
+        body { 
+            background-color: var(--md-bg); 
+            color: var(--md-text); 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            padding-bottom: 40px;
         }
 
-        .score-box { 
-            background: #111; border: 1px solid #444; color: white; 
-            font-size: 1.8rem; font-weight: 800; text-align: center; 
-            width: 65px; height: 65px; border-radius: 12px; transition: 0.2s;
+        .header-section {
+            padding: 30px 20px;
+            text-align: center;
+            background: white;
+            border-bottom: 1px solid var(--md-border);
+            margin-bottom: 25px;
         }
-        .score-box:focus { border-color: var(--md-red); outline: none; background: #000; }
-        
-        .team-logo { width: 50px; height: 50px; object-fit: contain; margin-bottom: 8px; }
-        .team-name { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; opacity: 0.9; }
 
-        .bonus-box { 
-            background: rgba(0,0,0,0.2); border-radius: 12px; padding: 15px; 
-            margin-top: 20px; border-top: 1px solid var(--md-border);
+        .logo-text { 
+            color: var(--md-red); 
+            font-weight: 800; 
+            font-size: 1.8rem; 
+            margin-bottom: 0; 
+            letter-spacing: -1px;
         }
-        
-        .btn-submit { 
-            background: var(--md-red); color: white; border: none; 
-            border-radius: 12px; padding: 18px; font-weight: 800; 
-            font-size: 1.1rem; width: 100%; transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(204, 0, 0, 0.3);
+
+        /* Premie-kort */
+        .prize-banner {
+            background: linear-gradient(135deg, var(--md-red) 0%, #a30000 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(204, 0, 0, 0.15);
         }
+
+        /* Kamp-kort */
+        .match-card {
+            background: var(--md-card);
+            border: 1px solid var(--md-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .single-game-border {
+            border: 2px solid var(--md-red);
+        }
+
+        .badge-mode {
+            background: var(--md-red);
+            color: white;
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        /* Score-input */
+        .score-input {
+            width: 60px;
+            height: 60px;
+            background: #f1f5f9;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--md-text);
+            transition: all 0.2s;
+        }
+
+        .score-input:focus {
+            background: white;
+            border-color: var(--md-red);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.1);
+        }
+
+        .team-logo-large {
+            width: 55px;
+            height: 55px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+
+        .team-name-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #475569;
+        }
+
+        /* Tilleggsspørsmål (Single Game) */
+        .bonus-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .form-switch .form-check-input:checked {
+            background-color: var(--md-red);
+            border-color: var(--md-red);
+        }
+
+        .btn-submit {
+            background: var(--md-red);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(204, 0, 0, 0.2);
+            transition: 0.2s;
+        }
+
         .btn-submit:active { transform: scale(0.98); }
 
-        .form-control-custom {
-            background: #1a1a1a; border: 1px solid #444; color: white;
-            border-radius: 12px; padding: 15px; text-align: center;
+        .name-input {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
 
-<div class="container" style="max-width: 480px;">
-    <div class="header-section">
-        <h1 class="logo-text">MatchDay.</h1>
-        <p class="small text-muted text-uppercase fw-bold">{{ group[1] }}</p>
-    </div>
+<div class="header-section">
+    <h1 class="logo-text">MatchDay.</h1>
+    <p class="text-muted small fw-bold text-uppercase m-0">{{ group[1] }}</p>
+</div>
 
+<div class="container" style="max-width: 500px;">
+    
     {% if group[5] %}
-    <div class="prize-card text-center">
-        <div class="small fw-bold text-uppercase opacity-75 mb-1" style="font-size: 0.6rem;">Dagens Premie</div>
-        <div class="h5 fw-bold m-0 text-white">🏆 {{ group[5] }}</div>
+    <div class="prize-banner">
+        <div class="small fw-bold text-uppercase opacity-75" style="font-size: 0.6rem;">Dagens Premie</div>
+        <div class="h5 fw-bold m-0">🏆 {{ group[5] }}</div>
     </div>
     {% endif %}
 
-    <div id="coupon-form">
+    <div id="coupon">
         {% for m in matches %}
-        <div class="match-card {% if group[4] == 'single' %}single-game-active{% endif %}" data-match-id="{{ m[0] }}">
-            {% if group[4] == 'single' %}<div class="badge-main">HOVEDKAMP</div>{% endif %}
+        <div class="match-card {% if group[4] == 'single' %}single-game-border{% endif %}">
+            {% if group[4] == 'single' %}<div class="badge-mode">Hovedkamp</div>{% endif %}
             
             <div class="row align-items-center text-center">
                 <div class="col-4">
-                    <img src="{{ m[4] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/50'">
-                    <div class="team-name">{{ m[2] }}</div>
+                    <img src="{{ m[4] }}" class="team-logo-large" onerror="this.src='https://via.placeholder.com/50'">
+                    <div class="team-name-label">{{ m[2] }}</div>
                 </div>
                 
-                <div class="col-4 px-0">
-                    <div class="d-flex justify-content-center align-items-center">
-                        <input type="number" pattern="\d*;" class="score-box home-score" placeholder="0" inputmode="numeric">
-                        <div class="mx-1 fw-bold opacity-25">-</div>
-                        <input type="number" pattern="\d*;" class="score-box away-score" placeholder="0" inputmode="numeric">
-                    </div>
+                <div class="col-4 px-0 d-flex justify-content-center align-items-center">
+                    <input type="number" class="score-input h-score" placeholder="0" inputmode="numeric">
+                    <span class="mx-1 fw-bold text-muted">-</span>
+                    <input type="number" class="score-input a-score" placeholder="0" inputmode="numeric">
                 </div>
 
                 <div class="col-4">
-                    <img src="{{ m[5] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/50'">
-                    <div class="team-name">{{ m[3] }}</div>
+                    <img src="{{ m[5] }}" class="team-logo-large" onerror="this.src='https://via.placeholder.com/50'">
+                    <div class="team-name-label">{{ m[3] }}</div>
                 </div>
             </div>
 
             {% if group[4] == 'single' %}
-            <div class="bonus-box">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="small fw-bold text-muted">Blir det straffespark?</span>
-                    <div class="form-check form-switch m-0">
-                        <input class="form-check-input pen-check" type="checkbox">
+            <div class="bonus-section">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small fw-bold">Straffespark i kampen?</span>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="pen-{{ m[0] }}">
                     </div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <span class="small fw-bold text-muted">Blir det rødt kort?</span>
-                    <div class="form-check form-switch m-0">
-                        <input class="form-check-input red-check" type="checkbox">
+                    <span class="small fw-bold">Rødt kort i kampen?</span>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="red-{{ m[0] }}">
                     </div>
                 </div>
-                <div class="mt-2">
-                    <label class="small fw-bold text-muted mb-1">Golden Goal (minutt):</label>
-                    <input type="number" class="form-control-custom w-100 gg-input" placeholder="Minutt f.eks. 34" inputmode="numeric">
-                </div>
+                <label class="small fw-bold text-muted">Golden Goal (minutt):</label>
+                <input type="number" class="form-control border-0 bg-white mt-1" style="border-radius: 8px;" placeholder="F.eks. 34" inputmode="numeric">
             </div>
             {% endif %}
         </div>
         {% endfor %}
 
         <div class="mt-4">
-            <input type="text" id="player-name" class="form-control-custom w-100 mb-3" placeholder="Skriv ditt navn...">
-            <button class="btn btn-submit" onclick="submitCoupon()">LEVER KUPONG</button>
+            <input type="text" id="p-name" class="form-control name-input w-100" placeholder="Skriv navnet ditt her...">
+            <button class="btn-submit" onclick="submitTicket()">LEVER KUPONG</button>
         </div>
     </div>
 </div>
 
 <script>
-function submitCoupon() {
-    const name = document.getElementById('player-name').value;
-    if (!name) {
-        alert("Du må skrive inn navnet ditt!");
-        return;
-    }
-
-    const matches = [];
-    document.querySelectorAll('.match-card').forEach(card => {
-        const matchId = card.getAttribute('data-match-id');
-        const hScore = card.querySelector('.home-score').value || 0;
-        const bScore = card.querySelector('.away-score').value || 0;
+    function submitTicket() {
+        const name = document.getElementById('p-name').value;
+        if(!name) { alert("Vennligst skriv navnet ditt"); return; }
         
-        let bonus = null;
-        if (card.querySelector('.gg-input')) {
-            bonus = {
-                penalty: card.querySelector('.pen-check').checked,
-                redCard: card.querySelector('.red-check').checked,
-                goldenGoal: card.querySelector('.gg-input').value || 0
-            };
-        }
-
-        matches.push({
-            id: matchId,
-            h: hScore,
-            b: bScore,
-            bonus: bonus
-        });
-    });
-
-    console.log("Leverer kupong for:", name, matches);
-    alert("Kupong levert! (Her kobler vi på API-et i neste steg)");
-}
+        // Her legger vi til API-kall for å lagre
+        alert("Kupongen din er registrert, " + name + "!");
+    }
 </script>
 
 </body>
