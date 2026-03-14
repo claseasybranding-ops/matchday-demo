@@ -127,6 +127,16 @@ def import_league(code):
     conn.close()
     return jsonify({"status": "Suksess"})
 
+@app.route('/api/update_group_settings', methods=['POST'])
+def update_group_settings():
+    data = request.json
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data['mode'], data['prize_info'], data['group_id']))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
 @app.route('/api/toggle_match', methods=['POST'])
 def toggle_match():
     data = request.json
