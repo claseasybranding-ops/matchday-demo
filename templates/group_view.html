@@ -22,7 +22,7 @@
         .score-val { font-size: 2.2rem; font-weight: 800; width: 40px; }
         .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
 
-        .bonus-box { background: #f8fafc; border-radius: 12px; padding: 15px; margin-top: 15px; border: 1px solid var(--md-border); }
+        .bonus-box { background: #f8fafc; border-radius: 12px; padding: 15px; margin-top: 15px; border: 1px solid var(--md-border); text-align: left; }
         .bonus-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 
         .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; margin-top: 10px; }
@@ -83,21 +83,30 @@
 
             {% if group[4] == 'single' %}
             <div class="bonus-box">
-                <div class="bonus-row"><span class="small fw-bold">Straffespark?</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="straffe"></div></div>
-                <div class="bonus-row"><span class="small fw-bold">Rødt kort?</span><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="rodt"></div></div>
-                <div class="mt-2"><label class="small fw-bold mb-1">Golden Goal (Minutt):</label><input type="number" id="gg" class="form-control text-center fw-bold" placeholder="Eks: 34"></div>
+                <div class="bonus-row">
+                    <span class="small fw-bold">Straffespark i kampen?</span>
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="straffe"></div>
+                </div>
+                <div class="bonus-row">
+                    <span class="small fw-bold">Rødt kort i kampen?</span>
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="rodt"></div>
+                </div>
+                <div class="mt-2">
+                    <label class="small fw-bold mb-1">Golden Goal (Minutt det scores):</label>
+                    <input type="number" id="gg" class="form-control text-center fw-bold" placeholder="Eks: 34">
+                </div>
             </div>
             {% endif %}
         </div>
         {% endfor %}
-        <input type="text" id="player-name" class="input-name" placeholder="Ditt Navn">
+        <input type="text" id="player-name" class="input-name" placeholder="Skriv navnet ditt her...">
         <button class="btn-submit" onclick="submitTicket()">LEVER KUPONG</button>
     </div>
 
     <div id="screen-leaderboard" class="d-none">
         <div class="text-center mb-3">
             <h4 class="fw-bold m-0">Leaderboard</h4>
-            <small class="text-muted">Kupongen din er mottatt!</small>
+            <small class="text-muted">Poeng beregnes live</small>
         </div>
         <div class="leaderboard-card">
             {% for entry in leaderboard %}
@@ -108,40 +117,65 @@
             </div>
             {% endfor %}
         </div>
+        <button class="btn btn-link w-100 text-danger mt-4 fw-bold" onclick="resetSubmission()">Endre min kupong</button>
     </div>
 </div>
 
 <script>
-    // Sjekk om de har tippet før
-    const groupKey = "voted_{{ group[2] }}";
-    if(localStorage.getItem(groupKey)) {
+    const storageKey = "md_voted_{{ group[2] }}";
+
+    // SJEKKER STATUS NÅR SIDEN ÅPNES
+    window.onload = function() {
+        if(localStorage.getItem(storageKey)) {
+            showLeaderboard();
+        }
+    };
+
+    function showLeaderboard() {
         document.getElementById('screen-coupon').classList.add('d-none');
         document.getElementById('screen-leaderboard').classList.remove('d-none');
+        window.scrollTo(0,0);
     }
 
     function submitTicket() {
         const n = document.getElementById('player-name').value;
-        if(!n || n.length < 2) return alert("Skriv navnet ditt først!");
+        if(!n || n.length < 2) return alert("Vennligst skriv navnet ditt!");
 
         const d = { group_id: "{{ group[0] }}", player_name: n, matches: [] };
+        
         document.querySelectorAll('.match-card').forEach(c => {
-            const bet = { match_id: c.getAttribute('data-match-id'), h: c.querySelector('.h-val').innerText, a: c.querySelector('.a-val').innerText };
-            const gg = document.getElementById('gg');
-            if(gg) {
+            const bet = { 
+                match_id: c.getAttribute('data-match-id'), 
+                h: c.querySelector('.h-val').innerText, 
+                a: c.querySelector('.a-val').innerText 
+            };
+            
+            // Hent storkamp-felt hvis de finnes
+            const ggInput = document.getElementById('gg');
+            if(ggInput) {
                 bet.straffe = document.getElementById('straffe').checked;
                 bet.rodt = document.getElementById('rodt').checked;
-                bet.golden_goal = gg.value;
+                bet.golden_goal = ggInput.value;
             }
             d.matches.push(bet);
         });
 
-        fetch('/api/submit_bet', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(d) })
+        fetch('/api/submit_bet', { 
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify(d) 
+        })
         .then(() => { 
-            // LÅS SIDEN: Lagre i telefonen at de har stemt
-            localStorage.setItem(groupKey, "true");
-            // Tving frem en oppdatering av siden for å se det ferske leaderboardet
-            location.reload();
+            localStorage.setItem(storageKey, "true");
+            location.reload(); // Nå relaster vi kun etter suksessfull levering
         });
+    }
+
+    function resetSubmission() {
+        if(confirm("Vil du slette leveringen og tippe på nytt?")) {
+            localStorage.removeItem(storageKey);
+            location.reload();
+        }
     }
 
     function adj(btn, val) {
