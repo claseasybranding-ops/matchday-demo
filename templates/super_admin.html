@@ -3,127 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Admin | MatchDay</title>
+    <title>MatchDay | System Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-bg: #0f0f0f; --md-card: #1a1a1a; --md-border: #333; }
-        body { background-color: var(--md-bg); color: #e0e0e0; font-family: 'Inter', sans-serif; }
-        
-        /* Topplinje */
-        .header-bar { background: #151515; border-bottom: 2px solid var(--md-red); padding: 20px 0; margin-bottom: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        .logo-main { color: var(--md-red); font-weight: 900; font-size: 1.8rem; margin: 0; letter-spacing: -1px; }
-        
-        /* Kort-design */
-        .card { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; margin-bottom: 25px; overflow: hidden; }
-        .card-header { background: #222; border-bottom: 1px solid var(--md-border); padding: 15px 25px; color: var(--md-red); font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
-        
-        /* Input og knapper */
-        .form-control { background: #111; border: 1px solid #444; color: white; padding: 12px 15px; border-radius: 8px; }
-        .form-control:focus { background: #000; border-color: var(--md-red); color: white; box-shadow: none; }
-        .btn-primary { background: var(--md-red); border: none; font-weight: bold; padding: 12px 25px; transition: 0.3s; }
-        .btn-primary:hover { background: #ff0000; transform: translateY(-2px); }
-        
-        /* Gruppe-liste */
-        .group-row { background: #222; border-radius: 12px; padding: 15px 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--md-red); }
-        .group-info h6 { margin: 0; color: white; font-weight: bold; }
-        .group-info small { color: #888; }
-        
-        /* Kamp-lageret */
-        .match-item { border-bottom: 1px solid #222; padding: 12px 20px; display: flex; align-items: center; font-size: 0.9rem; }
-        .match-item:last-child { border: none; }
-        .date-tag { color: #666; width: 100px; font-family: monospace; }
-        .teams { flex-grow: 1; font-weight: 600; }
-        
-        .btn-outline-light { border-color: #444; color: #888; font-size: 0.8rem; }
-        .btn-outline-light:hover { background: var(--md-red); border-color: var(--md-red); }
+        :root {
+            --md-red: #cc0000;
+            --md-bg: #0a0a0a;
+            --md-card: #161616;
+            --md-border: #262626;
+            --md-text: #ffffff;
+            --md-muted: #888888;
+        }
+
+        body { 
+            background-color: var(--md-bg); 
+            color: var(--md-text); 
+            font-family: 'Inter', sans-serif;
+            letter-spacing: -0.02em;
+        }
+
+        /* Navbar / Header */
+        .navbar-custom {
+            padding: 20px 0;
+            border-bottom: 1px solid var(--md-border);
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(10px);
+            margin-bottom: 40px;
+        }
+
+        .logo-brand { 
+            font-weight: 900; 
+            font-size: 1.8rem; 
+            color: var(--md-red); 
+            text-decoration: none;
+            letter-spacing: -1.5px;
+        }
+        .logo-dot { color: white; }
+
+        /* Card styling med dybde */
+        .card-custom {
+            background: var(--md-card);
+            border: 1px solid var(--md-border);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .section-label {
+            color: var(--md-red);
+            font-weight: 800;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        /* Input-felt som ser proffe ut */
+        .form-control-custom {
+            background: #1f1f1f;
+            border: 1px solid var(--md-border);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .form-control-custom:focus {
+            background: #252525;
+            border-color: var(--md-red);
+            color: white;
+            box-shadow: 0 0 0 4px rgba(204, 0, 0, 0.1);
+            outline: none;
+        }
+
+        /* Knapper med "pop" */
+        .btn-main {
+            background: var(--md-red);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+        .btn-main:hover {
+            background: #ff0000;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(204, 0, 0, 0.4);
+        }
+
+        .btn-outline-custom {
+            background: transparent;
+            border: 1px solid var(--md-border);
+            color: var(--md-muted);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .btn-outline-custom:hover {
+            border-color: #555;
+            color: white;
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Gruppeliste-rader */
+        .group-row {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--md-border);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
+        }
+        .group-row:hover {
+            border-color: #444;
+            background: rgba(255,255,255,0.04);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--md-muted);
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
 
-<div class="header-bar">
+<nav class="navbar-custom">
     <div class="container d-flex justify-content-between align-items-center">
-        <h1 class="logo-main">MatchDay<span class="text-white">.</span></h1>
-        <div class="badge rounded-pill bg-dark text-danger border border-danger px-3 py-2 small">SYSTEM ADMIN</div>
+        <a href="/" class="logo-brand">MatchDay<span class="logo-dot">.</span></a>
+        <div class="badge bg-dark border border-secondary text-secondary p-2 px-3" style="font-size: 0.7rem; border-radius: 50px;">
+            SYSTEM ADMIN
+        </div>
     </div>
-</div>
+</nav>
 
 <div class="container" style="max-width: 900px;">
     
-    <div class="card shadow">
-        <div class="card-header">Opprett Ny Gruppe / Kunde</div>
-        <div class="card-body p-4">
-            <div class="row g-3">
-                <div class="col-md-5">
-                    <input type="text" id="gName" class="form-control" placeholder="Gruppenavn (f.eks. Liverbirds)">
-                </div>
-                <div class="col-md-4">
-                    <input type="text" id="aName" class="form-control" placeholder="Admin (f.eks. Clas T)">
-                </div>
-                <div class="col-md-3">
-                    <button class="btn btn-primary w-100" onclick="createGroup()">OPPRETT</button>
-                </div>
+    <div class="card-custom">
+        <span class="section-label">Opprett ny supporterklubb / kunde</span>
+        <div class="row g-3">
+            <div class="col-md-5">
+                <input type="text" id="g-name" class="form-control-custom w-100" placeholder="Gruppenavn (f.eks. Liverbirds)">
+            </div>
+            <div class="col-md-4">
+                <input type="text" id="g-admin" class="form-control-custom w-100" placeholder="Admin (f.eks. Clas T)">
+            </div>
+            <div class="col-md-3">
+                <button class="btn-main" onclick="createGroup()">Opprett</button>
             </div>
         </div>
     </div>
 
-    <div class="card shadow">
-        <div class="card-header">Aktive Grupper</div>
-        <div class="card-body p-4">
+    <div class="card-custom">
+        <span class="section-label">Aktive Grupper</span>
+        <div id="group-list">
             {% for g in grupper %}
             <div class="group-row">
-                <div class="group-info">
-                    <h6>{{ g[1] }}</h6>
-                    <small>Leder: {{ g[3] }} | /group/{{ g[2] }}</small>
+                <div>
+                    <div class="fw-bold">{{ g[1] }}</div>
+                    <div class="small text-muted">URL: /group/{{ g[2] }}</div>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="/group/{{ g[2] }}/admin" class="btn btn-sm btn-light fw-bold px-3">Plukk kamper</a>
-                    <a href="/group/{{ g[2] }}" target="_blank" class="btn btn-sm btn-outline-danger fw-bold px-3">Se vegg</a>
-                </div>
+                <a href="/group/{{ g[2] }}/admin" class="btn btn-outline-custom">ADMIN PANEL</a>
             </div>
             {% else %}
-            <div class="text-center py-4 text-muted small">Ingen aktive grupper ennå.</div>
+            <div class="empty-state">Ingen aktive grupper ennå.</div>
             {% endfor %}
         </div>
     </div>
 
-    <div class="card shadow">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Kamp-lageret (Buffé)</span>
+    <div class="card-custom">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <span class="section-label m-0">Kamp-lageret (Buffé)</span>
             <div class="d-flex gap-2">
-                <button class="btn btn-outline-light" onclick="importL('PL')">Hent Premier League</button>
-                <button class="btn btn-outline-light" onclick="importL('CL')">Hent Champions League</button>
+                <button class="btn-outline-custom" onclick="importLeague('PL')">Hent Premier League</button>
+                <button class="btn-outline-custom" onclick="importLeague('CL')">Hent Champions League</button>
             </div>
         </div>
-        <div class="card-body p-0">
-            {% for k in kamper %}
-            <div class="match-item">
-                <span class="date-tag">{{ k[6][:10] }}</span>
-                <span class="teams">{{ k[2] }} — {{ k[3] }}</span>
-                <span class="badge bg-dark text-success border border-success small">KLAR</span>
-            </div>
-            {% endfor %}
+        
+        <div class="table-responsive">
+            <table class="table table-dark table-hover" style="font-size: 0.9rem;">
+                <thead>
+                    <tr class="text-muted" style="font-size: 0.7rem; text-transform: uppercase;">
+                        <th>Dato</th>
+                        <th>Kamp</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for k in kamper %}
+                    <tr>
+                        <td class="text-muted">{{ k[6][:10] }}</td>
+                        <td class="fw-bold">{{ k[2] }} - {{ k[3] }}</td>
+                        <td><span class="badge bg-success opacity-50">{{ k[7] }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-
 </div>
 
 <script>
     function createGroup() {
-        const name = document.getElementById('gName').value;
-        const admin = document.getElementById('aName').value;
-        if(!name || !admin) return alert("Fyll ut begge felt!");
-        
+        const name = document.getElementById('g-name').value;
+        const admin = document.getElementById('g-admin').value;
+        if(!name || !admin) return alert("Fyll ut begge felt");
+
         fetch('/api/create_group', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({name: name, admin_name: admin})
-        }).then(() => location.reload());
+        }).then(res => res.json()).then(data => {
+            alert(data.status);
+            location.reload();
+        });
     }
 
-    function importL(code) {
-        const btn = event.target;
-        btn.innerText = "Henter...";
-        fetch('/api/import_league/' + code).then(() => location.reload());
+    function importLeague(code) {
+        fetch('/api/import_league/' + code)
+            .then(res => res.json())
+            .then(data => {
+                alert("Import fullført!");
+                location.reload();
+            });
     }
 </script>
 
