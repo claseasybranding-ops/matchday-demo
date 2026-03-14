@@ -39,6 +39,8 @@ def group_admin(slug):
     c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
     group = c.fetchone()
+    if not group:
+        return "Gruppe ikke funnet", 404
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
     all_fixtures = c.fetchall()
     c.execute("SELECT fixture_id FROM group_selections WHERE group_id = ?", (group[0],))
@@ -52,6 +54,8 @@ def group_view(slug):
     c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
     group = c.fetchone()
+    if not group:
+        return "Gruppe ikke funnet", 404
     c.execute('''SELECT f.* FROM fixtures f 
                  JOIN group_selections gs ON f.id = gs.fixture_id 
                  WHERE gs.group_id = ? ORDER BY f.date ASC''', (group[0],))
@@ -63,18 +67,23 @@ def group_view(slug):
 def create_group():
     data = request.json
     name = data.get('name')
+    admin = data.get('admin_name')
     slug = name.lower().replace(" ", "-")
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (name, slug, data.get('admin_name')))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "Suksess"})
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (name, slug, admin))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "Suksess"})
+    except Exception as e:
+        return jsonify({"status": str(e)}), 400
 
 @app.route('/api/toggle_match', methods=['POST'])
 def toggle_match():
     data = request.json
-    gid, fid = data.get('group_id'), data.get('fixture_id')
+    gid = data.get('group_id')
+    fid = data.get('fixture_id')
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM group_selections WHERE group_id = ? AND fixture_id = ?", (gid, fid))
@@ -92,17 +101,21 @@ def toggle_match():
 def import_league(league_code):
     url = f"https://api.football-data.org/v4/competitions/{league_code}/matches?status=SCHEDULED"
     headers = { 'X-Auth-Token': API_KEY }
-    res = requests.get(url, headers=headers).json()
-    matches = res.get('matches', [])
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    for m in matches[:30]:
-        c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)",
-                  (m['id'], league_code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], 
-                   m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "Importert!"})
+    try:
+        response = requests.get(url, headers=headers)
+        res = response.json()
+        matches = res.get('matches', [])
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        for m in matches[:30]:
+            c.execute("INSERT OR REPLACE INTO fixtures VALUES (?,?,?,?,?,?,?,?)",
+                      (m['id'], league_code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], 
+                       m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "Importert!"})
+    except Exception as e:
+        return jsonify({"status": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
