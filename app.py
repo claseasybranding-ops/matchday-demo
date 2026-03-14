@@ -1,207 +1,142 @@
-import sqlite3
-from flask import Flask, render_template, request, jsonify
-import requests
 import os
-import json
-import time
+import sqlite3
+import requests
+from flask import Flask, render_template, request, jsonify, session
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "matchday_pro.db")
-API_KEY = "58f8589c07824c2495869fa6b7b815e5"
+app.secret_key = "matchday_secret_key" # Modul 7: Sesjonshåndtering
 
-last_api_update = 0
+# --- KONFIGURASJON ---
+DB_PATH = 'matchday_pro.db'
+# Din oppdaterte API-nøkkel:
+API_KEY = '58f8589c07824c2495869fa6b7b815e5' 
 
+# ---------------------------------------------------------
+# DATABASE INITIALISERING
+# ---------------------------------------------------------
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS fixtures 
-                 (id INTEGER PRIMARY KEY, league_id TEXT, h_navn TEXT, b_navn TEXT, 
-                  h_logo TEXT, b_logo TEXT, date TEXT, status TEXT, h_score INTEGER, b_score INTEGER)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS groups 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, slug TEXT UNIQUE, 
-                  admin_name TEXT, mode TEXT DEFAULT "multi", prize_info TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS group_selections 
-                 (group_id INTEGER, fixture_id INTEGER, PRIMARY KEY(group_id, fixture_id))''')
-    c.execute('''CREATE TABLE IF NOT EXISTS bets 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id INTEGER, player_name TEXT, 
-                  match_data TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+    
+    # Modul 2 & 3: Fixtures
+    c.execute('''CREATE TABLE IF NOT EXISTS fixtures
+                 (id INTEGER PRIMARY KEY, league_id INTEGER, home_team TEXT, 
+                  away_team TEXT, home_logo TEXT, away_logo TEXT, 
+                  date TEXT, status TEXT, home_actual INTEGER, away_actual INTEGER)''')
+    
+    # Modul 4 & 5: Bets og Poeng
+    c.execute('''CREATE TABLE IF NOT EXISTS bets
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id TEXT, user_name TEXT, 
+                  fixture_id INTEGER, home_score INTEGER, away_score INTEGER, points INTEGER DEFAULT 0)''')
+    
+    # Modul 10: Premier
+    c.execute('''CREATE TABLE IF NOT EXISTS prizes
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id TEXT, title TEXT, description TEXT, image_url TEXT)''')
+    
     conn.commit()
     conn.close()
 
 init_db()
 
-def update_scores_from_api():
-    global last_api_update
-    now = time.time()
-    if now - last_api_update < 300: return
-    url = "https://api.football-data.org/v4/matches"
-    headers = { 'X-Auth-Token': API_KEY }
-    try:
-        res = requests.get(url, headers=headers).json()
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        for m in res.get('matches', []):
-            if m['score']['fullTime']['home'] is not None:
-                c.execute("UPDATE fixtures SET h_score = ?, b_score = ?, status = ? WHERE id = ?", 
-                          (m['score']['fullTime']['home'], m['score']['fullTime']['away'], m['status'], m['id']))
-        conn.commit()
-        conn.close()
-        last_api_update = now
-    except: pass
-
-def get_leaderboard_data(group_id):
-    update_scores_from_api()
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT player_name, match_data FROM bets WHERE group_id = ? ORDER BY timestamp DESC", (group_id,))
-    bets = c.fetchall()
-    c.execute('''SELECT f.id, f.h_score, f.b_score, f.h_navn, f.b_navn FROM fixtures f 
-                 JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group_id,))
-    res = {r[0]: {'h': r[1], 'b': r[2], 'h_n': r[3], 'b_n': r[4]} for r in c.fetchall()}
+# ---------------------------------------------------------
+# MODUL 5: POENG-LOGIKK (3p for resultat, 1p for HUB)
+# ---------------------------------------------------------
+def calculate_points(u_h, u_a, a_h, a_a):
+    if a_h is None or a_a is None:
+        return 0
     
-    lb = []
-    for name, m_json in bets:
-        pts = 0
-        user_tips = json.loads(m_json)
-        for tip in user_tips:
-            m_id = int(tip['match_id'])
-            if m_id in res and res[m_id]['h'] is not None:
-                ah, ab = res[m_id]['h'], res[m_id]['b']
-                th, ta = int(tip['h']), int(tip['a'])
-                if th == ah and ta == ab: pts += 3
-                elif (th > ta and ah > ab) or (th < ta and ah < ab) or (th == ta and ah == ab): pts += 1
-        lb.append({'name': name, 'points': pts, 'tips': user_tips})
-    conn.close()
-    return sorted(lb, key=lambda x: x['points'], reverse=True)
+    # Konverter til int for sikker sammenligning
+    u_h, u_a, a_h, a_a = int(u_h), int(u_a), int(a_h), int(a_a)
+    
+    # 3 poeng for korrekt resultat
+    if u_h == a_h and u_a == a_a:
+        return 3
+        
+    # Finn HUB-tegn
+    u_hub = 'H' if u_h > u_a else ('B' if u_h < u_a else 'U')
+    a_hub = 'H' if a_h > a_a else ('B' if a_h < a_a else 'U')
+    
+    # 1 poeng for riktig tegn (HUB)
+    return 1 if u_hub == a_hub else 0
 
-@app.route('/')
-def super_admin():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT * FROM fixtures ORDER BY date ASC")
-    kamper = c.fetchall()
-    c.execute("SELECT * FROM groups")
-    grupper = c.fetchall()
-    conn.close()
-    return render_template('super_admin.html', kamper=kamper, grupper=grupper)
-
-@app.route('/group/<slug>/admin')
-def group_admin(slug):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
-    group = c.fetchone()
-    c.execute("SELECT fixture_id FROM group_selections WHERE group_id = ?", (group[0],))
-    sel_ids = [r[0] for r in c.fetchall()]
-    c.execute("SELECT * FROM fixtures ORDER BY date ASC")
-    all_f = c.fetchall()
-    conn.close()
-    return render_template('group_admin.html', group=group, all_fixtures=all_f, selected_ids=sel_ids)
-
-@app.route('/group/<slug>')
-def group_view(slug):
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT * FROM groups WHERE slug = ?", (slug,))
-    group = c.fetchone()
-    if not group: return "Gruppe ikke funnet", 404
-    c.execute('''SELECT f.* FROM fixtures f JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group[0],))
-    matches = c.fetchall()
-    lb = get_leaderboard_data(group[0])
-    conn.close()
-    return render_template('group_view.html', group=group, matches=matches, leaderboard=lb)
-
-@app.route('/api/create_group', methods=['POST'])
-def create_group():
-    data = request.json
-    name = data.get('name')
-    admin = data.get('admin_name')
-    slug = name.lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+# ---------------------------------------------------------
+# MODUL 2: API-IMPORT (Robust import med din nøkkel)
+# ---------------------------------------------------------
+@app.route('/api/import_league/<int:league_id>')
+def import_league(league_id):
+    fra_dato = datetime.now().strftime('%Y-%m-%d')
+    til_dato = (datetime.now() + timedelta(days=10)).strftime('%Y-%m-%d')
+    
+    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&from={fra_dato}&to={til_dato}&timezone=Europe/Oslo"
+    headers = {
+        'x-apisports-key': API_KEY, 
+        'x-rapidapi-host': 'v3.football.api-sports.io'
+    }
+    
     try:
-        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (name, slug, admin))
-        conn.commit()
-        return jsonify({"status": "Suksess"})
-    except Exception as e:
-        return jsonify({"status": "Feil: Navnet er kanskje opptatt"})
-    finally: conn.close()
+        response = requests.get(url, headers=headers)
+        res = response.json()
+        
+        # Fallback hvis dagsplanen er begrenset
+        if res.get('errors') and 'plan' in str(res.get('errors')):
+            url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&last=10"
+            res = requests.get(url, headers=headers).json()
 
-@app.route('/api/submit_bet', methods=['POST'])
-def submit_bet():
-    data = request.json
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("INSERT INTO bets (group_id, player_name, match_data) VALUES (?, ?, ?)", 
-              (data['group_id'], data['player_name'], json.dumps(data['matches'])))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
+        data = res.get('response', [])
+        if not data:
+            return jsonify({"status": "Fant ingen kamper i API-et."})
 
-@app.route('/api/delete_bet', methods=['POST'])
-def delete_bet():
-    data = request.json
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("DELETE FROM bets WHERE group_id = ? AND player_name = ?", (data['group_id'], data['player_name']))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
-
-@app.route('/api/admin_push_scores', methods=['POST'])
-def admin_push_scores():
-    data = request.json
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    for m in data['scores']:
-        c.execute("UPDATE fixtures SET h_score = ?, b_score = ? WHERE id = ?", (m['h'], m['b'], m['match_id']))
-    conn.commit()
-    conn.close()
-    global last_api_update
-    last_api_update = 0 
-    return jsonify({"status": "ok"})
-
-@app.route('/api/update_group_settings', methods=['POST'])
-def update_group_settings():
-    data = request.json
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data['mode'], data['prize_info'], data['group_id']))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
-
-@app.route('/api/toggle_match', methods=['POST'])
-def toggle_match():
-    data = request.json
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT * FROM group_selections WHERE group_id = ? AND fixture_id = ?", (data['group_id'], data['fixture_id']))
-    if c.fetchone():
-        c.execute("DELETE FROM group_selections WHERE group_id = ? AND fixture_id = ?", (data['group_id'], data['fixture_id']))
-    else:
-        c.execute("INSERT INTO group_selections (group_id, fixture_id) VALUES (?, ?)", (data['group_id'], data['fixture_id']))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok"})
-
-@app.route('/api/import_league/<string:code>')
-def import_league(code):
-    url = f"https://api.football-data.org/v4/competitions/{code}/matches?status=SCHEDULED"
-    headers = { 'X-Auth-Token': API_KEY }
-    try:
-        res = requests.get(url, headers=headers).json()
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-        for m in res.get('matches', []):
-            c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, h_navn, b_navn, h_logo, b_logo, date, status) VALUES (?,?,?,?,?,?,?,?)", 
-                      (m['id'], code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
+        for f in data:
+            c.execute("""INSERT OR REPLACE INTO fixtures 
+                         (id, league_id, home_team, away_team, home_logo, away_logo, date, status) 
+                         VALUES (?,?,?,?,?,?,?,?)""",
+                      (f['fixture']['id'], league_id, f['teams']['home']['name'], 
+                       f['teams']['away']['name'], f['teams']['home']['logo'], 
+                       f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
         conn.commit()
         conn.close()
-        return jsonify({"status": "Suksess"})
-    except:
-        return jsonify({"status": "Feil ved henting av kamper"})
+        return jsonify({"status": f"Importerte {len(data)} kamper."})
+    except Exception as e:
+        return jsonify({"status": f"API-feil: {str(e)}"})
+
+# ---------------------------------------------------------
+# MODUL 5: OPPDATER LIVE-SCORES & POENG
+# ---------------------------------------------------------
+@app.route('/api/update_live_scores')
+def update_live_scores():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    
+    # Henter alle tips og faktiske resultater for kamper som har score
+    c.execute("""
+        SELECT b.id, b.home_score, b.away_score, f.home_actual, f.away_actual 
+        FROM bets b
+        JOIN fixtures f ON b.fixture_id = f.id
+        WHERE f.home_actual IS NOT NULL
+    """)
+    
+    all_bets = c.fetchall()
+    for b_id, u_h, u_a, a_h, a_a in all_bets:
+        new_points = calculate_points(u_h, u_a, a_h, a_a)
+        c.execute("UPDATE bets SET points = ? WHERE id = ?", (new_points, b_id))
+        
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "Poeng og leaderboard er oppdatert!"})
+
+# ---------------------------------------------------------
+# VISNINGS-RUTER
+# ---------------------------------------------------------
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/group/<group_id>')
+def group_view(group_id):
+    return render_template('group_view.html', group_id=group_id)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True, port=5000)
