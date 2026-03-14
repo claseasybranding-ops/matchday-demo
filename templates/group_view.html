@@ -1,55 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="no">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MatchDay | {{ group[1] }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #121212; color: white; padding-bottom: 50px; }
-        .prize-banner { background: #cc0000; color: white; padding: 15px; border-radius: 15px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 10px rgba(204, 0, 0, 0.3); }
-        .match-card { background: #1e1e1e; border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid #333; }
-        .score-input { background: #2a2a2a; border: 1px solid #444; color: white; text-align: center; font-size: 1.5rem; font-weight: bold; border-radius: 10px; }
-        .single-bonus { background: #252525; padding: 15px; border-radius: 12px; margin-top: 15px; border-left: 4px solid #cc0000; }
-        .btn-action { background: #333; color: white; border: 1px solid #444; width: 100%; margin-top: 5px; }
+        :root { --md-red: #cc0000; --md-dark: #121212; --md-card: #1e1e1e; }
+        body { background-color: var(--md-dark); color: white; font-family: 'Inter', sans-serif; padding-bottom: 100px; }
+        
+        .header-section { padding: 40px 20px; text-align: center; }
+        .logo-text { color: var(--md-red); font-weight: 800; font-size: 2.5rem; margin-bottom: 0; }
+        
+        /* Premie-banner som virkelig synes */
+        .prize-card { 
+            background: linear-gradient(135deg, var(--md-red) 0%, #990000 100%);
+            border-radius: 20px; padding: 20px; margin-bottom: 30px;
+            box-shadow: 0 10px 20px rgba(204, 0, 0, 0.3); border: none;
+        }
+
+        /* Match-kortet */
+        .match-card { 
+            background: var(--md-card); border-radius: 20px; padding: 25px; 
+            margin-bottom: 20px; border: 1px solid #333; position: relative;
+        }
+        .single-game-active { border: 2px solid var(--md-red); box-shadow: 0 0 15px rgba(204, 0, 0, 0.2); }
+        .badge-main { background: var(--md-red); position: absolute; top: -10px; left: 50%; transform: translateX(-50%); padding: 5px 15px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; }
+
+        /* Score-inputtene */
+        .score-box { 
+            background: #2a2a2a; border: 2px solid #444; color: white; 
+            font-size: 2rem; font-weight: 800; text-align: center; 
+            width: 70px; height: 70px; border-radius: 15px; margin: 0 5px;
+        }
+        .score-box:focus { border-color: var(--md-red); outline: none; background: #333; }
+        
+        .team-logo { width: 60px; height: 60px; object-fit: contain; margin-bottom: 10px; }
+        .team-name { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .bonus-box { background: #252525; border-radius: 15px; padding: 15px; margin-top: 20px; border-left: 4px solid var(--md-red); }
+        
+        .btn-submit { 
+            background: var(--md-red); color: white; border: none; 
+            border-radius: 50px; padding: 18px; font-weight: bold; 
+            font-size: 1.2rem; width: 100%; box-shadow: 0 5px 15px rgba(204, 0, 0, 0.4);
+        }
     </style>
 </head>
-<body class="container py-4">
-    <h2 class="text-center fw-bold text-danger mb-1">MatchDay.</h2>
-    <p class="text-center small text-muted mb-4">{{ group[1] }}</p>
+<body>
+
+<div class="container" style="max-width: 500px;">
+    <div class="header-section">
+        <h1 class="logo-text">MatchDay.</h1>
+        <p class="text-muted">{{ group[1] }}</p>
+    </div>
 
     {% if group[5] %}
-    <div class="prize-banner">
-        <small class="fw-bold opacity-75">PREMIE I DENNE RUNDEN:</small>
-        <div class="h5 m-0 fw-bold">🏆 {{ group[5] }}</div>
+    <div class="prize-card text-center">
+        <div class="small fw-bold text-uppercase opacity-75 mb-1">Premie i denne runden</div>
+        <div class="h4 fw-bold m-0">🏆 {{ group[5] }}</div>
     </div>
     {% endif %}
 
     {% for m in matches %}
-    <div class="match-card">
+    <div class="match-card {% if group[4] == 'single' %}single-game-active{% endif %}">
+        {% if group[4] == 'single' %}<div class="badge-main">HOVEDKAMP</div>{% endif %}
+        
         <div class="row align-items-center text-center">
-            <div class="col-4"><img src="{{ m[4] }}" width="45"><br><small class="fw-bold d-block mt-1">{{ m[2] }}</small></div>
-            <div class="col-4 text-muted fw-bold">VS</div>
-            <div class="col-4"><img src="{{ m[5] }}" width="45"><br><small class="fw-bold d-block mt-1">{{ m[3] }}</small></div>
-        </div>
+            <div class="col-4">
+                <img src="{{ m[4] }}" class="team-logo">
+                <div class="team-name">{{ m[2] }}</div>
+            </div>
+            
+            <div class="col-4 px-0">
+                <div class="d-flex justify-content-center align-items-center">
+                    <input type="number" class="score-box" placeholder="0">
+                    <input type="number" class="score-box" placeholder="0">
+                </div>
+            </div>
 
-        <div class="row g-2 mt-3">
-            <div class="col-6"><input type="number" class="form-control score-input" placeholder="0"></div>
-            <div class="col-6"><input type="number" class="form-control score-input" placeholder="0"></div>
+            <div class="col-4">
+                <img src="{{ m[5] }}" class="team-logo">
+                <div class="team-name">{{ m[3] }}</div>
+            </div>
         </div>
 
         {% if group[4] == 'single' %}
-        <div class="single-bonus">
-            <label class="small fw-bold text-danger mb-2">EKSTRA SPØRSMÅL:</label>
-            <button class="btn btn-action" onclick="this.classList.toggle('btn-danger')">Blir det straffespark?</button>
-            <button class="btn btn-action" onclick="this.classList.toggle('btn-danger')">Blir det rødt kort?</button>
-            <input type="number" class="form-control bg-dark text-white border-secondary mt-2" placeholder="Golden Goal (Minutt)">
+        <div class="bonus-box">
+            <h6 class="text-danger fw-bold small mb-3">TILLEGGSSPJØRSMÅL:</h6>
+            <div class="mb-3">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="pen-{{ m[0] }}">
+                    <label class="form-check-label small" for="pen-{{ m[0] }}">Blir det straffespark?</label>
+                </div>
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="red-{{ m[0] }}">
+                    <label class="form-check-label small" for="red-{{ m[0] }}">Blir det rødt kort?</label>
+                </div>
+            </div>
+            <label class="small fw-bold opacity-75">Golden Goal (Minutt):</label>
+            <input type="number" class="form-control bg-dark text-white border-secondary mt-1" placeholder="F.eks. 24">
         </div>
         {% endif %}
     </div>
     {% endfor %}
 
-    <div class="mt-4">
-        <input type="text" class="form-control form-control-lg bg-dark text-white border-secondary text-center mb-3" placeholder="Ditt navn">
-        <button class="btn btn-danger btn-lg w-100 fw-bold py-3 shadow">LEVER KUPONG</button>
+    <div class="mt-5">
+        <input type="text" class="form-control bg-dark text-white border-secondary text-center py-3 mb-3" style="border-radius: 15px;" placeholder="Ditt Navn">
+        <button class="btn btn-submit">LEVER KUPONG</button>
     </div>
+</div>
+
 </body>
 </html>
