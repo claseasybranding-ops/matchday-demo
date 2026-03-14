@@ -56,23 +56,23 @@ def get_leaderboard_data(group_id):
     c = conn.cursor()
     c.execute("SELECT player_name, match_data FROM bets WHERE group_id = ? ORDER BY timestamp DESC", (group_id,))
     bets = c.fetchall()
-    c.execute('''SELECT f.id, f.h_score, f.b_score FROM fixtures f 
+    c.execute('''SELECT f.id, f.h_score, f.b_score, f.h_navn, f.b_navn FROM fixtures f 
                  JOIN group_selections gs ON f.id = gs.fixture_id WHERE gs.group_id = ?''', (group_id,))
-    res = {r[0]: {'h': r[1], 'b': r[2]} for r in c.fetchall()}
+    res = {r[0]: {'h': r[1], 'b': r[2], 'h_n': r[3], 'b_n': r[4]} for r in c.fetchall()}
+    
     lb = []
     for name, m_json in bets:
         pts = 0
-        try:
-            user_tips = json.loads(m_json)
-            for tip in user_tips:
-                m_id = int(tip['match_id'])
-                if m_id in res and res[m_id]['h'] is not None:
-                    ah, ab = res[m_id]['h'], res[m_id]['b']
-                    th, ta = int(tip['h']), int(tip['a'])
-                    if th == ah and ta == ab: pts += 3
-                    elif (th > ta and ah > ab) or (th < ta and ah < ab) or (th == ta and ah == ab): pts += 1
-        except: pass
-        lb.append({'name': name, 'points': pts})
+        user_tips = json.loads(m_json)
+        # Vi sender med tipsene slik at de kan vises på klikk
+        for tip in user_tips:
+            m_id = int(tip['match_id'])
+            if m_id in res and res[m_id]['h'] is not None:
+                ah, ab = res[m_id]['h'], res[m_id]['b']
+                th, ta = int(tip['h']), int(tip['a'])
+                if th == ah and ta == ab: pts += 3
+                elif (th > ta and ah > ab) or (th < ta and ah < ab) or (th == ta and ah == ab): pts += 1
+        lb.append({'name': name, 'points': pts, 'tips': user_tips})
     conn.close()
     return sorted(lb, key=lambda x: x['points'], reverse=True)
 
@@ -123,7 +123,6 @@ def submit_bet():
     conn.close()
     return jsonify({"status": "ok"})
 
-# NY RUTЕ: Sletter spillerens tips før nytt legges inn
 @app.route('/api/delete_bet', methods=['POST'])
 def delete_bet():
     data = request.json
@@ -146,33 +145,6 @@ def admin_push_scores():
     global last_api_update
     last_api_update = 0 
     return jsonify({"status": "ok"})
-
-@app.route('/api/create_group', methods=['POST'])
-def create_group():
-    data = request.json
-    slug = data['name'].lower().strip().replace(" ", "-").replace("æ","ae").replace("ø","o").replace("å","a")
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    try:
-        c.execute("INSERT INTO groups (name, slug, admin_name) VALUES (?, ?, ?)", (data['name'], slug, data['admin_name']))
-        conn.commit()
-        return jsonify({"status": "Suksess"})
-    except: return jsonify({"status": "Feil"})
-    finally: conn.close()
-
-@app.route('/api/import_league/<string:code>')
-def import_league(code):
-    url = f"https://api.football-data.org/v4/competitions/{code}/matches?status=SCHEDULED"
-    headers = { 'X-Auth-Token': API_KEY }
-    res = requests.get(url, headers=headers).json()
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    for m in res.get('matches', []):
-        c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, h_navn, b_navn, h_logo, b_logo, date, status) VALUES (?,?,?,?,?,?,?,?)", 
-                  (m['id'], code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam']['crest'], m['awayTeam']['crest'], m['utcDate'], 'upcoming'))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "Suksess"})
 
 @app.route('/api/update_group_settings', methods=['POST'])
 def update_group_settings():
