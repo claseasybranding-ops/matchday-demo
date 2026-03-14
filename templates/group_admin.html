@@ -10,12 +10,11 @@
         :root { --md-red: #cc0000; --md-bg: #f3f4f6; --md-card: #ffffff; --md-text: #111827; --md-border: #e5e7eb; }
         body { background-color: var(--md-bg); color: var(--md-text); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 100px; }
         .admin-header { background: white; padding: 20px; border-bottom: 1px solid var(--md-border); margin-bottom: 20px; text-align: center; }
-        .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; }
         .label-style { font-size: 0.7rem; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: block; }
         .mode-card { border: 2px solid #e5e7eb; padding: 15px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.2s; }
         .mode-card.active { border-color: var(--md-red); background: #fff1f2; color: var(--md-red); }
-        .btn-main { background: var(--md-red); color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; }
-        .push-input { width: 50px; text-align: center; font-weight: bold; border: 1px solid #ddd; border-radius: 6px; }
+        .match-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
     </style>
 </head>
 <body>
@@ -26,34 +25,20 @@
 </div>
 
 <div class="container" style="max-width: 500px;">
-    <div class="card-custom border-danger">
-        <label class="label-style text-danger">Gud-Modus: Push Resultater (Investor)</label>
-        {% for m in selected_fixtures %}
-        <div class="d-flex justify-content-between align-items-center mb-2 push-row" data-id="{{ m[0] }}">
-            <span class="small fw-bold">{{ m[2] }} - {{ m[3] }}</span>
-            <div class="d-flex gap-1">
-                <input type="number" class="h-score push-input" value="{{ m[8] or 0 }}">
-                <input type="number" class="b-score push-input" value="{{ m[9] or 0 }}">
-            </div>
-        </div>
-        {% endfor %}
-        <button class="btn btn-danger w-100 fw-bold mt-2" onclick="pushResults()">PUSH RESULTATER NÅ</button>
-    </div>
-
     <div class="card-custom">
-        <label class="label-style">Instillinger</label>
+        <label class="label-style">Instillinger for runden</label>
         <input type="text" id="prize" class="form-control mb-3" placeholder="Hva er premien?" value="{{ group[5] or '' }}">
         <div class="row g-2 mb-3">
             <div class="col-6"><div id="m-multi" class="mode-card {% if group[4] == 'multi' %}active{% endif %}" onclick="setMode('multi')">RUNDE</div></div>
             <div class="col-6"><div id="m-single" class="mode-card {% if group[4] == 'single' %}active{% endif %}" onclick="setMode('single')">STORKAMP</div></div>
         </div>
-        <button class="btn btn-dark w-100 fw-bold" onclick="saveSettings()">LAGRE</button>
+        <button class="btn btn-dark w-100 fw-bold" onclick="saveSettings()">LAGRE INNSTILLINGER</button>
     </div>
 
     <div class="card-custom">
-        <label class="label-style">Velg kamper fra API</label>
+        <label class="label-style">Velg kamper fra terminlisten</label>
         {% for m in all_fixtures %}
-        <div class="d-flex justify-content-between align-items-center mb-2 py-2 border-bottom">
+        <div class="match-row">
             <span class="small fw-bold">{{ m[2] }} - {{ m[3] }}</span>
             <button class="btn btn-sm {% if m[0] in selected_ids %}btn-success{% else %}btn-outline-secondary{% endif %}" onclick="toggleMatch('{{ m[0] }}')">
                 {% if m[0] in selected_ids %}VALGT{% else %}VELG{% endif %}
@@ -74,13 +59,6 @@
     function saveSettings() {
         const p = document.getElementById('prize').value;
         fetch('/api/update_group_settings', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({group_id:'{{group[0]}}', mode:currentMode, prize_info:p})}).then(()=>location.reload());
-    }
-    function pushResults() {
-        const sc = [];
-        document.querySelectorAll('.push-row').forEach(r => {
-            sc.push({match_id: r.getAttribute('data-id'), h: r.querySelector('.h-score').value, b: r.querySelector('.b-score').value});
-        });
-        fetch('/api/admin_push_scores', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({scores:sc})}).then(()=>alert("Pushet!"));
     }
     function toggleMatch(fid) {
         fetch('/api/toggle_match', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({group_id:'{{group[0]}}', fixture_id:fid})}).then(()=>location.reload());
