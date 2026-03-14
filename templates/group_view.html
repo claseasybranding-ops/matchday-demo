@@ -17,7 +17,7 @@
         .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
         .team-logo { width: 45px; height: 45px; object-fit: contain; margin-bottom: 8px; }
         .score-val { font-size: 2.2rem; font-weight: 800; width: 40px; }
-        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; margin-top: 10px; }
         .lb-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.2s; }
         .lb-row:hover { background: #f8fafc; }
@@ -28,7 +28,6 @@
         .btn-submit { background: var(--md-red); color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; text-transform: uppercase; margin-top: 10px; }
         .input-name { border: 1px solid var(--md-border); border-radius: 12px; padding: 15px; text-align: center; width: 100%; margin-top: 15px; font-weight: 600; }
         .d-none { display: none !important; }
-        .my-tips-badge { background: #f1f5f9; padding: 10px; border-radius: 10px; font-size: 0.8rem; margin-bottom: 15px; border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body>
@@ -48,8 +47,9 @@
 <div class="container" style="max-width: 480px;">
     
     <div id="screen-coupon">
+        <h4 class="fw-bold text-center mb-3">Lever din kupong</h4>
         {% for m in matches %}
-        <div class="match-card" data-match-id="{{ m[0] }}">
+        <div class="match-card" data-match-id="{{ m[0] }}" data-h-name="{{ m[2] }}" data-a-name="{{ m[3] }}">
             <div class="match-grid">
                 <div class="team-side">
                     <img src="{{ m[4] }}" class="team-logo">
@@ -75,7 +75,7 @@
             </div>
         </div>
         {% endfor %}
-        <input type="text" id="player-name" class="input-name" placeholder="Skriv navnet ditt her...">
+        <input type="text" id="player-name" class="input-name" placeholder="Ditt navn...">
         <button class="btn-submit" onclick="submitTicket()">LEVER KUPONG</button>
     </div>
 
@@ -85,13 +85,12 @@
             <div id="my-name-display" class="small text-muted fw-bold mt-1"></div>
         </div>
 
-        <div id="my-tips-summary" class="my-tips-badge d-none text-center">
-            <strong>Din kupong:</strong> <span id="tips-text"></span>
-        </div>
-
         <div class="leaderboard-card">
+            {% if not leaderboard %}
+                <div class="p-4 text-center text-muted">Ingen har tippet enda. Bli den første!</div>
+            {% endif %}
             {% for entry in leaderboard %}
-            <div class="lb-row {% if loop.index == 1 %}rank-1{% endif %}" onclick="showUserTips('{{ entry.name }}', {{ entry.tips | tojson }})">
+            <div class="lb-row {% if loop.index == 1 %}rank-1{% endif %}" onclick='showUserTips("{{ entry.name }}", {{ entry.tips | tojson }})'>
                 <div class="lb-rank">{{ loop.index }}.</div>
                 <div class="lb-name">{{ entry.name }}</div>
                 <div class="lb-points">{{ entry.points }}p</div>
@@ -103,54 +102,116 @@
     </div>
 </div>
 
+<div class="modal fade" id="tipsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 20px; border: none;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-800" id="modalTitle">Tips</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     const storageKey = "md_voted_{{ group[2] }}";
     const nameKey = "md_name_{{ group[2] }}";
+    const tipsModal = new bootstrap.Modal(document.getElementById('tipsModal'));
 
     window.onload = function() {
-        if(localStorage.getItem(storageKey)) {
+        // Sjekk om brukeren har tippet før
+        if(localStorage.getItem(storageKey) === "true") {
             showLeaderboard();
+        } else {
+            showCoupon();
         }
     };
+
+    function showCoupon() {
+        document.getElementById('screen-coupon').classList.remove('d-none');
+        document.getElementById('screen-leaderboard').classList.add('d-none');
+    }
 
     function showLeaderboard() {
         document.getElementById('screen-coupon').classList.add('d-none');
         document.getElementById('screen-leaderboard').classList.remove('d-none');
-        const myName = localStorage.getItem(nameKey);
+        const myName = localStorage.getItem(nameKey) || "Gjest";
         document.getElementById('my-name-display').innerText = "Spiller: " + myName;
         
-        // Deadline logikk: Skjul endre-knapp etter kl 21.00
+        // Deadline-sjekk (Skjul endre-knapp etter kl 21:00)
         const now = new Date();
         if (now.getHours() >= 21) {
-            document.getElementById('reset-btn').classList.add('d-none');
+            const btn = document.getElementById('reset-btn');
+            if(btn) btn.style.display = 'none';
         }
     }
 
     function submitTicket() {
-        const n = document.getElementById('player-name').value;
+        const n = document.getElementById('player-name').value.trim();
         if(!n || n.length < 2) return alert("Vennligst skriv navnet ditt!");
+        
         const d = { group_id: "{{ group[0] }}", player_name: n, matches: [] };
         document.querySelectorAll('.match-card').forEach(c => {
-            d.matches.push({ match_id: c.getAttribute('data-match-id'), h: c.querySelector('.h-val').innerText, a: c.querySelector('.a-val').innerText });
+            d.matches.push({ 
+                match_id: c.getAttribute('data-match-id'), 
+                h: c.querySelector('.h-val').innerText, 
+                a: c.querySelector('.a-val').innerText 
+            });
         });
-        fetch('/api/submit_bet', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(d) })
-        .then(() => { 
-            localStorage.setItem(storageKey, "true");
-            localStorage.setItem(nameKey, n);
-            location.reload();
+
+        fetch('/api/submit_bet', { 
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify(d) 
+        })
+        .then(response => {
+            if(response.ok) {
+                localStorage.setItem(storageKey, "true");
+                localStorage.setItem(nameKey, n);
+                location.reload();
+            }
         });
     }
 
     function showUserTips(name, tips) {
-        let text = name + " har tippet:\n";
-        tips.forEach(t => {
-            text += "Kamp: " + t.h + " - " + t.a + "\n";
+        document.getElementById('modalTitle').innerText = name + " sine tips";
+        let html = '<table class="table table-borderless m-0">';
+        
+        // Finn lagnavn fra kortene som er på siden
+        const matchNames = {};
+        document.querySelectorAll('.match-card').forEach(c => {
+            matchNames[c.getAttribute('data-match-id')] = {
+                h: c.getAttribute('data-h-name'),
+                a: c.getAttribute('data-a-name')
+            };
         });
-        alert(text); // Enkelt innsyn for demo nå
+
+        tips.forEach(t => {
+            const names = matchNames[t.match_id] || {h: "Kamp", a: ""};
+            html += `
+                <tr class="border-bottom">
+                    <td class="small fw-bold text-end" style="width: 40%">${names.h}</td>
+                    <td class="text-center bg-light rounded px-2 fw-800" style="width: 20%">${t.h} - ${t.a}</td>
+                    <td class="small fw-bold text-start" style="width: 40%">${names.a}</td>
+                </tr>`;
+        });
+        html += '</table>';
+        document.getElementById('modalContent').innerHTML = html;
+        tipsModal.show();
     }
 
     function resetSubmission() {
         const playerName = localStorage.getItem(nameKey);
+        if(!playerName) {
+            localStorage.removeItem(storageKey);
+            location.reload();
+            return;
+        }
+
         if(confirm("Vil du slette leveringen og tippe på nytt?")) {
             fetch('/api/delete_bet', {
                 method: 'POST',
@@ -165,11 +226,12 @@
     }
 
     function adj(btn, val) {
-        const side = btn.closest('.team-side');
         const card = btn.closest('.match-card');
+        const side = btn.closest('.team-side');
         const isHome = side === card.querySelector('.team-side:first-child');
         const target = card.querySelector(isHome ? '.h-val' : '.a-val');
-        target.innerText = Math.max(0, parseInt(target.innerText) + val);
+        let current = parseInt(target.innerText);
+        target.innerText = Math.max(0, current + val);
     }
 </script>
 </body>
