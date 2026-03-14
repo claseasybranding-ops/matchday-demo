@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ group[1] }} | MatchDay</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #1a1a1a; color: white; font-family: sans-serif; }
+        .container { max-width: 500px; padding-top: 50px; }
+        .match-card { background: #252525; border-radius: 15px; padding: 20px; margin-bottom: 15px; border: 1px solid #333; }
+        .logo-lg { width: 50px; height: 50px; object-fit: contain; }
+        .team-name { font-size: 0.9rem; margin-top: 10px; font-weight: bold; }
+        .vs-badge { background: #cc0000; padding: 5px 10px; border-radius: 5px; font-size: 0.7rem; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container text-center">
+    <h2 class="fw-bold mb-1 text-danger">MatchDay.</h2>
+    <h4 class="mb-4">{{ group[1] }}</h4>
+    <p class="text-white-50 small mb-5">Her er rundens utvalgte kamper. Bli med og tipp!</p>
+
+    {% for m in matches %}
+    <div class="match-card">
+        <div class="row align-items-center">
+            <div class="col-4">
+                <img src="{{ m[4] }}" class="logo-lg">
+                <div class="team-name">{{ m[2] }}</div>
+            </div>
+            <div class="col-4">
+                <span class="vs-badge">VS</span>
+                <div class="small text-white-50 mt-2">{{ m[6][11:16] }}</div>
+            </div>
+            <div class="col-4">
+                <img src="{{ m[5] }}" class="logo-lg">
+                <div class="team-name">{{ m[3] }}</div>
+            </div>
+        </div>
+        <button class="btn btn-outline-danger btn-sm w-100 mt-3">Gi ditt tips</button>
+    </div>
+    {% else %}
+        <p class="text-muted mt-5">Ingen kamper er lagt ut på kuppongen ennå.</p>
+    {% endfor %}
+</div>
+
+</body>
+</html>
