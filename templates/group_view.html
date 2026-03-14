@@ -13,101 +13,50 @@
             --md-card: #ffffff;
             --md-text: #1a1a1a;
             --md-border: #e2e8f0;
+            --gold: #ffd700;
+            --silver: #c0c0c0;
+            --bronze: #cd7f32;
         }
 
-        body { 
-            background-color: var(--md-bg); 
-            color: var(--md-text); 
-            font-family: 'Inter', sans-serif; 
-            padding-bottom: 40px; 
-            margin: 0;
-        }
+        body { background-color: var(--md-bg); color: var(--md-text); font-family: 'Inter', sans-serif; margin: 0; padding-bottom: 40px; }
 
-        /* App Header */
-        .app-header { 
-            background: white; 
-            padding: 15px 0; 
-            text-align: center; 
-            border-bottom: 1px solid var(--md-border); 
-            position: sticky; 
-            top: 0; 
-            z-index: 1000; 
-        }
+        /* Header & Info */
+        .app-header { background: white; padding: 15px 0; text-align: center; border-bottom: 1px solid var(--md-border); position: sticky; top: 0; z-index: 1000; }
         .logo-text { color: var(--md-red); font-weight: 800; font-size: 1.4rem; margin: 0; letter-spacing: -1px; }
-        .group-subtext { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-top: 2px; }
+        .group-subtext { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #64748b; }
 
-        /* Premie-boks - Gjort mer synlig */
-        .prize-container {
-            background: white;
-            margin: 15px auto;
-            max-width: 450px;
-            border-radius: 12px;
-            border: 2px solid var(--md-red);
-            padding: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            box-shadow: 0 4px 6px rgba(204, 0, 0, 0.05);
-        }
-        .prize-badge { 
-            background: var(--md-red); 
-            color: white; 
-            font-size: 0.7rem; 
-            font-weight: 800; 
-            padding: 4px 10px; 
-            border-radius: 6px; 
-            text-transform: uppercase;
-        }
-        .prize-name { font-size: 1rem; font-weight: 700; color: var(--md-text); }
+        .prize-container { background: white; margin: 15px auto; max-width: 450px; border-radius: 12px; border: 2px solid var(--md-red); padding: 12px; display: flex; align-items: center; justify-content: center; gap: 12px; box-shadow: 0 4px 6px rgba(204, 0, 0, 0.05); }
+        .prize-badge { background: var(--md-red); color: white; font-size: 0.7rem; font-weight: 800; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; }
 
-        /* Kamp-kort */
-        .match-card { 
-            background: var(--md-card); 
-            border: 1px solid var(--md-border); 
-            border-radius: 16px; 
-            padding: 20px; 
-            margin-bottom: 15px; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.03); 
-        }
+        /* Kamp-kort og Symmetri */
+        .match-card { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 20px; margin-bottom: 15px; }
         .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
+        .team-logo { width: 35px; height: 35px; object-fit: contain; margin-bottom: 5px; }
+        .team-name { font-size: 0.7rem; font-weight: 700; color: #444; display: block; }
+        .score-center { display: flex; align-items: center; gap: 8px; }
+        .score-val { font-size: 1.8rem; font-weight: 800; width: 25px; }
+        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; }
 
-        .team-logo { width: 40px; height: 40px; object-fit: contain; margin-bottom: 8px; }
-        .team-name { font-size: 0.75rem; font-weight: 700; color: #444; display: block; line-height: 1.2; }
+        /* Leaderboard Design */
+        .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; margin-top: 10px; }
+        .lb-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; }
+        .lb-rank { width: 30px; font-weight: 800; font-size: 0.9rem; color: #94a3b8; }
+        .lb-name { flex-grow: 1; font-weight: 600; font-size: 0.95rem; }
+        .lb-points { font-weight: 800; color: var(--md-red); font-size: 1rem; }
 
-        .score-center { display: flex; align-items: center; gap: 10px; padding: 0 10px; }
-        .score-val { font-size: 2rem; font-weight: 800; width: 30px; color: var(--md-text); }
-        .score-divider { color: #cbd5e1; font-weight: 800; font-size: 1.2rem; }
+        /* Gloria Effekter */
+        .rank-1 { background: linear-gradient(90deg, #fffcf0 0%, #ffffff 100%); border-left: 4px solid var(--gold); }
+        .rank-1 .lb-rank { color: var(--gold); }
+        .rank-2 { border-left: 4px solid var(--silver); }
+        .rank-2 .lb-rank { color: var(--silver); }
+        .rank-3 { border-left: 4px solid var(--bronze); }
+        .rank-3 .lb-rank { color: var(--bronze); }
 
-        .btn-adj { 
-            width: 36px; 
-            height: 36px; 
-            border: 1px solid var(--md-border); 
-            background: #f8fafc; 
-            border-radius: 10px; 
-            font-weight: bold; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            transition: 0.15s;
-        }
-        .btn-adj:active { background: #e2e8f0; transform: scale(0.9); }
-
-        /* Storkamp tillegg */
-        .bonus-section { 
-            background: #f8fafc; 
-            border-radius: 12px; 
-            padding: 15px; 
-            margin-top: 20px; 
-            border: 1px solid var(--md-border); 
-        }
-        .bonus-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .bonus-label { font-size: 0.85rem; font-weight: 600; color: #475569; }
-        .form-switch .form-check-input:checked { background-color: var(--md-red); border-color: var(--md-red); }
-
-        /* Bunn */
-        .input-name { border: 1px solid var(--md-border); border-radius: 12px; padding: 16px; font-weight: 600; text-align: center; margin-top: 20px; width: 100%; font-size: 1rem; }
-        .btn-submit { background: var(--md-red); color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; margin-top: 12px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(204, 0, 0, 0.2); }
+        /* Skjuling/Vising */
+        .d-none { display: none !important; }
+        
+        .btn-submit { background: var(--md-red); color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; text-transform: uppercase; margin-top: 10px; }
+        .input-name { border: 1px solid var(--md-border); border-radius: 12px; padding: 15px; text-align: center; width: 100%; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -126,73 +75,91 @@
     </div>
     {% endif %}
 
-    <div id="tippeskjema" class="mt-3">
+    <div id="screen-coupon">
         {% for m in matches %}
-        <div class="match-card" data-match-id="{{ m[0] }}">
+        <div class="match-card">
             <div class="match-grid">
                 <div class="team-side">
-                    <img src="{{ m[4] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/40'">
+                    <img src="{{ m[4] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/35'">
                     <span class="team-name">{{ m[2] }}</span>
-                    <div class="d-flex justify-content-center gap-2 mt-3">
-                        <button class="btn-adj" onclick="adjust(this, -1)">-</button>
-                        <button class="btn-adj" onclick="adjust(this, 1)">+</button>
+                    <div class="d-flex justify-content-center gap-2 mt-2">
+                        <button class="btn-adj" onclick="adj(this, -1)">-</button>
+                        <button class="btn-adj" onclick="adj(this, 1)">+</button>
                     </div>
                 </div>
-
                 <div class="score-center">
                     <span class="score-val h-val">0</span>
-                    <span class="score-divider">-</span>
+                    <span class="text-muted fw-bold">-</span>
                     <span class="score-val a-val">0</span>
                 </div>
-
                 <div class="team-side">
-                    <img src="{{ m[5] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/40'">
+                    <img src="{{ m[5] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/35'">
                     <span class="team-name">{{ m[3] }}</span>
-                    <div class="d-flex justify-content-center gap-2 mt-3">
-                        <button class="btn-adj" onclick="adjust(this, -1)">-</button>
-                        <button class="btn-adj" onclick="adjust(this, 1)">+</button>
+                    <div class="d-flex justify-content-center gap-2 mt-2">
+                        <button class="btn-adj" onclick="adj(this, -1)">-</button>
+                        <button class="btn-adj" onclick="adj(this, 1)">+</button>
                     </div>
                 </div>
             </div>
-
-            {% if group[4] == 'single' %}
-            <div class="bonus-section">
-                <div class="bonus-row">
-                    <span class="bonus-label">Blir det straffespark?</span>
-                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox"></div>
-                </div>
-                <div class="bonus-row">
-                    <span class="bonus-label">Blir det rødt kort?</span>
-                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox"></div>
-                </div>
-                <div class="mt-2">
-                    <label class="bonus-label mb-1 d-block">Golden Goal (Minutt):</label>
-                    <input type="number" class="form-control text-center fw-bold" style="border-radius: 8px; border: 1px solid #e2e8f0;" placeholder="F.eks. 34">
-                </div>
-            </div>
-            {% endif %}
         </div>
         {% endfor %}
-
         <input type="text" id="player-name" class="input-name" placeholder="Ditt Navn">
-        <button class="btn-submit" onclick="submitForm()">Lever kupong</button>
+        <button class="btn-submit" onclick="submitTicket()">LEVER KUPONG</button>
+    </div>
+
+    <div id="screen-leaderboard" class="d-none">
+        <div class="text-center mb-3">
+            <h5 class="fw-bold m-0">Leaderboard</h5>
+            <small class="text-muted">Poeng oppdateres live under kampen</small>
+        </div>
+        
+        <div class="leaderboard-card">
+            <div class="lb-row rank-1">
+                <div class="lb-rank">1.</div>
+                <div class="lb-name">Clas T. (Deg)</div>
+                <div class="lb-points">0p</div>
+            </div>
+            <div class="lb-row rank-2">
+                <div class="lb-rank">2.</div>
+                <div class="lb-name">Kåre Gruppeleder</div>
+                <div class="lb-points">0p</div>
+            </div>
+            <div class="lb-row rank-3">
+                <div class="lb-rank">3.</div>
+                <div class="lb-name">Supporter-Svein</div>
+                <div class="lb-points">0p</div>
+            </div>
+            <div class="lb-row">
+                <div class="lb-rank">4.</div>
+                <div class="lb-name">Heia-Hanna</div>
+                <div class="lb-points">0p</div>
+            </div>
+        </div>
+
+        <button class="btn btn-link w-100 text-muted mt-3 small" onclick="location.reload()">Endre min kupong</button>
     </div>
 </div>
 
 <script>
-    function adjust(btn, amount) {
+    function adj(btn, val) {
         const card = btn.closest('.match-card');
         const side = btn.closest('.team-side');
         const isHome = side === card.querySelector('.team-side:first-child');
         const target = card.querySelector(isHome ? '.h-val' : '.a-val');
         let current = parseInt(target.innerText);
-        target.innerText = Math.max(0, current + amount);
+        target.innerText = Math.max(0, current + val);
     }
 
-    function submitForm() {
+    function submitTicket() {
         const name = document.getElementById('player-name').value;
         if(!name) { alert("Vennligst skriv navnet ditt"); return; }
-        alert("Kupongen er levert! Lykke til, " + name);
+        
+        // Skjul kupong, vis leaderboard
+        document.getElementById('screen-coupon').classList.add('d-none');
+        document.getElementById('screen-leaderboard').classList.remove('d-none');
+        
+        // Scroll til toppen så de ser tabellen
+        window.scrollTo(0, 0);
     }
 </script>
 
