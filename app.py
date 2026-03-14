@@ -28,7 +28,6 @@ def init_db():
 
 init_db()
 
-# --- HJELPEFUNKSJONER ---
 def get_leaderboard_data(group_id):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -54,17 +53,17 @@ def get_leaderboard_data(group_id):
     conn.close()
     return sorted(lb, key=lambda x: x['points'], reverse=True)
 
-# --- HOVEDRUTER ---
 @app.route('/')
 def super_admin():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
-    fixtures = c.fetchall()
+    f_data = c.fetchall()
     c.execute("SELECT * FROM groups")
-    groups = c.fetchall()
+    g_data = c.fetchall()
     conn.close()
-    return render_template('super_admin.html', kamper=fixtures, grupper=groups)
+    # VIKTIG: Her må navnene kamper og grupper stemme med HTML
+    return render_template('super_admin.html', kamper=f_data, grupper=g_data)
 
 @app.route('/group/<slug>/admin')
 def group_admin(slug):
@@ -93,8 +92,6 @@ def group_view(slug):
     conn.close()
     return render_template('group_view.html', group=group, matches=matches, leaderboard=lb)
 
-# --- API ENDEPUNKTER FOR KNAPPER ---
-
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     data = request.json
@@ -108,7 +105,7 @@ def create_group():
         conn.commit()
         return jsonify({"status": "Suksess"})
     except:
-        return jsonify({"status": "Navnet er opptatt"})
+        return jsonify({"status": "Feil: Navnet er opptatt"})
     finally:
         conn.close()
 
@@ -127,7 +124,7 @@ def import_league(code):
         conn.close()
         return jsonify({"status": "Suksess"})
     except:
-        return jsonify({"status": "Feil ved henting av data"})
+        return jsonify({"status": "Feil ved henting"})
 
 @app.route('/api/admin_push_scores', methods=['POST'])
 def admin_push_scores():
@@ -176,4 +173,5 @@ def submit_bet():
     return jsonify({"status": "ok"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
