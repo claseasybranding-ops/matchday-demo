@@ -30,8 +30,8 @@
     <div class="card-custom">
         <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Opprett ny kunde</label>
         <div class="row g-2">
-            <div class="col-md-5"><input type="text" id="g-name" class="form-control" placeholder="Liverbirds Fredrikstad"></div>
-            <div class="col-md-4"><input type="text" id="g-admin" class="form-control" placeholder="Clas T"></div>
+            <div class="col-md-5"><input type="text" id="new-group-name" class="form-control" placeholder="Supporterklubb navn"></div>
+            <div class="col-md-4"><input type="text" id="new-admin-name" class="form-control" placeholder="Admin navn"></div>
             <div class="col-md-3"><button class="btn-main w-100" onclick="createGroup()">Opprett nå</button></div>
         </div>
     </div>
@@ -91,34 +91,54 @@
     }
 
     function createGroup() {
-        const name = document.getElementById('g-name').value;
-        const admin = document.getElementById('g-admin').value;
-        if(!name || !admin) return alert("Fyll ut begge felt");
+        // Henter data fra de riktige ID-ene
+        const nameVal = document.getElementById('new-group-name').value;
+        const adminVal = document.getElementById('new-admin-name').value;
+        
+        if(!nameVal || !adminVal) return alert("Vennligst fyll ut begge feltene.");
         
         fetch('/api/create_group', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({name: name, admin_name: admin})
-        }).then(res => res.json()).then(data => { 
-            alert(data.status); 
-            location.reload(); 
-        });
+            body: JSON.stringify({
+                name: nameVal, 
+                admin_name: adminVal
+            })
+        })
+        .then(res => res.json())
+        .then(data => { 
+            if(data.status === "Suksess") {
+                location.reload(); 
+            } else {
+                alert(data.status);
+            }
+        })
+        .catch(err => alert("Noe gikk galt: " + err));
     }
 
     function importLeague(code) {
-        fetch('/api/import_league/' + code).then(res => res.json()).then(data => { alert(data.status); location.reload(); });
+        fetch('/api/import_league/' + code)
+        .then(res => res.json())
+        .then(data => { alert(data.status); location.reload(); });
     }
 
     function pushResults() {
         const sc = [];
         document.querySelectorAll('#push-list tr').forEach(r => {
-            sc.push({match_id: r.getAttribute('data-id'), h: r.querySelector('.h-score').value, b: r.querySelector('.b-score').value});
+            sc.push({
+                match_id: r.getAttribute('data-id'), 
+                h: r.querySelector('.h-score').value, 
+                b: r.querySelector('.b-score').value
+            });
         });
         fetch('/api/admin_push_scores', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({scores: sc})
-        }).then(() => { alert("Pushet!"); location.reload(); });
+        }).then(() => { 
+            alert("Resultater pushet!"); 
+            location.reload(); 
+        });
     }
 </script>
 </body>
