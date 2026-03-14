@@ -17,7 +17,7 @@
         .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
         .team-logo { width: 45px; height: 45px; object-fit: contain; margin-bottom: 8px; }
         .score-val { font-size: 2.2rem; font-weight: 800; width: 40px; }
-        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; border: 1px solid #ddd; cursor: pointer;}
+        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #ddd; }
         .leaderboard-card { background: white; border-radius: 16px; border: 1px solid var(--md-border); overflow: hidden; margin-top: 10px; }
         .lb-row { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: 0.2s; }
         .lb-row:hover { background: #f8fafc; }
@@ -29,16 +29,12 @@
         .input-name { border: 1px solid var(--md-border); border-radius: 12px; padding: 15px; text-align: center; width: 100%; margin-top: 15px; font-weight: 600; }
         .d-none { display: none !important; }
 
-        /* NYTT DESIGN FOR TIPS-MODAL */
-        #tipsModal .modal-content { border-radius: 24px; border: none; background-color: var(--md-bg); }
-        #tipsModal .modal-header { background: white; border-bottom: 1px solid var(--md-border); border-radius: 24px 24px 0 0; padding: 20px; }
-        #tipsModal .modal-title { font-weight: 800; letter-spacing: -0.5px; }
-        #tipsModal .modal-body { padding: 20px; }
+        /* MODAL DESIGN */
         .tip-match-card { background: white; border: 1px solid var(--md-border); border-radius: 16px; padding: 15px; margin-bottom: 10px; }
         .tip-match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; gap: 10px; }
         .tip-team-logo { width: 30px; height: 30px; object-fit: contain; }
-        .tip-team-name { font-size: 0.85rem; fw-bold; }
-        .tip-score-box { background: #f1f5f9; border-radius: 8px; padding: 8px 12px; font-weight: 800; font-size: 1.1rem; min-width: 60px;}
+        .tip-team-name { font-size: 0.8rem; font-weight: 700; }
+        .tip-score-box { background: #f1f5f9; border-radius: 8px; padding: 8px; font-weight: 800; font-size: 1.1rem; min-width: 60px; }
     </style>
 </head>
 <body>
@@ -86,9 +82,9 @@
             </div>
         </div>
         {% endfor %}
-        <input type="text" id="player-name" class="input-name" placeholder="Ditt navn...">
+        <input type="text" id="player-name" class="input-name" placeholder="Skriv navnet ditt her...">
         <button class="btn-submit" onclick="submitTicket()">LEVER KUPONG</button>
-        <button class="btn btn-link w-100 text-muted mt-2" onclick="showLeaderboard()">Se Leaderboard uten å tippe</button>
+        <button class="btn btn-link w-100 text-muted mt-2" onclick="forceShowLeaderboard()">Se Leaderboard</button>
     </div>
 
     <div id="screen-leaderboard" class="d-none">
@@ -110,24 +106,21 @@
             {% endfor %}
         </div>
         
-        <div class="d-flex flex-column gap-2 mt-4">
-            <button id="reset-btn" class="btn btn-outline-danger w-100 fw-bold" onclick="resetSubmission()">Endre min kupong</button>
-            <button class="btn btn-link w-100 text-muted" onclick="showCoupon()">Tilbake til tipping</button>
+        <div class="mt-4">
+            <button id="reset-btn" class="btn btn-danger w-100 fw-bold" onclick="resetSubmission()">ENDRE MIN KUPONG</button>
+            <button class="btn btn-link w-100 text-muted mt-2" onclick="forceShowCoupon()">Tilbake til tipping</button>
         </div>
     </div>
 </div>
 
 <div class="modal fade" id="tipsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title" id="modalTitle">Tips</h5>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 24px; border: none;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-800" id="modalTitle">Tips</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div id="modalContent">
-                    </div>
-            </div>
+            <div class="modal-body" id="modalContent"></div>
         </div>
     </div>
 </div>
@@ -139,93 +132,70 @@
     const tipsModal = new bootstrap.Modal(document.getElementById('tipsModal'));
 
     window.onload = function() {
-        if(localStorage.getItem(storageKey) === "true") {
-            showLeaderboard();
+        // Logikken: Vis kun leaderboard hvis man FAKTISK er i listen fra serveren
+        const myStoredName = localStorage.getItem(nameKey);
+        const isInLeaderboard = Array.from(document.querySelectorAll('.lb-name')).some(el => el.innerText === myStoredName);
+        
+        if(localStorage.getItem(storageKey) === "true" && isInLeaderboard) {
+            forceShowLeaderboard();
         } else {
-            showCoupon();
+            forceShowCoupon();
         }
     };
 
-    function showCoupon() {
+    function forceShowCoupon() {
         document.getElementById('screen-coupon').classList.remove('d-none');
         document.getElementById('screen-leaderboard').classList.add('d-none');
     }
 
-    function showLeaderboard() {
+    function forceShowLeaderboard() {
         document.getElementById('screen-coupon').classList.add('d-none');
         document.getElementById('screen-leaderboard').classList.remove('d-none');
-        const myName = localStorage.getItem(nameKey) || "Ikke tippet";
-        document.getElementById('my-name-display').innerText = "Spiller: " + myName;
-
+        document.getElementById('my-name-display').innerText = "Spiller: " + (localStorage.getItem(nameKey) || "Gjest");
+        
         const now = new Date();
         if (now.getHours() >= 21) {
-            const btn = document.getElementById('reset-btn');
-            if(btn) btn.style.display = 'none';
+            document.getElementById('reset-btn').style.display = 'none';
         }
     }
 
     function submitTicket() {
         const n = document.getElementById('player-name').value.trim();
         if(!n || n.length < 2) return alert("Vennligst skriv navnet ditt!");
-        
         const d = { group_id: "{{ group[0] }}", player_name: n, matches: [] };
         document.querySelectorAll('.match-card').forEach(c => {
-            d.matches.push({ 
-                match_id: c.getAttribute('data-match-id'), 
-                h: c.querySelector('.h-val').innerText, 
-                a: c.querySelector('.a-val').innerText 
-            });
+            d.matches.push({ match_id: c.getAttribute('data-match-id'), h: c.querySelector('.h-val').innerText, a: c.querySelector('.a-val').innerText });
         });
-
-        fetch('/api/submit_bet', { 
-            method: 'POST', 
-            headers: {'Content-Type':'application/json'}, 
-            body: JSON.stringify(d) 
-        })
-        .then(res => {
-            if(res.ok) {
-                localStorage.setItem(storageKey, "true");
-                localStorage.setItem(nameKey, n);
-                location.reload();
-            }
+        fetch('/api/submit_bet', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(d) })
+        .then(() => { 
+            localStorage.setItem(storageKey, "true");
+            localStorage.setItem(nameKey, n);
+            location.reload();
         });
     }
 
     function showUserTips(name, tips) {
         document.getElementById('modalTitle').innerText = name + " sine tips";
         let html = '';
-        
-        const matchDataMap = {};
+        const matchData = {};
         document.querySelectorAll('.match-card').forEach(c => {
-            matchDataMap[c.getAttribute('data-match-id')] = {
-                h: c.getAttribute('data-h-name'),
-                a: c.getAttribute('data-a-name'),
-                hLogo: c.getAttribute('data-h-logo'),
-                aLogo: c.getAttribute('data-a-logo')
+            matchData[c.getAttribute('data-match-id')] = {
+                h: c.getAttribute('data-h-name'), a: c.getAttribute('data-a-name'),
+                hL: c.getAttribute('data-h-logo'), aL: c.getAttribute('data-a-logo')
             };
         });
 
         tips.forEach(t => {
-            const m = matchDataMap[t.match_id];
-            if (!m) return; // Hopp over hvis kampen ikke finnes
-
+            const m = matchData[t.match_id];
+            if(!m) return;
             html += `
                 <div class="tip-match-card">
                     <div class="tip-match-grid">
-                        <div class="text-end">
-                            <img src="${m.hLogo}" class="tip-team-logo mb-1">
-                            <div class="tip-team-name fw-bold">${m.h}</div>
-                        </div>
-                        <div class="tip-score-box text-center">
-                            ${t.h} - ${t.a}
-                        </div>
-                        <div class="text-start">
-                            <img src="${m.aLogo}" class="tip-team-logo mb-1">
-                            <div class="tip-team-name fw-bold">${m.a}</div>
-                        </div>
+                        <div><img src="${m.hL}" class="tip-team-logo"><div class="tip-team-name">${m.h}</div></div>
+                        <div class="tip-score-box">${t.h} - ${t.a}</div>
+                        <div><img src="${m.aL}" class="tip-team-logo"><div class="tip-team-name">${m.a}</div></div>
                     </div>
-                </div>
-            `;
+                </div>`;
         });
         document.getElementById('modalContent').innerHTML = html;
         tipsModal.show();
@@ -233,31 +203,20 @@
 
     function resetSubmission() {
         const playerName = localStorage.getItem(nameKey);
-        if(!playerName) {
-            localStorage.removeItem(storageKey);
+        fetch('/api/delete_bet', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ group_id: "{{ group[0] }}", player_name: playerName })
+        }).then(() => {
+            localStorage.clear(); // Tømmer alt for å være 100% sikker
             location.reload();
-            return;
-        }
-
-        if(confirm("Vil du slette din kupong og tippe på nytt?")) {
-            fetch('/api/delete_bet', {
-                method: 'POST',
-                headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ group_id: "{{ group[0] }}", player_name: playerName })
-            }).then(() => {
-                localStorage.removeItem(storageKey);
-                localStorage.removeItem(nameKey);
-                location.reload();
-            });
-        }
+        });
     }
 
     function adj(btn, val) {
-        const card = btn.closest('.match-card');
-        const side = btn.closest('.team-side');
-        const isHome = side === card.querySelector('.team-side:first-child');
-        const target = card.querySelector(isHome ? '.h-val' : '.a-val');
-        target.innerText = Math.max(0, parseInt(target.innerText) + val);
+        const p = btn.closest('.team-side');
+        const v = p.parentNode.querySelector(p.classList.contains('team-side') && p === p.parentNode.firstElementChild ? '.h-val' : '.a-val');
+        v.innerText = Math.max(0, parseInt(v.innerText) + val);
     }
 </script>
 </body>
