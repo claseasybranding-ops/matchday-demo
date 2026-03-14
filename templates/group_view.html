@@ -1,127 +1,55 @@
 <!DOCTYPE html>
-<html lang="no">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ group[1] }} | MatchDay</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background: #f4f7f6; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .header-card { background: #cc0000; color: white; border-radius: 0 0 40px 40px; padding: 50px 20px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .match-card { background: white; border-radius: 20px; padding: 25px; margin-bottom: 20px; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .single-game-border { border: 3px solid #cc0000 !important; position: relative; }
-        .single-game-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #cc0000; color: white; padding: 2px 15px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
-        
-        .score-control { display: flex; align-items: center; justify-content: center; gap: 15px; margin: 10px 0; }
-        .btn-qty { width: 35px; height: 35px; border-radius: 50%; border: 2px solid #eee; background: white; font-weight: bold; color: #cc0000; transition: 0.2s; }
-        .btn-qty:active { background: #cc0000; color: white; }
-        .score-display { font-size: 1.8rem; font-weight: 800; width: 40px; text-align: center; color: #333; }
-        
-        .extra-question { background: #fff5f5; border-radius: 12px; padding: 15px; margin-top: 20px; border-left: 4px solid #cc0000; }
-        .logo-img { width: 60px; height: 60px; object-fit: contain; }
-        .team-name { font-size: 1rem; font-weight: bold; margin-top: 10px; color: #1a1a1a; }
-        
-        .submit-section { background: white; border-radius: 20px; padding: 25px; margin-bottom: 50px; }
+        body { background: #1a1a1a; color: white; }
+        .card { background: #2d2d2d; border: none; border-radius: 20px; color: white; }
+        .btn-check-custom { background: #3d3d3d; color: white; border: 1px solid #555; width: 100%; margin-bottom: 5px; }
     </style>
 </head>
-<body>
+<body class="p-3">
+    <div class="container" style="max-width: 500px;">
+        <h3 class="text-center fw-bold text-danger">MatchDay.</h3>
+        <p class="text-center opacity-50">{{ group[1] }}</p>
 
-<div class="header-card text-center">
-    <h1 class="fw-bold m-0">{{ group[1] }}</h1>
-    <p class="opacity-75">Velkommen til ukens kupong</p>
-</div>
-
-<div class="container" style="max-width: 550px;">
-    {% for m in matches %}
-    <div class="match-card {% if m[8] == 1 %}single-game-border{% endif %}">
-        {% if m[8] == 1 %}<div class="single-game-badge">Hovedkamp</div>{% endif %}
-        
-        <div class="row align-items-center text-center">
-            <div class="col-4">
-                <img src="{{ m[4] }}" class="logo-img">
-                <div class="team-name">{{ m[2] }}</div>
+        {% for m in matches %}
+        <div class="card p-4 mb-3 text-center">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="text-center" style="width: 40%"><img src="{{ m[4] }}" width="50"><br><small>{{ m[2] }}</small></div>
+                <div class="fw-bold h4">VS</div>
+                <div class="text-center" style="width: 40%"><img src="{{ m[5] }}" width="50"><br><small>{{ m[3] }}</small></div>
             </div>
-            
-            <div class="col-4">
-                <div class="score-control">
-                    <button class="btn-qty" onclick="change('h-{{ m[0] }}', 1)">+</button>
-                    <div class="score-display" id="h-{{ m[0] }}">0</div>
-                    <button class="btn-qty" onclick="change('h-{{ m[0] }}', -1)">-</button>
+
+            {% if group[4] == 'single' %}
+            <div class="text-start mt-3 border-top pt-3">
+                <label class="small fw-bold text-danger">SLUTTRESULTAT:</label>
+                <div class="d-flex gap-2 mb-3">
+                    <input type="number" class="form-control bg-dark text-white border-secondary" placeholder="H">
+                    <input type="number" class="form-control bg-dark text-white border-secondary" placeholder="B">
                 </div>
-                <div class="text-muted small fw-bold">VS</div>
-                <div class="score-control">
-                    <button class="btn-qty" onclick="change('b-{{ m[0] }}', 1)">+</button>
-                    <div class="score-display" id="b-{{ m[0] }}">0</div>
-                    <button class="btn-qty" onclick="change('b-{{ m[0] }}', -1)">-</button>
+
+                <label class="small fw-bold text-danger">HENDELSER I KAMPEN:</label>
+                <div class="row g-2 mb-3">
+                    <div class="col-6"><button class="btn btn-check-custom">Straffespark?</button></div>
+                    <div class="col-6"><button class="btn btn-check-custom">Rødt kort?</button></div>
                 </div>
-            </div>
 
-            <div class="col-4">
-                <img src="{{ m[5] }}" class="logo-img">
-                <div class="team-name">{{ m[3] }}</div>
+                <label class="small fw-bold text-danger">GOLDEN GOAL (Minutt første mål):</label>
+                <input type="number" class="form-control bg-dark text-white border-secondary" placeholder="F.eks. 24">
             </div>
+            {% else %}
+            <div class="d-flex gap-2">
+                <input type="number" class="form-control bg-dark text-white border-secondary text-center" placeholder="H">
+                <input type="number" class="form-control bg-dark text-white border-secondary text-center" placeholder="B">
+            </div>
+            {% endif %}
         </div>
+        {% endfor %}
 
-        {% if m[8] == 1 %}
-        <div class="extra-question mt-4">
-            <h6 class="fw-bold mb-3 text-danger">Ekstra vinnersjanser:</h6>
-            
-            <div class="mb-3">
-                <label class="small fw-bold">Hvem scorer første mål?</label>
-                <input type="text" class="form-control form-control-sm" placeholder="Spillernavn...">
-            </div>
-            
-            <div class="mb-3">
-                <label class="small fw-bold">Blir det straffespark i kampen?</label>
-                <select class="form-select form-select-sm">
-                    <option value="nei">Nei</option>
-                    <option value="ja">Ja</option>
-                </select>
-            </div>
-
-            <div class="mb-0">
-                <label class="small fw-bold">Når kommer første mål?</label>
-                <select class="form-select form-select-sm">
-                    <option>0 - 15 min</option>
-                    <option>16 - 30 min</option>
-                    <option>31 - 45 min</option>
-                    <option>46+ min</option>
-                    <option>Ingen mål</option>
-                </select>
-            </div>
-        </div>
-        {% endif %}
+        <input type="text" class="form-control mb-3" placeholder="Ditt navn">
+        <button class="btn btn-danger w-100 fw-bold py-3 rounded-pill shadow">LEVER KUPONG</button>
     </div>
-    {% endfor %}
-
-    <div class="submit-section text-center">
-        <label class="fw-bold mb-2">Klar til å levere?</label>
-        <input type="text" id="userName" class="form-control mb-3 text-center py-2" placeholder="Skriv ditt navn her">
-        <button class="btn btn-danger btn-lg w-100 fw-bold shadow" onclick="submitKupong()">SEND INN KUPONG</button>
-        <p class="text-muted small mt-3">Lykke til!</p>
-    </div>
-</div>
-
-<script>
-    function change(id, delta) {
-        const el = document.getElementById(id);
-        let val = parseInt(el.innerText) + delta;
-        if (val < 0) val = 0;
-        if (val > 15) val = 15; // Sikkerhet
-        el.innerText = val;
-    }
-
-    function submitKupong() {
-        const name = document.getElementById('userName').value;
-        if(!name) {
-            alert("Du må skrive navnet ditt før du sender inn!");
-            return;
-        }
-        
-        // Her legger vi inn API-kallet i neste steg for å lagre i databasen
-        alert("Kjempebra " + name + "! Kupongen din er registrert.");
-    }
-</script>
-
 </body>
 </html>
