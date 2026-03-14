@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 DB_PATH = "matchday_pro.db"
 
-# BYTT UT DENNE MED EN HELT NY NØKKEL:
+# Din nye, fungerende nøkkel:
 API_KEY = "67426ace3170141fe1072055b5825f1e"
 
 def init_db():
@@ -34,8 +34,8 @@ def import_league(league_id):
     today = datetime.now().strftime('%Y-%m-%d')
     next_week = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
     
-    # Denne URL-en er den mest stabile for gratiskontoer
-    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&from={today}&to={next_week}&timezone=Europe/Oslo"
+    # Her har jeg lagt til &season=2025 som API-et ba om i feilmeldingen din
+    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&from={today}&to={next_week}&timezone=Europe/Oslo"
     
     headers = {
         'x-apisports-key': API_KEY,
@@ -43,15 +43,16 @@ def import_league(league_id):
     }
     
     try:
-        res = requests.get(url, headers=headers).json()
+        response = requests.get(url, headers=headers)
+        res = response.json()
         
         if res.get('errors'):
-            return jsonify({"status": f"API-nøkkel feil: {res['errors']}"})
+            return jsonify({"status": f"API-feil: {res['errors']}"})
             
         data = res.get('response', [])
         
         if not data:
-            return jsonify({"status": "Ingen kamper funnet i denne perioden."})
+            return jsonify({"status": f"Fant ingen kamper i sesong 2025 mellom {today} og {next_week}."})
 
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -64,7 +65,7 @@ def import_league(league_id):
         conn.close()
         return jsonify({"status": f"Suksess! Hentet {len(data)} kamper."})
     except Exception as e:
-        return jsonify({"status": f"Feil: {str(e)}"})
+        return jsonify({"status": f"Systemfeil: {str(e)}"})
 
 if __name__ == '__main__':
     app.run(debug=True)
