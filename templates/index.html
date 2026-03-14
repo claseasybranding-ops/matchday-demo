@@ -3,73 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ o.gruppe }}</title>
+    <title>MatchDay | Profesjonell Konkurranseplattform</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { background-color: #f4f7f6; font-family: sans-serif; }
-        .match-card { background: white; border-radius: 20px; padding: 15px; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .team-logo { width: 40px; height: 40px; object-fit: contain; }
-        .team-name { font-weight: 800; font-size: 0.7rem; text-transform: uppercase; margin-top: 5px; }
-        .score-val { font-size: 1.5rem; font-weight: 800; min-width: 30px; text-align: center; }
-        .btn-qty { border: 1px solid #ddd; background: white; color: #d62828; width: 35px; height: 35px; border-radius: 8px; font-weight: bold; }
-        .extra-box { background: #fff5f5; border: 1px dashed #d62828; border-radius: 15px; padding: 15px; margin-top: 10px; }
+        :root { --md-red: #cc0000; --md-dark: #1a1a1a; }
+        body { background-color: var(--md-dark); color: white; font-family: 'Inter', sans-serif; }
+        .hero-section { padding: 100px 0; text-align: center; background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1350&q=80'); background-size: cover; }
+        .btn-primary { background-color: var(--md-red); border: none; padding: 12px 30px; font-weight: bold; }
+        .card { background: #2a2a2a; border: none; color: white; transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); }
     </style>
 </head>
 <body>
-
-<div class="container" style="max-width: 450px; padding-top: 20px;">
-    <div class="text-center mb-4">
-        <h2 class="fw-bold m-0">MatchDay<span>.</span></h2>
-        <p class="text-muted fw-bold">{{ o.gruppe }}</p>
-    </div>
-
-    <input type="text" id="navn" class="form-control mb-3 p-3" placeholder="Ditt navn..." style="border-radius: 12px;">
-
-    {% for k in o.kamper %}
-    <div class="match-card">
-        <div class="row align-items-center g-0 text-center">
-            <div class="col-3">
-                <img src="{{ k.h_logo }}" class="team-logo">
-                <div class="team-name">{{ k.h_navn }}</div>
-            </div>
-            <div class="col-6">
-                <div class="d-flex align-items-center justify-content-center gap-2">
-                    <button class="btn-qty" onclick="e('h{{loop.index}}',-1)">-</button>
-                    <span class="score-val" id="h{{loop.index}}">0</span>
-                    <button class="btn-qty" onclick="e('h{{loop.index}}',1)">+</button>
-                </div>
-                <div class="d-flex align-items-center justify-content-center gap-2 mt-2">
-                    <button class="btn-qty" onclick="e('b{{loop.index}}',-1)">-</button>
-                    <span class="score-val" id="b{{loop.index}}">0</span>
-                    <button class="btn-qty" onclick="e('b{{loop.index}}',1)">+</button>
-                </div>
-            </div>
-            <div class="col-3">
-                <img src="{{ k.b_logo }}" class="team-logo">
-                <div class="team-name">{{ k.b_navn }}</div>
+    <div class="hero-section">
+        <div class="container">
+            <h1 class="display-3 fw-bold">MatchDay</h1>
+            <p class="lead">Den ultimate plattformen for sportskonkurranser og bedriftsligaer.</p>
+            <div class="mt-4">
+                <a href="/group/demo-gruppe" class="btn btn-primary btn-lg">Prøv Demo-Konkurranse</a>
             </div>
         </div>
     </div>
-    {% endfor %}
 
-    {% if o.modus == 'singel' %}
-    <div class="extra-box">
-        <label class="small fw-bold text-danger">ADDITIONAL PREDICTIONS</label>
-        <input type="text" class="form-control mb-2 mt-1" placeholder="Første målscorer...">
-        <input type="number" class="form-control" placeholder="Minutt første mål...">
+    <div class="container my-5">
+        <h2 class="text-center mb-5">Topp Konkurranser (Modul 8)</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card p-4">
+                    <h3>Bedriftsligaen 2026</h3>
+                    <p>Sponset av Marine AS</p>
+                    <span class="badge bg-danger w-25">LIVE</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-4">
+                    <h3>Venneligaen</h3>
+                    <p>Privat gruppe</p>
+                    <span class="text-muted small">12 deltakere</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-4">
+                    <h3>Champions League Mix</h3>
+                    <p>Åpen for alle</p>
+                    <span class="badge bg-success w-25">ÅPEN</span>
+                </div>
+            </div>
+        </div>
     </div>
-    {% endif %}
-
-    <button class="btn btn-danger w-100 p-3 fw-bold shadow mt-3" style="border-radius: 15px;">LÅS TIPS ⚽</button>
-</div>
-
-<script>
-    function e(id,v){
-        let el=document.getElementById(id);
-        let n=parseInt(el.innerText)+v;
-        if(n>=0) el.innerText=n;
-    }
-</script>
-
 </body>
 </html>
