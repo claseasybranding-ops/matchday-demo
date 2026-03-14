@@ -1,10 +1,41 @@
+import sqlite3
+from flask import Flask, render_template, request, jsonify
+import requests, os
+from datetime import datetime, timedelta
+
+app = Flask(__name__)
+DB_PATH = "matchday_pro.db"
+
+# Her er din korrekte nøkkel lagt inn fast:
+API_KEY = "c06ecd6de7644023a13c7b881248e5bc"
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS fixtures 
+                 (id INTEGER PRIMARY KEY, league_id INTEGER, h_navn TEXT, b_navn TEXT, 
+                  h_logo TEXT, b_logo TEXT, date TEXT, status TEXT)''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+@app.route('/super_admin_dashboard')
+def super_admin():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT * FROM fixtures ORDER BY date ASC")
+    alle_kamper = c.fetchall()
+    conn.close()
+    return render_template('super_admin.html', kamper=alle_kamper)
+
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
     # Vi henter fra i dag og 7 dager frem i tid
     today = datetime.now().strftime('%Y-%m-%d')
     next_week = (datetime.now() + timedelta(days=7)).strftime('%Y-%m-%d')
     
-    # Vi fjerner 'season' parameteren helt for å la API-et velge riktig sesong selv
+    # VIKTIG: Vi fjerner season-filteret helt for å unngå dato-krøll i 2026
     url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&from={today}&to={next_week}&timezone=Europe/Oslo"
     
     headers = {
@@ -17,15 +48,8 @@ def import_league(league_id):
         res = response.json()
         data = res.get('response', [])
         
-        # Hvis det fortsatt er tomt, prøver vi en siste gang uten dato, men med 'next=10'
-        # (Selv om noen planer nekter 'next', fungerer det ofte som fallback uten 'season')
         if not data:
-            url_fallback = f"https://v3.football.api-sports.io/fixtures?league={league_id}&next=10"
-            res = requests.get(url_fallback, headers=headers).json()
-            data = res.get('response', [])
-
-        if not data:
-            return jsonify({"status": f"Ingen kamper funnet. API-svar: {res}"})
+            return jsonify({"status": f"Fant ingen kamper i perioden {today} til {next_week}. API svar: {res}"})
 
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -39,3 +63,6 @@ def import_league(league_id):
         return jsonify({"status": f"Suksess! Hentet {len(data)} kamper."})
     except Exception as e:
         return jsonify({"status": f"Feil: {str(e)}"})
+
+if __name__ == '__main__':
+    app.run(debug=True)
