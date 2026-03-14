@@ -15,113 +15,186 @@
             --md-border: #e2e8f0;
         }
 
-        body { background-color: var(--md-bg); color: var(--md-text); font-family: 'Inter', sans-serif; padding-bottom: 40px; }
+        body { 
+            background-color: var(--md-bg); 
+            color: var(--md-text); 
+            font-family: 'Inter', sans-serif; 
+            padding-bottom: 40px; 
+            margin: 0;
+        }
 
-        .app-header { background: white; padding: 15px 0; text-align: center; border-bottom: 1px solid var(--md-border); position: sticky; top: 0; z-index: 1000; }
+        /* App Header */
+        .app-header { 
+            background: white; 
+            padding: 15px 0; 
+            text-align: center; 
+            border-bottom: 1px solid var(--md-border); 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+        }
         .logo-text { color: var(--md-red); font-weight: 800; font-size: 1.4rem; margin: 0; letter-spacing: -1px; }
+        .group-subtext { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #64748b; margin-top: 2px; }
 
-        .prize-section { background: white; padding: 12px; margin-bottom: 20px; border-bottom: 1px solid var(--md-border); display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .prize-label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; color: var(--md-red); background: rgba(204, 0, 0, 0.1); padding: 2px 8px; border-radius: 4px; }
-        .prize-text { font-size: 0.9rem; font-weight: 600; color: #444; }
+        /* Premie-boks - Gjort mer synlig */
+        .prize-container {
+            background: white;
+            margin: 15px auto;
+            max-width: 450px;
+            border-radius: 12px;
+            border: 2px solid var(--md-red);
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 6px rgba(204, 0, 0, 0.05);
+        }
+        .prize-badge { 
+            background: var(--md-red); 
+            color: white; 
+            font-size: 0.7rem; 
+            font-weight: 800; 
+            padding: 4px 10px; 
+            border-radius: 6px; 
+            text-transform: uppercase;
+        }
+        .prize-name { font-size: 1rem; font-weight: 700; color: var(--md-text); }
 
-        .match-card { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        /* Kamp-kort */
+        .match-card { 
+            background: var(--md-card); 
+            border: 1px solid var(--md-border); 
+            border-radius: 16px; 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03); 
+        }
         .match-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; }
 
-        .team-logo { width: 32px; height: 32px; object-fit: contain; margin-bottom: 5px; }
-        .team-name { font-size: 0.75rem; font-weight: 700; display: block; }
+        .team-logo { width: 40px; height: 40px; object-fit: contain; margin-bottom: 8px; }
+        .team-name { font-size: 0.75rem; font-weight: 700; color: #444; display: block; line-height: 1.2; }
 
-        .score-row { display: flex; align-items: center; gap: 8px; }
-        .score-val { font-size: 1.6rem; font-weight: 800; width: 25px; }
-        .btn-adj { width: 32px; height: 32px; border: 1px solid var(--md-border); background: #f8fafc; border-radius: 8px; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .btn-adj:active { background: #eee; transform: scale(0.9); }
+        .score-center { display: flex; align-items: center; gap: 10px; padding: 0 10px; }
+        .score-val { font-size: 2rem; font-weight: 800; width: 30px; color: var(--md-text); }
+        .score-divider { color: #cbd5e1; font-weight: 800; font-size: 1.2rem; }
 
-        /* Tilleggsspørsmål for Storkamp */
-        .bonus-box { background: #f8fafc; border-radius: 10px; padding: 15px; margin-top: 15px; border: 1px solid var(--md-border); }
+        .btn-adj { 
+            width: 36px; 
+            height: 36px; 
+            border: 1px solid var(--md-border); 
+            background: #f8fafc; 
+            border-radius: 10px; 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: 0.15s;
+        }
+        .btn-adj:active { background: #e2e8f0; transform: scale(0.9); }
+
+        /* Storkamp tillegg */
+        .bonus-section { 
+            background: #f8fafc; 
+            border-radius: 12px; 
+            padding: 15px; 
+            margin-top: 20px; 
+            border: 1px solid var(--md-border); 
+        }
+        .bonus-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .bonus-label { font-size: 0.85rem; font-weight: 600; color: #475569; }
         .form-switch .form-check-input:checked { background-color: var(--md-red); border-color: var(--md-red); }
 
-        .input-name { border: 1px solid var(--md-border); border-radius: 10px; padding: 15px; font-weight: 600; text-align: center; margin-top: 20px; width: 100%; }
-        .btn-submit { background: var(--md-red); color: white; border: none; border-radius: 10px; padding: 16px; width: 100%; font-weight: 800; margin-top: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        /* Bunn */
+        .input-name { border: 1px solid var(--md-border); border-radius: 12px; padding: 16px; font-weight: 600; text-align: center; margin-top: 20px; width: 100%; font-size: 1rem; }
+        .btn-submit { background: var(--md-red); color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; margin-top: 12px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(204, 0, 0, 0.2); }
     </style>
 </head>
 <body>
 
 <div class="app-header">
     <h1 class="logo-text">MatchDay.</h1>
-    <div class="text-muted" style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase;">{{ group[1] }}</div>
+    <div class="group-subtext">{{ group[1] }}</div>
 </div>
 
-{% if group[5] %}
-<div class="prize-section">
-    <span class="prize-label">Premie</span>
-    <span class="prize-text">🏆 {{ group[5] }}</span>
-</div>
-{% endif %}
-
-<div class="container" style="max-width: 450px; margin-top: 10px;">
-    {% for m in matches %}
-    <div class="match-card" data-match-id="{{ m[0] }}">
-        <div class="match-grid">
-            <div class="team-side">
-                <img src="{{ m[4] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/32'">
-                <span class="team-name">{{ m[2] }}</span>
-                <div class="d-flex justify-content-center gap-1 mt-2">
-                    <button class="btn-adj" onclick="adj(this, -1)">-</button>
-                    <button class="btn-adj" onclick="adj(this, 1)">+</button>
-                </div>
-            </div>
-
-            <div class="score-row px-3">
-                <span class="score-val h-val">0</span>
-                <span class="text-muted fw-bold">-</span>
-                <span class="score-val a-val">0</span>
-            </div>
-
-            <div class="team-side">
-                <img src="{{ m[5] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/32'">
-                <span class="team-name">{{ m[3] }}</span>
-                <div class="d-flex justify-content-center gap-1 mt-2">
-                    <button class="btn-adj" onclick="adj(this, -1)">-</button>
-                    <button class="btn-adj" onclick="adj(this, 1)">+</button>
-                </div>
-            </div>
-        </div>
-
-        {% if group[4] == 'single' %}
-        <div class="bonus-box">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="small fw-bold">Straffespark i kampen?</span>
-                <div class="form-check form-switch"><input class="form-check-input" type="checkbox"></div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <span class="small fw-bold">Rødt kort i kampen?</span>
-                <div class="form-check form-switch"><input class="form-check-input" type="checkbox"></div>
-            </div>
-            <label class="small fw-bold text-muted mb-1">Golden Goal (Minutt):</label>
-            <input type="number" class="form-control form-control-sm text-center fw-bold" placeholder="F.eks. 34">
-        </div>
-        {% endif %}
+<div class="container" style="max-width: 480px;">
+    
+    {% if group[5] %}
+    <div class="prize-container">
+        <span class="prize-badge">Premie</span>
+        <span class="prize-name">🏆 {{ group[5] }}</span>
     </div>
-    {% endfor %}
+    {% endif %}
 
-    <input type="text" id="name" class="input-name" placeholder="Ditt navn">
-    <button class="btn-submit" onclick="send()">Lever kupong</button>
+    <div id="tippeskjema" class="mt-3">
+        {% for m in matches %}
+        <div class="match-card" data-match-id="{{ m[0] }}">
+            <div class="match-grid">
+                <div class="team-side">
+                    <img src="{{ m[4] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/40'">
+                    <span class="team-name">{{ m[2] }}</span>
+                    <div class="d-flex justify-content-center gap-2 mt-3">
+                        <button class="btn-adj" onclick="adjust(this, -1)">-</button>
+                        <button class="btn-adj" onclick="adjust(this, 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="score-center">
+                    <span class="score-val h-val">0</span>
+                    <span class="score-divider">-</span>
+                    <span class="score-val a-val">0</span>
+                </div>
+
+                <div class="team-side">
+                    <img src="{{ m[5] }}" class="team-logo" onerror="this.src='https://via.placeholder.com/40'">
+                    <span class="team-name">{{ m[3] }}</span>
+                    <div class="d-flex justify-content-center gap-2 mt-3">
+                        <button class="btn-adj" onclick="adjust(this, -1)">-</button>
+                        <button class="btn-adj" onclick="adjust(this, 1)">+</button>
+                    </div>
+                </div>
+            </div>
+
+            {% if group[4] == 'single' %}
+            <div class="bonus-section">
+                <div class="bonus-row">
+                    <span class="bonus-label">Blir det straffespark?</span>
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox"></div>
+                </div>
+                <div class="bonus-row">
+                    <span class="bonus-label">Blir det rødt kort?</span>
+                    <div class="form-check form-switch"><input class="form-check-input" type="checkbox"></div>
+                </div>
+                <div class="mt-2">
+                    <label class="bonus-label mb-1 d-block">Golden Goal (Minutt):</label>
+                    <input type="number" class="form-control text-center fw-bold" style="border-radius: 8px; border: 1px solid #e2e8f0;" placeholder="F.eks. 34">
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        <input type="text" id="player-name" class="input-name" placeholder="Ditt Navn">
+        <button class="btn-submit" onclick="submitForm()">Lever kupong</button>
+    </div>
 </div>
 
 <script>
-    function adj(btn, val) {
+    function adjust(btn, amount) {
         const card = btn.closest('.match-card');
         const side = btn.closest('.team-side');
         const isHome = side === card.querySelector('.team-side:first-child');
         const target = card.querySelector(isHome ? '.h-val' : '.a-val');
         let current = parseInt(target.innerText);
-        target.innerText = Math.max(0, current + val);
+        target.innerText = Math.max(0, current + amount);
     }
 
-    function send() {
-        const name = document.getElementById('name').value;
+    function submitForm() {
+        const name = document.getElementById('player-name').value;
         if(!name) { alert("Vennligst skriv navnet ditt"); return; }
-        alert("Kupongen er registrert!");
+        alert("Kupongen er levert! Lykke til, " + name);
     }
 </script>
+
 </body>
 </html>
