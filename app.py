@@ -17,19 +17,15 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
-    # Kamper
     c.execute('''CREATE TABLE IF NOT EXISTS fixtures
                  (id INTEGER PRIMARY KEY, league_id INTEGER, home_team TEXT, 
                   away_team TEXT, home_logo TEXT, away_logo TEXT, 
                   date TEXT, status TEXT, home_actual INTEGER, away_actual INTEGER)''')
-    # Grupper
     c.execute('''CREATE TABLE IF NOT EXISTS groups
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_name TEXT, group_id_str TEXT, 
                   admin_name TEXT, mode TEXT DEFAULT 'multi', prize_info TEXT)''')
-    # Hvilke kamper tilhører hvilken gruppe
     c.execute('''CREATE TABLE IF NOT EXISTS group_matches
                  (group_id INTEGER, fixture_id INTEGER)''')
-    # Tips fra brukere
     c.execute('''CREATE TABLE IF NOT EXISTS bets
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id_str TEXT, user_name TEXT, 
                   fixture_id INTEGER, home_score INTEGER, away_score INTEGER, points INTEGER DEFAULT 0)''')
@@ -39,7 +35,6 @@ def init_db():
 init_db()
 
 # --- ROUTES ---
-
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -62,13 +57,10 @@ def group_view(group_id_str):
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
     if not group: return "Siden finnes ikke", 404
-    
-    # Henter de spesifikke kampene valgt for denne gruppen
     c.execute("""SELECT f.* FROM fixtures f 
                  JOIN group_matches gm ON f.id = gm.fixture_id 
                  WHERE gm.group_id = ?""", (group[0],))
     kamper = c.fetchall()
-    
     c.execute("""SELECT user_name, SUM(points) as total FROM bets 
                  WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC""", (group_id_str,))
     leaderboard = c.fetchall()
@@ -88,17 +80,24 @@ def group_admin(group_id_str):
     conn.close()
     return render_template('group_admin.html', group=group, all_fixtures=all_fixtures, selected_ids=selected_ids)
 
-# --- API ---
-
+# --- API (Denne er nå oppdatert for å garantert finne kamper) ---
 @app.route('/api/import_league/<code>')
 def import_league(code):
     l_id = 39 # Premier League
-    url = f"https://v3.football.api-sports.io/fixtures?league={l_id}&season=2025&next=15&timezone=Europe/Oslo"
+    # Vi fjerner "season" og bruker "next=20" for å hente de kommende kampene
+    url = f"https://v3.football.api-sports.io/fixtures?league={l_id}&next=20&timezone=Europe/Oslo"
     headers = {'x-apisports-key': API_KEY}
     
     try:
         res = requests.get(url, headers=headers).json()
         fixtures = res.get('response', [])
+        
+        if not fixtures:
+            # Hvis "next" er tom, prøver vi å hente dagens kamper i stedet
+            url = f"https://v3.football.api-sports.io/fixtures?league={l_id}&date=2026-03-15"
+            res = requests.get(url, headers=headers).json()
+            fixtures = res.get('response', [])
+
         conn = get_db()
         c = conn.cursor()
         for f in fixtures:
