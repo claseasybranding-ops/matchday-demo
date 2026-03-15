@@ -5,70 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin | {{ group[1] }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-bg: #f3f4f6; }
-        body { background-color: var(--md-bg); font-family: 'Inter', sans-serif; padding-bottom: 100px; }
-        .card-custom { background: white; border-radius: 16px; padding: 20px; margin-bottom: 15px; border: 1px solid #e5e7eb; }
-        .match-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
-        .team-logo { width: 25px; height: 25px; object-fit: contain; margin: 0 5px; }
-        .btn-main { background: var(--md-red); color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; text-transform: uppercase; }
-        .fixed-bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; border-top: 1px solid #ddd; }
+        :root { --md-red: #cc0000; --md-dark: #1a1a1a; --md-bg: #f8f9fa; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px 20px; }
+        .admin-card { background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
+        .match-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .btn-save { background: var(--md-red); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; width: 100%; margin-top: 20px; }
     </style>
 </head>
 <body>
-
-<div class="container mt-4" style="max-width: 500px;">
-    <h3 class="fw-bold mb-4">Kontrollpanel: {{ group[1] }}</h3>
-
-    <div class="card-custom">
-        <label class="small fw-bold text-muted text-uppercase mb-2 d-block">Runde-innstillinger</label>
-        <input type="text" id="prize-input" class="form-control mb-3" placeholder="Hva er premien?" value="{{ group[5] or '' }}">
-        <button class="btn btn-dark w-100 fw-bold" onclick="saveSettings()">LAGRE INNSTILLINGER</button>
-    </div>
-
-    <div class="card-custom">
-        <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Velg kamper</label>
-        {% for m in all_fixtures %}
-        <div class="match-row">
-            <div class="d-flex align-items-center">
-                <img src="{{ m[4] }}" class="team-logo">
-                <span class="small fw-bold">{{ m[2] }} - {{ m[3] }}</span>
-                <img src="{{ m[5] }}" class="team-logo">
-            </div>
-            <button class="btn btn-sm {% if m[0] in selected_ids %}btn-success{% else %}btn-outline-secondary{% endif %}" onclick="toggleMatch('{{ m[0] }}')">
-                {% if m[0] in selected_ids %}VALGT{% else %}VELG{% endif %}
-            </button>
+    <div class="admin-card">
+        <h2 class="fw-800 mb-4">Administrer {{ group[1] }}</h2>
+        
+        <div class="mb-4">
+            <label class="fw-bold small text-uppercase">Spillmodus</label>
+            <select id="group-mode" class="form-select mt-1">
+                <option value="multi" {% if group[4] == 'multi' %}selected{% endif %}>Multi Game (Mange kamper)</option>
+                <option value="single" {% if group[4] == 'single' %}selected{% endif %}>Single Game (Fokus på én kamp)</option>
+            </select>
         </div>
-        {% endfor %}
+
+        <div class="mb-4">
+            <label class="fw-bold small text-uppercase">Premieinfo</label>
+            <input type="text" id="prize-info" class="form-control mt-1" value="{{ group[5] or '' }}" placeholder="F.eks: En valgfri pizza">
+        </div>
+
+        <label class="fw-bold small text-uppercase mb-2">Velg kamper for denne runden</label>
+        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 10px; padding: 10px;">
+            {% for k in kamper %}
+            <div class="match-row">
+                <input type="checkbox" class="match-check me-3" value="{{ k[0] }}" {% if k[0] in valgte %}checked{% endif %}>
+                <div class="small">
+                    <strong>{{ k[2] }} - {{ k[3] }}</strong><br>
+                    <span class="text-muted">{{ k[6] }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <button class="btn-save" onclick="saveSettings()">Lagre endringer 💾</button>
+        <a href="/group/{{ group[2] }}/leaderboard" class="btn btn-link w-100 text-muted mt-2">Tilbake til tabell</a>
     </div>
-</div>
 
-<div class="fixed-bottom-nav">
-    <div class="container" style="max-width: 500px;">
-        <a href="/group/{{ group[2] }}" class="btn-main d-block text-center text-decoration-none">GÅ TIL KONKURRANSE</a>
-    </div>
-</div>
-
-<script>
-    function saveSettings() {
-        fetch('/api/update_group_settings', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                group_id: {{ group[0] }},
-                mode: 'multi',
-                prize_info: document.getElementById('prize-input').value
-            })
-        }).then(() => alert("Lagret!"));
-    }
-
-    function toggleMatch(fid) {
-        fetch('/api/toggle_match', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ group_id: {{ group[0] }}, fixture_id: fid })
-        }).then(() => location.reload());
-    }
-</script>
+    <script>
+        function saveSettings() {
+            const matches = [];
+            document.querySelectorAll('.match-check:checked').forEach(cb => matches.push(cb.value));
+            
+            fetch('/api/update_group_settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    group_id_str: '{{ group[2] }}',
+                    mode: document.getElementById('group-mode').value,
+                    prize: document.getElementById('prize-info').value,
+                    matches: matches
+                })
+            }).then(() => alert("Lagret!"));
+        }
+    </script>
 </body>
 </html>
