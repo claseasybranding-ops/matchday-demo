@@ -3,66 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin | {{ group[1] }}</title>
+    <title>Admin | MatchDay</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-dark: #1a1a1a; --md-bg: #f8f9fa; }
-        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px 20px; }
-        .admin-card { background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
-        .match-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
-        .btn-save { background: var(--md-red); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; width: 100%; margin-top: 20px; }
+        body { background: #f8f9fa; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
+        .admin-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
+        .smart-btn { background: #f1f1f1; border: none; padding: 10px 15px; border-radius: 10px; font-weight: 700; margin: 5px; font-size: 0.8rem; }
+        .smart-btn:hover { background: #e0e0e0; }
+        .btn-save { background: #cc0000; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; width: 100%; margin-top: 20px; }
     </style>
 </head>
 <body>
     <div class="admin-card">
-        <h2 class="fw-800 mb-4">Administrer {{ group[1] }}</h2>
-        
+        <h3 class="fw-800 mb-4">Oppsett for {{ group[1] }}</h3>
+
         <div class="mb-4">
-            <label class="fw-bold small text-uppercase">Spillmodus</label>
-            <select id="group-mode" class="form-select mt-1">
-                <option value="multi" {% if group[4] == 'multi' %}selected{% endif %}>Multi Game (Mange kamper)</option>
-                <option value="single" {% if group[4] == 'single' %}selected{% endif %}>Single Game (Fokus på én kamp)</option>
+            <label class="fw-bold small text-uppercase text-muted">1. Velg Modus</label>
+            <select id="mode" class="form-select fw-bold">
+                <option value="multi" {% if group[4] == 'multi' %}selected{% endif %}>Multi Game (Flere kamper)</option>
+                <option value="single" {% if group[4] == 'single' %}selected{% endif %}>Single Game (Supporter-modus)</option>
             </select>
         </div>
 
         <div class="mb-4">
-            <label class="fw-bold small text-uppercase">Premieinfo</label>
-            <input type="text" id="prize-info" class="form-control mt-1" value="{{ group[5] or '' }}" placeholder="F.eks: En valgfri pizza">
+            <label class="fw-bold small text-uppercase text-muted">2. Velg kamp</label>
+            <select id="match-select" class="form-select">
+                {% for k in kamper %}
+                <option value="{{ k[0] }}" {% if k[0] in valgte %}selected{% endif %}>{{ k[2] }} - {{ k[3] }}</option>
+                {% endfor %}
+            </select>
         </div>
 
-        <label class="fw-bold small text-uppercase mb-2">Velg kamper for denne runden</label>
-        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 10px; padding: 10px;">
-            {% for k in kamper %}
-            <div class="match-row">
-                <input type="checkbox" class="match-check me-3" value="{{ k[0] }}" {% if k[0] in valgte %}checked{% endif %}>
-                <div class="small">
-                    <strong>{{ k[2] }} - {{ k[3] }}</strong><br>
-                    <span class="text-muted">{{ k[6] }}</span>
+        {% if group[4] == 'single' %}
+        <div class="mb-4 p-3" style="background: #fdfdfd; border: 2px dashed #eee; border-radius: 15px;">
+            <label class="fw-bold small text-uppercase text-muted d-block mb-2">3. Legg til smarte spørsmål</label>
+            <button class="smart-btn" onclick="addQ('Blir det straffespark?')">+ Straffe?</button>
+            <button class="smart-btn" onclick="addQ('Blir det rødt kort?')">+ Rødt kort?</button>
+            <button class="smart-btn" onclick="addQ('Leder hjemmelaget til pause?')">+ Pause-leder?</button>
+            
+            <div class="mt-3">
+                <label class="small fw-bold">Scorer spesifikk spiller?</label>
+                <div class="d-flex gap-2">
+                    <select id="player-select" class="form-select form-select-sm">
+                        {% for p in players %}
+                        <option value="Scorer {{ p.name }} ({{ p.team }})?">{{ p.name }} ({{ p.team }})</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn btn-sm btn-dark fw-bold" onclick="addQ(document.getElementById('player-select').value)">LEGG TIL</button>
                 </div>
             </div>
-            {% endfor %}
         </div>
+        {% endif %}
 
-        <button class="btn-save" onclick="saveSettings()">Lagre endringer 💾</button>
-        <a href="/group/{{ group[2] }}/leaderboard" class="btn btn-link w-100 text-muted mt-2">Tilbake til tabell</a>
+        <button class="btn-save" onclick="saveAll()">LAGRE OG AKTIVER 🚀</button>
     </div>
 
     <script>
-        function saveSettings() {
-            const matches = [];
-            document.querySelectorAll('.match-check:checked').forEach(cb => matches.push(cb.value));
-            
+        function saveAll() {
+            const mode = document.getElementById('mode').value;
+            const mid = document.getElementById('match-select').value;
             fetch('/api/update_group_settings', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    group_id_str: '{{ group[2] }}',
-                    mode: document.getElementById('group-mode').value,
-                    prize: document.getElementById('prize-info').value,
-                    matches: matches
-                })
-            }).then(() => alert("Lagret!"));
+                body: JSON.stringify({ group_id_str: '{{ group[2] }}', mode: mode, matches: [mid] })
+            }).then(() => window.location.reload());
+        }
+
+        function addQ(text) {
+            fetch('/api/add_smart_question', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ group_id_str: '{{ group[2] }}', match_id: document.getElementById('match-select').value, text: text })
+            }).then(() => alert("Spørsmål lagt til!"));
         }
     </script>
 </body>
