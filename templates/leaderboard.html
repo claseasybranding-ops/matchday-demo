@@ -7,34 +7,106 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #fcfcfc; font-family: 'Plus Jakarta Sans', sans-serif; color: #333; }
+        :root { --md-red: #cc0000; --md-dark: #1a1a1a; }
+        body { background-color: #f8f9fa; font-family: 'Plus Jakarta Sans', sans-serif; color: #333; }
+        
         .leaderboard-container { max-width: 500px; margin: 40px auto; padding: 20px; }
-        .leaderboard-card { background: white; border-radius: 12px; border: 1px solid #eee; overflow: hidden; }
-        .table { margin-bottom: 0; }
-        .table thead { background: #f8f9fa; color: #666; }
-        .table th { padding: 15px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; border-bottom: 1px solid #eee; }
-        .table td { padding: 18px; vertical-align: middle; border-bottom: 1px solid #f9f9f9; }
-        .rank-badge { width: 30px; height: 30px; background: #f0f0f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 800; }
-        .rank-1 .rank-badge { background: #fff9c4; color: #827717; border: 1px solid #fbc02d; }
-        .points-col { font-weight: 800; text-align: right; font-size: 1.1rem; }
-        .refresh-notice { text-align: center; font-size: 0.7rem; color: #aaa; margin-top: 20px; text-transform: uppercase; }
-        .btn-outline-custom { border: 2px solid #eee; color: #666; font-weight: 700; border-radius: 10px; padding: 12px; }
+        
+        /* Glassmorphism card */
+        .leaderboard-card { 
+            background: white; 
+            border-radius: 20px; 
+            border: 1px solid rgba(0,0,0,0.05); 
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+
+        .table thead { background: #fdfdfd; }
+        .table th { 
+            padding: 20px; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            font-size: 0.75rem; 
+            letter-spacing: 1px; 
+            color: #888;
+            border-bottom: 2px solid #f1f1f1;
+        }
+
+        .table td { padding: 20px; vertical-align: middle; border-bottom: 1px solid #f8f8f8; }
+
+        /* Rank styling */
+        .rank-badge { 
+            width: 35px; height: 35px; 
+            background: #f1f1f1; 
+            border-radius: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 800; 
+            font-size: 0.9rem;
+        }
+
+        .rank-1 { background-color: rgba(204, 0, 0, 0.03); }
+        .rank-1 .rank-badge { 
+            background: #FFD700; 
+            color: #000; 
+            box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .points-col { 
+            font-weight: 800; 
+            text-align: right; 
+            font-size: 1.2rem; 
+            color: var(--md-dark);
+        }
+
+        /* Live indicator pulse */
+        .live-dot {
+            height: 8px; width: 8px;
+            background-color: var(--md-red);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(204, 0, 0, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(204, 0, 0, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(204, 0, 0, 0); }
+        }
+
+        .btn-outline-custom { 
+            border: 2px solid #eee; 
+            color: #444; 
+            font-weight: 700; 
+            border-radius: 14px; 
+            padding: 15px;
+            transition: 0.3s;
+            background: white;
+        }
+        .btn-outline-custom:hover { border-color: var(--md-red); color: var(--md-red); }
+
+        .refresh-notice { text-align: center; font-size: 0.7rem; color: #bbb; margin-top: 25px; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <div class="leaderboard-container">
-        <div class="text-center mb-4">
-            <h2 class="fw-bold">{{ group[1] }}</h2>
-            <div class="badge text-dark border p-2">LIVE TABELL</div>
+        <div class="text-center mb-5">
+            <h1 class="fw-800 mb-1" style="letter-spacing: -1px;">{{ group[1] }}</h1>
+            <div class="d-flex align-items-center justify-content-center">
+                <span class="live-dot"></span>
+                <span class="small fw-bold text-uppercase tracking-wider" style="color: var(--md-red);">Live Leaderboard</span>
+            </div>
         </div>
         
-        <div class="leaderboard-card shadow-sm">
-            <table class="table">
+        <div class="leaderboard-card">
+            <table class="table mb-0">
                 <thead>
                     <tr>
-                        <th style="width: 60px;">#</th>
-                        <th>Navn</th>
+                        <th style="width: 80px;">Rank</th>
+                        <th>Deltaker</th>
                         <th class="text-end">Poeng</th>
                     </tr>
                 </thead>
@@ -42,7 +114,10 @@
                     {% for row in leaderboard %}
                     <tr class="{% if loop.first %}rank-1{% endif %}">
                         <td><div class="rank-badge">{{ loop.index }}</div></td>
-                        <td><span class="fw-bold">{{ row[0] }}</span></td>
+                        <td>
+                            <div class="fw-bold">{{ row[0] }}</div>
+                            {% if loop.first %}<small class="text-muted fw-bold" style="font-size: 0.6rem; text-transform: uppercase;">Leader</small>{% endif %}
+                        </td>
                         <td class="points-col">{{ row[1] }}</td>
                     </tr>
                     {% else %}
@@ -52,24 +127,30 @@
             </table>
         </div>
 
-        <p class="refresh-notice">Oppdateres automatisk hvert 5. minutt...</p>
+        <p class="refresh-notice text-uppercase">Neste automatiske oppdatering om et øyeblikk...</p>
         
         <div class="mt-4">
-            <a href="/group/{{ group[2] }}" class="btn btn-outline-custom w-100 text-decoration-none d-block text-center">ENDRE MINE TIPS</a>
+            <a href="/group/{{ group[2] }}" class="btn btn-outline-custom w-100 text-decoration-none d-block text-center shadow-sm">
+                ← ENDRE MINE TIPS
+            </a>
         </div>
     </div>
 
     <script>
         function refreshLeaderboard() {
-            console.log("Sjekker for nye mål...");
             fetch('/api/refresh_data')
                 .then(res => res.json())
                 .then(data => {
-                    location.reload(); 
+                    if (data.status === "OK") {
+                        // Vi kan implementere en sjekk her om data har endret seg 
+                        // før vi reloader for en enda glattere opplevelse.
+                        location.reload(); 
+                    }
                 })
                 .catch(err => console.log("Kunne ikke koble til server"));
         }
-        setInterval(refreshLeaderboard, 300000); // 5 minutter
+        // Oppdaterer hvert 2. minutt i demo-modus for å virke mer "snappy"
+        setInterval(refreshLeaderboard, 120000); 
     </script>
 </body>
 </html>
