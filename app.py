@@ -38,19 +38,19 @@ def calculate_points(u_h, u_a, a_h, a_a):
         return 1 if u_hub == a_hub else 0
     except: return 0
 
-# --- MODUL 4: AUTOMATISK FYLL ---
+# --- MODUL 4: GHOST-SPILLERE ---
 def auto_fill_ghosts(group_id):
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("SELECT COUNT(DISTINCT user_name) FROM bets WHERE group_id = ?", (group_id,))
-        if c.fetchone()[0] < 6:
+        if c.fetchone()[0] < 5:
             names = ["Thomas", "Kari B.", "Petter", "Lise", "Morten"]
-            c.execute("SELECT id FROM fixtures LIMIT 10")
-            match_ids = [row[0] for row in c.fetchall()]
+            c.execute("SELECT id FROM fixtures LIMIT 5")
+            matches = [row[0] for row in c.fetchall()]
             for name in names:
-                for m_id in match_ids:
-                    c.execute("SELECT id FROM bets WHERE user_name = ? AND fixture_id = ?", (name, m_id))
+                for m_id in matches:
+                    c.execute("SELECT id FROM bets WHERE user_name = ? AND group_id = ?", (name, group_id))
                     if not c.fetchone():
                         c.execute("INSERT INTO bets (group_id, user_name, fixture_id, home_score, away_score) VALUES (?,?,?,?,?)",
                                   (group_id, name, m_id, random.randint(0,2), random.randint(0,2)))
@@ -58,7 +58,8 @@ def auto_fill_ghosts(group_id):
         conn.close()
     except: pass
 
-# --- HOVEDRUTER ---
+# --- ALLE DINE SIDER (ROUTES) ---
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -76,7 +77,12 @@ def group_view(group_id):
 def group_admin(group_id):
     return render_template('group_admin.html', group_id=group_id)
 
-# --- API RUTER ---
+@app.route('/admin') # Noen ganger bruker du kanskje bare /admin
+def simple_admin():
+    return render_template('admin.html')
+
+# --- API-FUNKSJONER ---
+
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
     url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&next=15&timezone=Europe/Oslo"
@@ -107,7 +113,7 @@ def update_live_scores():
     conn.close()
     return jsonify({"status": "updated"})
 
-# --- RENDER OPPSTART ---
+# --- START SERVER ---
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
