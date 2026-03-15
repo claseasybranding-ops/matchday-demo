@@ -3,152 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tips | {{ group[1] }}</title>
+    <title>Tips | MatchDay</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-dark: #1a1a1a; --md-bg: #f8f9fa; }
-        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 160px; }
-        
-        /* Navbar matching Leaderboard */
-        .navbar { background-color: white; border-bottom: 2px solid var(--md-red); padding: 15px 0; }
-        .navbar-brand { color: var(--md-dark) !important; letter-spacing: -1px; font-weight: 800; font-size: 1.5rem; }
-
-        .prize-notice {
-            background: white; border-radius: 12px; padding: 15px;
-            margin-bottom: 25px; border-left: 4px solid #FFD700;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-        }
-
-        /* Match Card - Leaderboard Style */
-        .match-card { 
-            background: white; border-radius: 20px; margin-bottom: 15px; padding: 20px; 
-            border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-        
-        .team-section { width: 30%; text-align: center; }
-        .team-logo { width: 40px; height: 40px; object-fit: contain; margin-bottom: 8px; }
-        .team-name { font-size: 0.7rem; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        /* Stepper - Modern & Clean */
-        .score-stepper { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .step-btn { 
-            width: 32px; height: 32px; border: none; background: #f8f9fa; 
-            border-radius: 10px; font-weight: 800; color: var(--md-red);
-            display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-            transition: 0.2s; border: 1px solid #eee;
-        }
-        .step-btn:active { transform: scale(0.9); background: #eee; }
-        .score-val { font-size: 1.5rem; font-weight: 800; color: var(--md-dark); min-width: 25px; text-align: center; }
-
-        .divider { font-weight: 800; color: #ddd; font-size: 1.5rem; margin-top: 35px; }
-
-        /* Floating Input Area */
-        .action-bar {
-            position: fixed; bottom: 0; left: 0; right: 0; background: white;
-            padding: 20px; border-top: 1px solid #eee; box-shadow: 0 -10px 25px rgba(0,0,0,0.05); z-index: 1000;
-        }
-        .name-field { 
-            padding: 15px; border-radius: 14px; border: 2px solid #f1f1f1; 
-            width: 100%; margin-bottom: 12px; font-weight: 700; background: #fdfdfd; 
-        }
-        .btn-save { 
-            background: var(--md-red); color: white; border: none; padding: 18px; 
-            border-radius: 16px; font-weight: 800; width: 100%; text-transform: uppercase;
-            letter-spacing: 1px; box-shadow: 0 4px 15px rgba(204, 0, 0, 0.2);
-        }
+        body { background: #f8f9fa; font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 120px; }
+        .card { border-radius: 20px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .score-input { width: 60px; height: 60px; font-size: 1.5rem; font-weight: 800; text-align: center; border: 2px solid #eee; border-radius: 12px; }
+        .golden-input { width: 100%; padding: 15px; border-radius: 15px; border: 2px solid #cc0000; font-weight: 800; text-align: center; }
+        .btn-save { background: #cc0000; color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; position: fixed; bottom: 20px; left: 0; right: 0; max-width: 440px; margin: auto; }
     </style>
 </head>
 <body>
+    <div class="container mt-4" style="max-width: 480px;">
+        <h2 class="fw-800 text-center mb-4">{{ group[1] }}</h2>
 
-    <nav class="navbar mb-4 shadow-sm text-center">
-        <div class="container d-flex justify-content-center">
-            <a class="navbar-brand" href="/">MATCHDAY<span style="color:var(--md-red)">.</span></a>
-        </div>
-    </nav>
-
-    <div class="container" style="max-width: 480px;">
-        <div class="prize-notice d-flex align-items-center">
-            <span class="me-3" style="font-size: 1.5rem;">🏆</span>
-            <div>
-                <div class="small fw-bold text-muted text-uppercase" style="font-size: 0.6rem;">Premie i runden</div>
-                <div class="fw-bold text-dark">{{ group[5] or 'Ære og berømmelse' }}</div>
-            </div>
-        </div>
-
-        <h6 class="mb-3 fw-800 text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 1px;">Dine Tips</h6>
-        
         {% for k in kamper %}
-        <div class="match-card d-flex justify-content-between align-items-center" data-id="{{ k[0] }}">
-            
-            <div class="team-section">
-                <img src="{{ k[4] }}" class="team-logo">
-                <div class="team-name">{{ k[2] }}</div>
+        <div class="card p-4 text-center match-row" data-id="{{ k[0] }}">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="fw-bold">{{ k[2] }}</div>
+                <div class="d-flex gap-2">
+                    <input type="number" class="score-input h-score" value="0">
+                    <input type="number" class="score-input a-score" value="0">
+                </div>
+                <div class="fw-bold">{{ k[3] }}</div>
             </div>
-
-            <div class="score-stepper">
-                <button class="step-btn" onclick="changeVal(this, 1)">+</button>
-                <div class="score-val h-score">0</div>
-                <button class="step-btn" onclick="changeVal(this, -1)">-</button>
-            </div>
-
-            <div class="divider">:</div>
-
-            <div class="score-stepper">
-                <button class="step-btn" onclick="changeVal(this, 1)">+</button>
-                <div class="score-val b-score">0</div>
-                <button class="step-btn" onclick="changeVal(this, -1)">-</button>
-            </div>
-
-            <div class="team-section">
-                <img src="{{ k[5] }}" class="team-logo">
-                <div class="team-name">{{ k[3] }}</div>
-            </div>
-
         </div>
         {% endfor %}
-    </div>
 
-    <div class="action-bar">
-        <div class="container" style="max-width: 440px;">
-            <input type="text" id="user-name-field" class="name-field" placeholder="SKRIV DITT NAVN...">
-            <button class="btn-save" onclick="saveTips()">Lagre alle tips 🚀</button>
+        <div class="card p-4">
+            <label class="fw-bold small text-uppercase text-muted d-block text-center mb-2">TIE-BREAKER: GOLDEN GOAL</label>
+            <input type="number" id="golden-goal" class="golden-input" placeholder="Hvilket minutt scores første mål?">
         </div>
+
+        {% if questions %}
+        <div class="card p-4">
+            <h6 class="fw-800 mb-3">TILLEGGSSVAR</h6>
+            {% for q in questions %}
+            <div class="mb-3 q-row" data-qid="{{ q[0] }}">
+                <p class="small fw-bold mb-2">{{ q[1] }}</p>
+                <div class="btn-group w-100">
+                    <input type="radio" class="btn-check" name="q{{ q[0] }}" id="y{{ q[0] }}" value="JA">
+                    <label class="btn btn-outline-dark fw-bold" for="y{{ q[0] }}">JA</label>
+                    <input type="radio" class="btn-check" name="q{{ q[0] }}" id="n{{ q[0] }}" value="NEI" checked>
+                    <label class="btn btn-outline-dark fw-bold" for="n{{ q[0] }}">NEI</label>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <input type="text" id="user-name" class="form-control p-3 fw-bold mb-4" placeholder="DITT NAVN..." style="border-radius:15px;">
+        <button class="btn-save shadow-lg" onclick="sendTips()">SEND TIPS 🚀</button>
     </div>
 
     <script>
-        function changeVal(btn, delta) {
-            const display = btn.parentElement.querySelector('.score-val');
-            let current = parseInt(display.innerText);
-            let newVal = current + delta;
-            if (newVal < 0) newVal = 0;
-            display.innerText = newVal;
-        }
-
-        function saveTips() {
-            const userName = document.getElementById('user-name-field').value;
-            if (!userName) return alert("Vennligst skriv navnet ditt!");
-
-            const tipsData = [];
-            document.querySelectorAll('.match-card').forEach(card => {
-                tipsData.push({
-                    match_id: card.getAttribute('data-id'),
-                    h: card.querySelector('.h-score').innerText,
-                    a: card.querySelector('.b-score').innerText
-                });
+        function sendTips() {
+            const name = document.getElementById('user-name').value;
+            if(!name) return alert("Navn mangler!");
+            const tips = [];
+            document.querySelectorAll('.match-row').forEach(row => {
+                tips.push({ match_id: row.dataset.id, h: row.querySelector('.h-score').value, a: row.querySelector('.a-score').value });
+            });
+            const extras = {};
+            document.querySelectorAll('.q-row').forEach(row => {
+                extras[row.dataset.qid] = row.querySelector('input:checked').value;
             });
 
             fetch('/api/submit_tips', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    group_id: '{{ group[2] }}',
-                    user_name: userName,
-                    tips: tipsData
-                })
-            }).then(() => {
-                window.location.href = "/group/{{ group[2] }}/leaderboard";
-            });
+                body: JSON.stringify({ group_id: '{{ group[2] }}', user_name: name, tips: tips, golden_goal: document.getElementById('golden-goal').value, extras: extras })
+            }).then(() => window.location.href = "/group/{{ group[2] }}/leaderboard");
         }
     </script>
 </body>
