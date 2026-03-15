@@ -9,30 +9,34 @@
     <style>
         :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-card: #ffffff; --md-border: #e2e8f0; }
         body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 60px; }
-        .navbar-custom { background: white; padding: 15px 0; border-bottom: 1px solid var(--md-border); margin-bottom: 30px; }
-        .logo-brand { font-weight: 800; font-size: 1.6rem; color: var(--md-red); text-decoration: none; }
-        .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 12px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .btn-main { background: var(--md-red); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; }
-        .investor-drawer { background: #fff1f2; border: 1px dashed var(--md-red); border-radius: 12px; padding: 20px; display: none; margin-top: 15px; }
+        
+        .navbar-custom { background: white; padding: 15px 0; border-bottom: 2px solid var(--md-red); margin-bottom: 30px; }
+        .logo-brand { font-weight: 800; font-size: 1.5rem; color: #1a1a1a; text-decoration: none; }
+        
+        .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .btn-main { background: var(--md-red); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+        
+        .investor-drawer { background: #fff1f2; border: 2px dashed var(--md-red); border-radius: 16px; padding: 25px; display: none; margin-top: 20px; }
+        .table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #888; border-bottom: 2px solid #eee; }
     </style>
 </head>
 <body>
 
-<nav class="navbar-custom">
+<nav class="navbar-custom shadow-sm">
     <div class="container d-flex justify-content-between align-items-center">
-        <a href="/" class="logo-brand">MatchDay.</a>
-        <button class="btn btn-sm btn-outline-danger fw-bold" onclick="toggleInvestor()">INVESTOR MODUS</button>
+        <a href="/" class="logo-brand">MATCHDAY<span style="color:var(--md-red)">.</span> <small class="text-muted fw-bold" style="font-size: 0.7rem;">SYSTEM ADMIN</small></a>
+        <button class="btn btn-sm btn-dark fw-bold px-3" style="border-radius: 8px;" onclick="toggleInvestor()">INVESTOR MODUS</button>
     </div>
 </nav>
 
 <div class="container" style="max-width: 900px;">
     
     <div class="card-custom">
-        <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Opprett ny kunde</label>
+        <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Opprett ny kunde / Supporterklubb</label>
         <div class="row g-2">
-            <div class="col-md-5"><input type="text" id="new-group-name" class="form-control" placeholder="Supporterklubb navn"></div>
-            <div class="col-md-4"><input type="text" id="new-admin-name" class="form-control" placeholder="Admin navn"></div>
-            <div class="col-md-3"><button class="btn-main w-100" onclick="createGroup()">Opprett nå</button></div>
+            <div class="col-md-5"><input type="text" id="new-group-name" class="form-control form-control-lg" placeholder="Navn på klubb" style="font-size: 0.9rem; border-radius: 10px;"></div>
+            <div class="col-md-4"><input type="text" id="new-admin-name" class="form-control form-control-lg" placeholder="Navn på Admin" style="font-size: 0.9rem; border-radius: 10px;"></div>
+            <div class="col-md-3"><button class="btn-main w-100 h-100" onclick="createGroup()">Opprett 🚀</button></div>
         </div>
     </div>
 
@@ -40,28 +44,32 @@
         <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Aktive Supporterklubber</label>
         {% for g in grupper %}
         <div class="d-flex justify-content-between align-items-center border-bottom py-3">
-            <div><div class="fw-bold">{{ g[1] }}</div><small class="text-muted">URL: /group/{{ g[2] }}</small></div>
-            <a href="/group/{{ g[2] }}/admin" class="btn btn-sm btn-outline-dark fw-bold">KONTROLLPANEL</a>
+            <div>
+                <div class="fw-800" style="font-size: 1.1rem;">{{ g[1] }}</div>
+                <small class="text-muted fw-bold">ID: {{ g[2] }}</small>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/group/{{ g[2] }}" target="_blank" class="btn btn-sm btn-outline-secondary fw-bold">SE SIDE</a>
+                <a href="/group/{{ g[2] }}/admin" class="btn btn-sm btn-outline-dark fw-bold">KONTROLLPANEL</a>
+            </div>
         </div>
-        {% else %}
-        <p class="text-center text-muted m-0 py-3">Ingen aktive grupper ennå.</p>
         {% endfor %}
     </div>
 
     <div class="card-custom">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <label class="small fw-bold text-muted text-uppercase m-0">Kamp-lageret (Buffé)</label>
-            <button class="btn btn-sm btn-dark" onclick="importLeague('PL')">Hent Premier League</button>
+            <label class="small fw-bold text-muted text-uppercase m-0">Globalt Kamp-lager (PL)</label>
+            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="importLeague('PL')">Hent ferske kamper</button>
         </div>
-        <div class="table-responsive rounded border">
-            <table class="table table-hover m-0">
-                <thead class="table-light"><tr><th class="small">Dato</th><th class="small">Kamp</th><th class="small text-end">Status</th></tr></thead>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead><tr><th>Dato</th><th>Kamp</th><th class="text-end">Status</th></tr></thead>
                 <tbody>
                     {% for k in kamper %}
                     <tr>
-                        <td class="small text-muted">{{ k[6][:10] if k[6] else 'TBA' }}</td>
-                        <td class="small fw-bold">{{ k[2] }} - {{ k[3] }}</td>
-                        <td class="small text-end"><span class="badge bg-light text-success border">Klar</span></td>
+                        <td class="small text-muted">{{ k[6] }}</td>
+                        <td class="fw-bold">{{ k[2] }} - {{ k[3] }}</td>
+                        <td class="text-end"><span class="badge bg-light text-success border">Klar for spill</span></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -70,21 +78,25 @@
     </div>
 
     <div id="investor-panel" class="investor-drawer">
-        <h6 class="fw-bold text-danger mb-3 text-uppercase">Demo-kontroll: Push resultater</h6>
-        <div class="bg-white rounded border p-2 mb-3">
-            <table class="table table-sm table-borderless m-0">
+        <div class="text-center mb-4">
+            <h5 class="fw-800 text-danger mb-1">DEMO-KONTROLL: PUSH LIVE DATA</h5>
+            <p class="small text-muted">Simuler mål i sanntid for å imponere investorer</p>
+        </div>
+        
+        <div class="bg-white rounded-4 border p-3 mb-4">
+            <table class="table table-borderless m-0 align-middle">
                 <tbody id="push-list">
                     {% for k in kamper %}
                     <tr data-id="{{ k[0] }}">
-                        <td class="small">{{ k[2] }} - {{ k[3] }}</td>
-                        <td><input type="number" class="h-score form-control form-control-sm" style="width:55px" value="{{ k[8] or 0 }}"></td>
-                        <td><input type="number" class="b-score form-control form-control-sm" style="width:55px" value="{{ k[9] or 0 }}"></td>
+                        <td class="fw-bold small">{{ k[2] }} - {{ k[3] }}</td>
+                        <td><input type="number" class="h-score form-control form-control-sm text-center fw-bold" style="width:60px; border-radius: 8px;" value="{{ k[8] or 0 }}"></td>
+                        <td><input type="number" class="b-score form-control form-control-sm text-center fw-bold" style="width:60px; border-radius: 8px;" value="{{ k[9] or 0 }}"></td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <button class="btn btn-danger w-100 fw-bold" onclick="pushResults()">PUSH RESULTATER</button>
+        <button class="btn btn-danger w-100 py-3 fw-800 shadow" style="border-radius: 14px;" onclick="pushResults()">OPPDATER ALLE RESULTATER NÅ ⚡</button>
     </div>
 </div>
 
@@ -97,36 +109,19 @@
     function createGroup() {
         const nameVal = document.getElementById('new-group-name').value;
         const adminVal = document.getElementById('new-admin-name').value;
-        
-        if(!nameVal || !adminVal) return alert("Vennligst fyll ut begge feltene.");
+        if(!nameVal || !adminVal) return alert("Fyll ut begge feltene.");
         
         fetch('/api/create_group', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                name: nameVal, 
-                admin_name: adminVal
-            })
+            body: JSON.stringify({ name: nameVal, admin_name: adminVal })
         })
         .then(res => res.json())
-        .then(data => { 
-            // Endret fra "success" til "Suksess" for å matche Python-koden
-            if(data.status === "Suksess") {
-                location.reload(); 
-            } else {
-                alert(data.status);
-            }
-        })
-        .catch(err => alert("Noe gikk galt: " + err));
+        .then(data => { location.reload(); });
     }
 
     function importLeague(code) {
-        fetch('/api/import_league/' + code)
-        .then(res => res.json())
-        .then(data => { 
-            alert(data.status); 
-            location.reload(); 
-        });
+        fetch('/api/import_league/' + code).then(() => location.reload());
     }
 
     function pushResults() {
@@ -142,13 +137,7 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({scores: sc})
-        }).then(res => res.json())
-        .then(data => { 
-            if(data.status === "Suksess") {
-                alert("Resultater pushet og poeng beregnet!"); 
-                location.reload(); 
-            }
-        });
+        }).then(() => { alert("Resultater pushet!"); location.reload(); });
     }
 </script>
 </body>
