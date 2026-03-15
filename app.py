@@ -15,12 +15,10 @@ API_KEY = '58f8589c07824c2495869fa6b7b815e5'
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    # Tabell for kamper
     c.execute('''CREATE TABLE IF NOT EXISTS fixtures
                  (id INTEGER PRIMARY KEY, league_id INTEGER, home_team TEXT, 
                   away_team TEXT, home_logo TEXT, away_logo TEXT, 
                   date TEXT, status TEXT, home_actual INTEGER, away_actual INTEGER)''')
-    # Tabell for tips
     c.execute('''CREATE TABLE IF NOT EXISTS bets
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id TEXT, user_name TEXT, 
                   fixture_id INTEGER, home_score INTEGER, away_score INTEGER, points INTEGER DEFAULT 0)''')
@@ -40,7 +38,7 @@ def calculate_points(u_h, u_a, a_h, a_a):
         return 1 if u_hub == a_hub else 0
     except: return 0
 
-# --- MODUL 4: AUTOMATISK FYLL AV DELTAKERE ---
+# --- MODUL 4: AUTOMATISK FYLL ---
 def auto_fill_ghosts(group_id):
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -55,12 +53,30 @@ def auto_fill_ghosts(group_id):
                     c.execute("SELECT id FROM bets WHERE user_name = ? AND fixture_id = ?", (name, m_id))
                     if not c.fetchone():
                         c.execute("INSERT INTO bets (group_id, user_name, fixture_id, home_score, away_score) VALUES (?,?,?,?,?)",
-                                  (group_id, name, m_id, random.randint(0,3), random.randint(0,3)))
+                                  (group_id, name, m_id, random.randint(0,2), random.randint(0,2)))
         conn.commit()
         conn.close()
-    except Exception as e: print(f"Ghost error: {e}")
+    except: pass
 
-# --- MODUL 2: API-IMPORT ---
+# --- HOVEDRUTER ---
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/super_admin_dashboard')
+def super_admin():
+    return render_template('super_admin.html')
+
+@app.route('/group/<group_id>')
+def group_view(group_id):
+    auto_fill_ghosts(group_id)
+    return render_template('group_view.html', group_id=group_id)
+
+@app.route('/group/<group_id>/admin')
+def group_admin(group_id):
+    return render_template('group_admin.html', group_id=group_id)
+
+# --- API RUTER ---
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
     url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&next=15&timezone=Europe/Oslo"
@@ -71,47 +87,27 @@ def import_league(league_id):
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         for f in data:
-            c.execute("""INSERT OR REPLACE INTO fixtures 
-                         (id, league_id, home_team, away_team, home_logo, away_logo, date, status) 
-                         VALUES (?,?,?,?,?,?,?,?)""",
-                      (f['fixture']['id'], league_id, f['teams']['home']['name'], 
-                       f['teams']['away']['name'], f['teams']['home']['logo'], 
-                       f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
+            c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
+                      (f['fixture']['id'], league_id, f['teams']['home']['name'], f['teams']['away']['name'], f['teams']['home']['logo'], f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
         conn.commit()
         conn.close()
-        return jsonify({"status": f"Importerte {len(data)} kamper."})
+        return jsonify({"status": "success", "count": len(data)})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
-# --- MODUL 5: LIVE UPDATES ---
 @app.route('/api/update_live_scores')
 def update_live_scores():
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("""SELECT b.id, b.home_score, b.away_score, f.home_actual, f.away_actual 
-                     FROM bets b JOIN fixtures f ON b.fixture_id = f.id 
-                     WHERE f.home_actual IS NOT NULL""")
-        for b_id, u_h, u_a, a_h, a_a in c.fetchall():
-            pts = calculate_points(u_h, u_a, a_h, a_a)
-            c.execute("UPDATE bets SET points = ? WHERE id = ?", (pts, b_id))
-        conn.commit()
-        conn.close()
-        return jsonify({"status": "success"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT b.id, b.home_score, b.away_score, f.home_actual, f.away_actual FROM bets b JOIN fixtures f ON b.fixture_id = f.id WHERE f.home_actual IS NOT NULL")
+    for b_id, u_h, u_a, a_h, a_a in c.fetchall():
+        pts = calculate_points(u_h, u_a, a_h, a_a)
+        c.execute("UPDATE bets SET points = ? WHERE id = ?", (pts, b_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "updated"})
 
-# --- VISNING ---
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/group/<group_id>')
-def group_view(group_id):
-    auto_fill_ghosts(group_id)
-    return render_template('group_view.html', group_id=group_id)
-
-# --- SIKKER OPPSTART ---
+# --- RENDER OPPSTART ---
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
