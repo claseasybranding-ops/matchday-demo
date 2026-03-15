@@ -3,78 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin | MatchDay</title>
+    <title>Admin | {{ group[1] }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { background: #f8f9fa; font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
-        .admin-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
-        .smart-btn { background: #f1f1f1; border: none; padding: 10px 15px; border-radius: 10px; font-weight: 700; margin: 5px; font-size: 0.8rem; }
-        .smart-btn:hover { background: #e0e0e0; }
-        .btn-save { background: #cc0000; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 800; width: 100%; margin-top: 20px; }
+        :root { --md-red: #cc0000; --md-bg: #f8f9fa; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
+        .admin-card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
+        .match-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .smart-btn { background: #f1f1f1; border: none; padding: 8px 12px; border-radius: 10px; font-weight: 700; margin: 5px 2px; font-size: 0.75rem; }
+        .btn-save { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; margin-top: 20px; text-transform: uppercase; }
+        .match-list { max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 12px; padding: 10px; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="admin-card">
-        <h3 class="fw-800 mb-4">Oppsett for {{ group[1] }}</h3>
-
+        <h2 class="fw-800 mb-4 text-center">Oppsett: {{ group[1] }}</h2>
+        
         <div class="mb-4">
-            <label class="fw-bold small text-uppercase text-muted">1. Velg Modus</label>
-            <select id="mode" class="form-select fw-bold">
+            <label class="fw-bold small text-uppercase text-muted">Spillmodus</label>
+            <select id="mode" class="form-select fw-bold" onchange="toggleView()">
                 <option value="multi" {% if group[4] == 'multi' %}selected{% endif %}>Multi Game (Flere kamper)</option>
                 <option value="single" {% if group[4] == 'single' %}selected{% endif %}>Single Game (Supporter-modus)</option>
             </select>
         </div>
 
         <div class="mb-4">
-            <label class="fw-bold small text-uppercase text-muted">2. Velg kamp</label>
-            <select id="match-select" class="form-select">
-                {% for k in kamper %}
-                <option value="{{ k[0] }}" {% if k[0] in valgte %}selected{% endif %}>{{ k[2] }} - {{ k[3] }}</option>
-                {% endfor %}
-            </select>
+            <label class="fw-bold small text-uppercase text-muted">Premie i denne runden</label>
+            <input type="text" id="prize" class="form-control fw-bold" value="{{ group[5] or '' }}" placeholder="F.eks: En signert drakt">
         </div>
 
-        {% if group[4] == 'single' %}
-        <div class="mb-4 p-3" style="background: #fdfdfd; border: 2px dashed #eee; border-radius: 15px;">
-            <label class="fw-bold small text-uppercase text-muted d-block mb-2">3. Legg til smarte spørsmål</label>
-            <button class="smart-btn" onclick="addQ('Blir det straffespark?')">+ Straffe?</button>
-            <button class="smart-btn" onclick="addQ('Blir det rødt kort?')">+ Rødt kort?</button>
-            <button class="smart-btn" onclick="addQ('Leder hjemmelaget til pause?')">+ Pause-leder?</button>
-            
-            <div class="mt-3">
-                <label class="small fw-bold">Scorer spesifikk spiller?</label>
-                <div class="d-flex gap-2">
-                    <select id="player-select" class="form-select form-select-sm">
-                        {% for p in players %}
-                        <option value="Scorer {{ p.name }} ({{ p.team }})?">{{ p.name }} ({{ p.team }})</option>
-                        {% endfor %}
-                    </select>
-                    <button class="btn btn-sm btn-dark fw-bold" onclick="addQ(document.getElementById('player-select').value)">LEGG TIL</button>
+        <div class="mb-4">
+            <label class="fw-bold small text-uppercase text-muted">Velg kamper</label>
+            <div class="match-list" id="match-container">
+                {% for k in kamper %}
+                <div class="match-row">
+                    <input type="checkbox" class="match-check me-2" value="{{ k[0] }}" {% if k[0] in valgte %}checked{% endif %}>
+                    <span class="small fw-bold">{{ k[2] }} - {{ k[3] }}</span>
                 </div>
+                {% endfor %}
             </div>
         </div>
-        {% endif %}
 
-        <button class="btn-save" onclick="saveAll()">LAGRE OG AKTIVER 🚀</button>
+        <div id="single-extras" style="display: {% if group[4] == 'single' %}block{% else %}none{% endif %}; background: #fdfdfd; padding: 15px; border-radius: 15px; border: 2px dashed #eee;">
+            <label class="fw-bold small text-uppercase text-muted d-block mb-2">Tie-breakers (Kun for Single Game)</label>
+            <button class="smart-btn" onclick="addQ('Blir det straffespark?')">+ Straffe?</button>
+            <button class="smart-btn" onclick="addQ('Blir det rødt kort?')">+ Rødt kort?</button>
+            
+            <div class="mt-3">
+                <select id="player-select" class="form-select form-select-sm mb-2">
+                    {% for p in players %}<option value="Scorer {{ p.name }}?">{{ p.name }} ({{ p.team }})</option>{% endfor %}
+                </select>
+                <button class="btn btn-sm btn-dark w-100 fw-bold" onclick="addQ(document.getElementById('player-select').value)">LEGG TIL SPILLER-MÅL</button>
+            </div>
+            <div id="q-list" class="mt-2">
+                {% for q in questions %}<div class="small fw-bold text-success">✓ {{ q[1] }}</div>{% endfor %}
+            </div>
+        </div>
+
+        <button class="btn-save shadow" onclick="saveAll()">LAGRE OG GÅ TIL TABELL 🚀</button>
     </div>
 
     <script>
+        function toggleView() {
+            const mode = document.getElementById('mode').value;
+            document.getElementById('single-extras').style.display = (mode === 'single') ? 'block' : 'none';
+        }
+
         function saveAll() {
             const mode = document.getElementById('mode').value;
-            const mid = document.getElementById('match-select').value;
+            const prize = document.getElementById('prize').value;
+            const matches = [];
+            document.querySelectorAll('.match-check:checked').forEach(cb => matches.push(cb.value));
+
             fetch('/api/update_group_settings', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ group_id_str: '{{ group[2] }}', mode: mode, matches: [mid] })
-            }).then(() => window.location.reload());
+                body: JSON.stringify({ group_id_str: '{{ group[2] }}', mode: mode, prize: prize, matches: matches })
+            }).then(() => {
+                window.location.href = "/group/{{ group[2] }}/leaderboard";
+            });
         }
 
         function addQ(text) {
+            const mid = document.querySelector('.match-check:checked')?.value;
+            if(!mid) return alert("Velg en kamp først!");
             fetch('/api/add_smart_question', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ group_id_str: '{{ group[2] }}', match_id: document.getElementById('match-select').value, text: text })
-            }).then(() => alert("Spørsmål lagt til!"));
+                body: JSON.stringify({ group_id_str: '{{ group[2] }}', match_id: mid, text: text })
+            }).then(() => window.location.reload());
         }
     </script>
 </body>
