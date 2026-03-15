@@ -27,17 +27,7 @@ def init_db():
 
 init_db()
 
-# --- LOGIKK: POENG OG GHOST-SPILLERE ---
-def calculate_points(u_h, u_a, a_h, a_a):
-    try:
-        if a_h is None or a_a is None: return 0
-        u_h, u_a, a_h, a_a = int(u_h), int(u_a), int(a_h), int(a_a)
-        if u_h == a_h and u_a == a_a: return 3
-        u_hub = 'H' if u_h > u_a else ('B' if u_h < u_a else 'U')
-        a_hub = 'H' if a_h > a_a else ('B' if a_h < a_a else 'U')
-        return 1 if u_hub == a_hub else 0
-    except: return 0
-
+# --- MODUL 4: GHOST-SPILLERE ---
 def auto_fill_ghosts(group_id):
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -57,7 +47,7 @@ def auto_fill_ghosts(group_id):
         conn.close()
     except: pass
 
-# --- ALLE DINE SIDER (ROUTES) ---
+# --- RUTENE (Her kobler vi nettsidene dine nøyaktig slik de heter på bildet) ---
 
 @app.route('/')
 def index():
@@ -73,18 +63,18 @@ def group_view(group_id):
     return render_template('group_view.html', group_id=group_id)
 
 @app.route('/group/<group_id>/admin')
-def group_admin(group_id):
+def group_admin_route(group_id):
     return render_template('group_admin.html', group_id=group_id)
 
 @app.route('/admin')
-def admin_page():
+def admin_simple():
     return render_template('admin.html')
 
-# --- API-FUNKSJONER ---
+# --- API (Henting av data) ---
 
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
-    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&next=15&timezone=Europe/Oslo"
+    url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&next=15"
     headers = {'x-apisports-key': API_KEY, 'x-rapidapi-host': 'v3.football.api-sports.io'}
     try:
         res = requests.get(url, headers=headers).json()
@@ -100,19 +90,7 @@ def import_league(league_id):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
-@app.route('/api/update_live_scores')
-def update_live_scores():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT b.id, b.home_score, b.away_score, f.home_actual, f.away_actual FROM bets b JOIN fixtures f ON b.fixture_id = f.id WHERE f.home_actual IS NOT NULL")
-    for b_id, u_h, u_a, a_h, a_a in c.fetchall():
-        pts = calculate_points(u_h, u_a, a_h, a_a)
-        c.execute("UPDATE bets SET points = ? WHERE id = ?", (pts, b_id))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "updated"})
-
-# --- START SERVER (SIKKER FOR RENDER) ---
+# --- RENDER OPPSTART ---
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
