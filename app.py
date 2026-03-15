@@ -16,15 +16,19 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
+    # Kamper - Her må rekkefølgen stemme med k[2], k[3] osv i HTML
     c.execute('''CREATE TABLE IF NOT EXISTS fixtures
                  (id INTEGER PRIMARY KEY, league_id INTEGER, home_team TEXT, 
                   away_team TEXT, home_logo TEXT, away_logo TEXT, 
                   date TEXT, status TEXT, home_actual INTEGER, away_actual INTEGER)''')
+    # Grupper
     c.execute('''CREATE TABLE IF NOT EXISTS groups
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_name TEXT, group_id_str TEXT, 
                   admin_name TEXT, mode TEXT DEFAULT 'multi', prize_info TEXT)''')
+    # Valgte kamper
     c.execute('''CREATE TABLE IF NOT EXISTS group_matches
                  (group_id INTEGER, fixture_id INTEGER)''')
+    # Tips
     c.execute('''CREATE TABLE IF NOT EXISTS bets
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id_str TEXT, user_name TEXT, 
                   fixture_id INTEGER, home_score INTEGER, away_score INTEGER, points INTEGER DEFAULT 0)''')
@@ -40,7 +44,7 @@ def calc_points(u_h, u_a, a_h, a_a):
     a_res = "H" if int(a_h) > int(a_a) else ("B" if int(a_h) < int(a_a) else "U")
     return 1 if u_res == a_res else 0
 
-# --- AUTOMATISK LIVE-OPPDATERING (Kalles av group_view.html) ---
+# --- AUTOMATIKK: LIVE SCORE OPPDATERING ---
 @app.route('/api/update_live_scores')
 def update_live_scores():
     url = "https://v3.football.api-sports.io/fixtures?league=39&live=all"
@@ -72,6 +76,7 @@ def super_admin():
     c = conn.cursor()
     c.execute("SELECT id, group_name, group_id_str, admin_name FROM groups")
     grupper = c.fetchall()
+    # Henter de 20 nyeste kampene så lista ikke er tom ved refresh
     c.execute("SELECT * FROM fixtures ORDER BY date DESC LIMIT 20")
     kamper = c.fetchall()
     conn.close()
@@ -83,9 +88,13 @@ def group_view(group_id_str):
     c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
-    c.execute("SELECT f.* FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id WHERE gm.group_id = ?", (group[0],))
+    # Join for å hente kamper valgt av admin
+    c.execute("""SELECT f.* FROM fixtures f 
+                 JOIN group_matches gm ON f.id = gm.fixture_id 
+                 WHERE gm.group_id = ?""", (group[0],))
     kamper = c.fetchall()
-    c.execute("SELECT user_name, SUM(points) as total FROM bets WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC", (group_id_str,))
+    c.execute("""SELECT user_name, SUM(points) as total FROM bets 
+                 WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC""", (group_id_str,))
     leaderboard = c.fetchall()
     conn.close()
     return render_template('group_view.html', group_id=group_id_str, group=group, kamper=kamper, leaderboard=leaderboard)
@@ -106,19 +115,26 @@ def group_admin(group_id_str):
 # --- API ---
 @app.route('/api/import_league/<code>')
 def import_league(code):
-    l_id = 39 
+    l_id = 39 # PL
+    # Vi henter 20 kommende kamper UTEN sesong-filter for å unngå 0 resultater
     url = f"https://v3.football.api-sports.io/fixtures?league={l_id}&next=20"
     headers = {'x-apisports-key': API_KEY}
-    res = requests.get(url, headers=headers).json()
-    fixtures = res.get('response', [])
-    conn = get_db()
-    c = conn.cursor()
-    for f in fixtures:
-        c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
-                  (f['fixture']['id'], l_id, f['teams']['home']['name'], f['teams']['away']['name'], f['teams']['home']['logo'], f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "Suksess"})
+    try:
+        res = requests.get(url, headers=headers).json()
+        fixtures = res.get('response', [])
+        conn = get_db()
+        c = conn.cursor()
+        for f in fixtures:
+            c.execute("""INSERT OR REPLACE INTO fixtures 
+                (id, league_id, home_team, away_team, home_logo, away_logo, date, status) 
+                VALUES (?,?,?,?,?,?,?,?)""",
+                (f['fixture']['id'], l_id, f['teams']['home']['name'], f['teams']['away']['name'],
+                 f['teams']['home']['logo'], f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "Suksess"})
+    except:
+        return jsonify({"status": "Feil"})
 
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
