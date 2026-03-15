@@ -27,7 +27,7 @@ def init_db():
 
 init_db()
 
-# --- MODUL 5: POENG-LOGIKK ---
+# --- LOGIKK: POENG OG GHOST-SPILLERE ---
 def calculate_points(u_h, u_a, a_h, a_a):
     try:
         if a_h is None or a_a is None: return 0
@@ -38,7 +38,6 @@ def calculate_points(u_h, u_a, a_h, a_a):
         return 1 if u_hub == a_hub else 0
     except: return 0
 
-# --- MODUL 4: GHOST-SPILLERE ---
 def auto_fill_ghosts(group_id):
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -77,8 +76,8 @@ def group_view(group_id):
 def group_admin(group_id):
     return render_template('group_admin.html', group_id=group_id)
 
-@app.route('/admin') # Noen ganger bruker du kanskje bare /admin
-def simple_admin():
+@app.route('/admin')
+def admin_page():
     return render_template('admin.html')
 
 # --- API-FUNKSJONER ---
@@ -113,7 +112,7 @@ def update_live_scores():
     conn.close()
     return jsonify({"status": "updated"})
 
-# --- START SERVER ---
+# --- START SERVER (SIKKER FOR RENDER) ---
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
