@@ -2,13 +2,12 @@ import os
 import sqlite3
 import requests
 from flask import Flask, render_template, request, jsonify
-from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "matchday_secret_key"
 
 DB_PATH = 'matchday_pro.db'
-# Din ekte nøkkel fra e-posten:
+# Nøkkelen din fra e-posten i går:
 API_KEY = '58f8589c07824c2495869fa6b7b815e5' 
 
 def get_db():
@@ -18,6 +17,7 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
+    # Vi bruker samme tabellstruktur, men fyller den med data fra Daniel
     c.execute('''CREATE TABLE IF NOT EXISTS fixtures
                  (id INTEGER PRIMARY KEY, league_id TEXT, home_team TEXT, 
                   away_team TEXT, home_logo TEXT, away_logo TEXT, 
@@ -46,11 +46,11 @@ def super_admin():
     conn.close()
     return render_template('super_admin.html', grupper=grupper, kamper=kamper)
 
-# --- NY IMPORT-FUNKSJON TILPASSET DIN EKTE API-NØKKEL ---
 @app.route('/api/import_league/<code>')
 def import_league(code):
-    # Football-data.org bruker 'PL' for Premier League
+    # Denne URL-en er spesifikk for football-data.org (Premier League = PL)
     url = "https://api.football-data.org/v4/competitions/PL/matches"
+    # Her bruker vi 'X-Auth-Token' slik Daniel beskrev i mailen
     headers = {'X-Auth-Token': API_KEY}
     
     try:
@@ -63,15 +63,14 @@ def import_league(code):
         count = 0
         
         for m in matches:
-            # Vi henter kamper som er planlagt (SCHEDULED) eller som spilles i dag
-            if m['status'] in ['SCHEDULED', 'TIMED', 'LIVE']:
+            # Vi henter bare kamper som ikke er ferdigspilt (SCHEDULED eller TIMED)
+            if m['status'] in ['SCHEDULED', 'TIMED']:
                 mid = m['id']
                 home = m['homeTeam']['name']
                 away = m['awayTeam']['name']
-                # Football-data gir ofte ikke direkte bilde-URL i denne pakken, 
-                # så vi bruker en placeholder hvis logo mangler
-                h_logo = m['homeTeam'].get('crest', 'https://via.placeholder.com/50')
-                a_logo = m['awayTeam'].get('crest', 'https://via.placeholder.com/50')
+                # Logoer/Crests fra Football-Data
+                h_logo = m['homeTeam'].get('crest', '')
+                a_logo = m['awayTeam'].get('crest', '')
                 m_date = m['utcDate']
                 
                 c.execute("""INSERT OR REPLACE INTO fixtures 
@@ -82,9 +81,11 @@ def import_league(code):
             
         conn.commit()
         conn.close()
-        return jsonify({"status": f"Suksess! Hentet {count} kamper fra Football-Data.org"})
+        return jsonify({"status": f"Suksess! Hentet {count} kamper fra ny kilde."})
     except Exception as e:
-        return jsonify({"status": f"Feil ved henting: {str(e)}"})
+        return jsonify({"status": f"Feil: {str(e)}"})
+
+# --- STANDARD FUNKSJONALITET ---
 
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
