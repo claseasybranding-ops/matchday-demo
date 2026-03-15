@@ -21,6 +21,29 @@ def format_date(iso_date):
         return dt.strftime("%d.%m kl %H:%M")
     except: return iso_date
 
+def init_db():
+    conn = get_db(); c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS fixtures
+                 (id INTEGER PRIMARY KEY, league_id TEXT, home_team TEXT, 
+                  away_team TEXT, home_logo TEXT, away_logo TEXT, 
+                  date TEXT, status TEXT, home_actual INTEGER, away_actual INTEGER)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS groups
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, group_name TEXT, group_id_str TEXT, 
+                  admin_name TEXT, mode TEXT DEFAULT 'multi', prize_info TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS group_matches
+                 (group_id INTEGER, fixture_id INTEGER)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS bets
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id_str TEXT, user_name TEXT, 
+                  fixture_id INTEGER, home_score INTEGER, away_score INTEGER, points INTEGER DEFAULT 0)''')
+    conn.commit(); conn.close()
+
+init_db()
+
+# --- SIDER ---
+
+@app.route('/')
+def index(): return render_template('index.html')
+
 @app.route('/super_admin_dashboard')
 def super_admin():
     conn = get_db(); c = conn.cursor()
@@ -59,7 +82,6 @@ def group_view(group_id_str):
     conn.close()
     return render_template('group_view.html', group_id=group_id_str, group=group, kamper=kamper)
 
-# --- NY SIDE: LEADERBOARD ---
 @app.route('/group/<group_id_str>/leaderboard')
 def leaderboard(group_id_str):
     conn = get_db(); c = conn.cursor()
@@ -71,24 +93,7 @@ def leaderboard(group_id_str):
     conn.close()
     return render_template('leaderboard.html', group=group, leaderboard=rows)
 
-@app.route('/api/submit_tips', methods=['POST'])
-def submit_tips():
-    data = request.get_json()
-    conn = get_db(); c = conn.cursor()
-    for t in data['tips']:
-        c.execute("INSERT OR REPLACE INTO bets (group_id_str, user_name, fixture_id, home_score, away_score) VALUES (?,?,?,?,?)",
-                  (data['group_id'], data['user_name'], t['match_id'], t['h'], t['a']))
-    conn.commit(); conn.close()
-    return jsonify({"status": "Suksess"})
-
-# --- (Resten av API-ene som før: import_league, create_group, toggle_match, update_group_settings) ---
-@app.route('/api/update_group_settings', methods=['POST'])
-def update_settings():
-    data = request.get_json()
-    conn = get_db(); c = conn.cursor()
-    c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data['mode'], data['prize_info'], data['group_id']))
-    conn.commit(); conn.close()
-    return jsonify({"status": "OK"})
+# --- API ---
 
 @app.route('/api/import_league/<code>')
 def import_league(code):
@@ -105,14 +110,23 @@ def import_league(code):
     conn.commit(); conn.close()
     return jsonify({"status": "Suksess"})
 
-@app.route('/api/create_group', methods=['POST'])
-def create_group():
+@app.route('/api/submit_tips', methods=['POST'])
+def submit_tips():
     data = request.get_json()
-    gid = data['name'].lower().replace(" ", "-")
     conn = get_db(); c = conn.cursor()
-    c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", (data['name'], gid, data['admin_name']))
+    for t in data['tips']:
+        c.execute("INSERT OR REPLACE INTO bets (group_id_str, user_name, fixture_id, home_score, away_score) VALUES (?,?,?,?,?)",
+                  (data['group_id'], data['user_name'], t['match_id'], t['h'], t['a']))
     conn.commit(); conn.close()
     return jsonify({"status": "Suksess"})
+
+@app.route('/api/update_group_settings', methods=['POST'])
+def update_settings():
+    data = request.get_json()
+    conn = get_db(); c = conn.cursor()
+    c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data['mode'], data['prize_info'], data['group_id']))
+    conn.commit(); conn.close()
+    return jsonify({"status": "OK"})
 
 @app.route('/api/toggle_match', methods=['POST'])
 def toggle_match():
@@ -124,8 +138,14 @@ def toggle_match():
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
 
-@app.route('/')
-def index(): return render_template('index.html')
+@app.route('/api/create_group', methods=['POST'])
+def create_group():
+    data = request.get_json()
+    gid = data['name'].lower().replace(" ", "-")
+    conn = get_db(); c = conn.cursor()
+    c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", (data['name'], gid, data['admin_name']))
+    conn.commit(); conn.close()
+    return jsonify({"status": "Suksess"})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
