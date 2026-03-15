@@ -27,7 +27,7 @@ def init_db():
 
 init_db()
 
-# --- MODUL 4: GHOST-SPILLERE ---
+# --- MODUL 4: AUTOMATISK GHOST-SPILLERE ---
 def auto_fill_ghosts(group_id):
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -47,30 +47,35 @@ def auto_fill_ghosts(group_id):
         conn.close()
     except: pass
 
-# --- RUTENE (Her kobler vi nettsidene dine nøyaktig slik de heter på bildet) ---
+# --- RUTENE (Her kobler vi adressene til HTML-filene dine) ---
 
 @app.route('/')
 def index():
+    # Åpner index.html
     return render_template('index.html')
 
 @app.route('/super_admin_dashboard')
 def super_admin():
+    # Åpner super_admin.html (fra bildet ditt)
     return render_template('super_admin.html')
 
 @app.route('/group/<group_id>')
 def group_view(group_id):
+    # Åpner group_view.html og fyller med ghost-spillere
     auto_fill_ghosts(group_id)
     return render_template('group_view.html', group_id=group_id)
 
 @app.route('/group/<group_id>/admin')
-def group_admin_route(group_id):
+def group_admin(group_id):
+    # Åpner group_admin.html (fra bildet ditt)
     return render_template('group_admin.html', group_id=group_id)
 
 @app.route('/admin')
-def admin_simple():
+def simple_admin():
+    # Åpner admin.html (fra bildet ditt)
     return render_template('admin.html')
 
-# --- API (Henting av data) ---
+# --- API-FUNKSJONER (Henter data fra fotball-APIet) ---
 
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
@@ -90,7 +95,7 @@ def import_league(league_id):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
-# --- RENDER OPPSTART ---
+# --- RENDER OPPSTART (Viktig for at Render skal koble til) ---
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
