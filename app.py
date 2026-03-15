@@ -66,6 +66,23 @@ def update_points_logic():
         return True
     except: return False
 
+def get_players_safe(fixture_id):
+    headers = {'X-Auth-Token': API_KEY}
+    players = []
+    try:
+        # Hent kampdetaljer først for å få lag-IDer
+        match_res = requests.get(f"https://api.football-data.org/v4/matches/{fixture_id}", headers=headers, timeout=5).json()
+        for team_key in ['homeTeam', 'awayTeam']:
+            t_id = match_res[team_key]['id']
+            t_name = match_res[team_key]['shortName']
+            # Hent stallen til laget
+            squad_res = requests.get(f"https://api.football-data.org/v4/teams/{t_id}", headers=headers, timeout=5).json()
+            for p in squad_res.get('squad', []):
+                players.append({'name': p['name'], 'team': t_name})
+    except Exception as e:
+        print(f"API-feil ved henting av spillere: {e}")
+    return players
+
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -90,9 +107,14 @@ def group_admin(group_id_str):
     alle = c.fetchall()
     c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
     valgte = [r[0] for r in c.fetchall()]
-    players = [] # Forenklet for nå for å sikre stabilitet
+    
+    players = []
+    if group[4] == 'single' and valgte:
+        players = get_players_safe(valgte[0])
+    
     c.execute("SELECT id, question_text FROM extra_questions WHERE group_id_str = ?", (group_id_str,))
-    questions = c.fetchall()
+    questions = [q for q in c.fetchall() if q[1] and q[1].strip()] # Fjerner tomme spørsmål
+    
     conn.close()
     return render_template('group_admin.html', group=group, kamper=alle, valgte=valgte, players=players, questions=questions)
 
@@ -121,27 +143,6 @@ def leaderboard(group_id_str):
     rows = c.fetchall(); conn.close()
     return render_template('leaderboard.html', group=group, leaderboard=rows)
 
-@app.route('/api/get_user_bets/<group_id_str>/<user_name>')
-def get_user_bets(group_id_str, user_name):
-    conn = get_db(); c = conn.cursor()
-    # Hent hovedtips
-    c.execute("""SELECT b.home_score, b.away_score, b.points, b.golden_goal, f.home_team, f.away_team, f.home_logo, f.away_logo 
-                 FROM bets b JOIN fixtures f ON b.fixture_id = f.id 
-                 WHERE b.group_id_str = ? AND b.user_name = ?""", (group_id_str, user_name))
-    main_bet = c.fetchall()
-    
-    # Hent tilleggsspørsmål og svar
-    c.execute("""SELECT q.question_text, eb.user_answer 
-                 FROM extra_bets eb JOIN extra_questions q ON eb.question_id = q.id 
-                 WHERE eb.group_id_str = ? AND eb.user_name = ?""", (group_id_str, user_name))
-    extras = c.fetchall()
-    
-    conn.close()
-    return jsonify({
-        'main': [{'h': b[0], 'a': b[1], 'pts': b[2], 'gg': b[3], 'ht': b[4], 'at': b[5], 'hl': b[6], 'al': b[7]} for b in main_bet],
-        'extras': [{'q': e[0], 'ans': e[1]} for e in extras]
-    })
-
 @app.route('/api/update_group_settings', methods=['POST'])
 def update_group_settings():
     data = request.get_json()
@@ -158,11 +159,30 @@ def update_group_settings():
 @app.route('/api/add_smart_question', methods=['POST'])
 def add_smart_question():
     data = request.get_json()
+    if not data.get('text') or not data['text'].strip():
+        return jsonify({"status": "Error", "message": "Tom tekst"}), 400
     conn = get_db(); c = conn.cursor()
     c.execute("INSERT INTO extra_questions (group_id_str, fixture_id, question_text) VALUES (?,?,?)",
               (data['group_id_str'], data['match_id'], data['text']))
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
+
+@app.route('/api/get_user_bets/<group_id_str>/<user_name>')
+def get_user_bets(group_id_str, user_name):
+    conn = get_db(); c = conn.cursor()
+    c.execute("""SELECT b.home_score, b.away_score, b.points, b.golden_goal, f.home_team, f.away_team, f.home_logo, f.away_logo 
+                 FROM bets b JOIN fixtures f ON b.fixture_id = f.id 
+                 WHERE b.group_id_str = ? AND b.user_name = ?""", (group_id_str, user_name))
+    main_bet = c.fetchall()
+    c.execute("""SELECT q.question_text, eb.user_answer 
+                 FROM extra_bets eb JOIN extra_questions q ON eb.question_id = q.id 
+                 WHERE eb.group_id_str = ? AND eb.user_name = ?""", (group_id_str, user_name))
+    extras = c.fetchall()
+    conn.close()
+    return jsonify({
+        'main': [{'h': b[0], 'a': b[1], 'pts': b[2], 'gg': b[3], 'ht': b[4], 'at': b[5], 'hl': b[6], 'al': b[7]} for b in main_bet],
+        'extras': [{'q': e[0], 'ans': e[1]} for e in extras]
+    })
 
 @app.route('/api/submit_tips', methods=['POST'])
 def submit_tips():
