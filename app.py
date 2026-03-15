@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 app.secret_key = "matchday_secret_key"
 
+# --- KONFIGURASJON ---
 DB_PATH = 'matchday_pro.db'
 API_KEY = '58f8589c07824c2495869fa6b7b815e5' 
 
@@ -26,7 +27,7 @@ def init_db():
 
 init_db()
 
-# --- ROUTES FOR SIDER ---
+# --- SIDER ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -39,26 +40,39 @@ def super_admin():
 def group_view(group_id):
     return render_template('group_view.html', group_id=group_id)
 
-# --- API FOR Å HENTE KAMPER (Fikset for å unngå JSON-feil) ---
+@app.route('/group/<group_id>/admin')
+def group_admin(group_id):
+    return render_template('group_admin.html', group_id=group_id)
+
+# --- API (Fikset for å fjerne JSON-feilen) ---
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
     url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&next=15"
-    headers = {'x-apisports-key': API_KEY, 'x-rapidapi-host': 'v3.football.api-sports.io'}
+    headers = {
+        'x-apisports-key': API_KEY,
+        'x-rapidapi-host': 'v3.football.api-sports.io'
+    }
     try:
-        res = requests.get(url, headers=headers).json()
+        response = requests.get(url, headers=headers)
+        res = response.json()
         data = res.get('response', [])
         
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         for f in data:
-            c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
-                      (f['fixture']['id'], league_id, f['teams']['home']['name'], f['teams']['away']['name'], f['teams']['home']['logo'], f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
+            c.execute("""INSERT OR REPLACE INTO fixtures 
+                         (id, league_id, home_team, away_team, home_logo, away_logo, date, status) 
+                         VALUES (?,?,?,?,?,?,?,?)""",
+                      (f['fixture']['id'], league_id, f['teams']['home']['name'], 
+                       f['teams']['away']['name'], f['teams']['home']['logo'], 
+                       f['teams']['away']['logo'], f['fixture']['date'], 'upcoming'))
         conn.commit()
         conn.close()
         
-        # VIKTIG: Vi sender nå et rent JSON-svar som knappen din forstår
-        return jsonify({"status": "success", "message": f"Importerte {len(data)} kamper"})
+        # Sender rent JSON-svar tilbake til knappen
+        return jsonify({"status": "success", "count": len(data)})
     except Exception as e:
+        # Sender feilmelding som JSON så knappen ikke kræsjer
         return jsonify({"status": "error", "message": str(e)})
 
 # --- RENDER OPPSTART ---
