@@ -19,26 +19,7 @@ def format_date(iso_date):
         iso_date = iso_date.replace('Z', '+00:00')
         dt = datetime.fromisoformat(iso_date)
         return dt.strftime("%d.%m kl %H:%M")
-    except:
-        return iso_date
-
-def init_db():
-    conn = get_db(); c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS fixtures
-                 (id INTEGER PRIMARY KEY, league_id TEXT, home_team TEXT, 
-                  away_team TEXT, home_logo TEXT, away_logo TEXT, 
-                  date TEXT, status TEXT, home_actual INTEGER, away_actual INTEGER)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS groups
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, group_name TEXT, group_id_str TEXT, 
-                  admin_name TEXT, mode TEXT DEFAULT 'multi', prize_info TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS group_matches
-                 (group_id INTEGER, fixture_id INTEGER)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS bets
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id_str TEXT, user_name TEXT, 
-                  fixture_id INTEGER, home_score INTEGER, away_score INTEGER, points INTEGER DEFAULT 0)''')
-    conn.commit(); conn.close()
-
-init_db()
+    except: return iso_date
 
 @app.route('/super_admin_dashboard')
 def super_admin():
@@ -46,8 +27,7 @@ def super_admin():
     c.execute("SELECT id, group_name, group_id_str, admin_name FROM groups")
     grupper = c.fetchall()
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
-    raw = c.fetchall()
-    kamper = []
+    raw = c.fetchall(); kamper = []
     for f in raw:
         f_l = list(f); f_l[6] = format_date(f[6]); kamper.append(f_l)
     conn.close()
@@ -59,8 +39,7 @@ def group_admin(group_id_str):
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
-    raw = c.fetchall()
-    all_fixtures = []
+    raw = c.fetchall(); all_fixtures = []
     for f in raw:
         f_l = list(f); f_l[6] = format_date(f[6]); all_fixtures.append(f_l)
     c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
@@ -74,22 +53,23 @@ def group_view(group_id_str):
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
     c.execute("SELECT f.* FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id WHERE gm.group_id = ?", (group[0],))
-    raw = c.fetchall()
-    kamper = []
+    raw = c.fetchall(); kamper = []
     for f in raw:
         f_l = list(f); f_l[6] = format_date(f[6]); kamper.append(f_l)
-    c.execute("SELECT user_name, SUM(points) as total FROM bets WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC", (group_id_str,))
-    leaderboard = c.fetchall()
     conn.close()
-    return render_template('group_view.html', group_id=group_id_str, group=group, kamper=kamper, leaderboard=leaderboard)
+    return render_template('group_view.html', group_id=group_id_str, group=group, kamper=kamper)
 
-@app.route('/api/update_group_settings', methods=['POST'])
-def update_settings():
-    data = request.get_json()
+# --- NY SIDE: LEADERBOARD ---
+@app.route('/group/<group_id_str>/leaderboard')
+def leaderboard(group_id_str):
     conn = get_db(); c = conn.cursor()
-    c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data['mode'], data['prize_info'], data['group_id']))
-    conn.commit(); conn.close()
-    return jsonify({"status": "OK"})
+    c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
+    group = c.fetchone()
+    c.execute("""SELECT user_name, SUM(points) as total FROM bets 
+                 WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC""", (group_id_str,))
+    rows = c.fetchall()
+    conn.close()
+    return render_template('leaderboard.html', group=group, leaderboard=rows)
 
 @app.route('/api/submit_tips', methods=['POST'])
 def submit_tips():
@@ -100,6 +80,15 @@ def submit_tips():
                   (data['group_id'], data['user_name'], t['match_id'], t['h'], t['a']))
     conn.commit(); conn.close()
     return jsonify({"status": "Suksess"})
+
+# --- (Resten av API-ene som før: import_league, create_group, toggle_match, update_group_settings) ---
+@app.route('/api/update_group_settings', methods=['POST'])
+def update_settings():
+    data = request.get_json()
+    conn = get_db(); c = conn.cursor()
+    c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data['mode'], data['prize_info'], data['group_id']))
+    conn.commit(); conn.close()
+    return jsonify({"status": "OK"})
 
 @app.route('/api/import_league/<code>')
 def import_league(code):
