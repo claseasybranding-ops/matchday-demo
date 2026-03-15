@@ -39,8 +39,6 @@ def init_db():
 
 init_db()
 
-# --- LOGIKK ---
-
 def update_points_logic():
     url = "https://api.football-data.org/v4/competitions/PL/matches"
     headers = {'X-Auth-Token': API_KEY}
@@ -53,7 +51,7 @@ def update_points_logic():
                 a_act = m['score']['fullTime']['away']
                 mid = m['id']
                 c.execute("UPDATE fixtures SET home_actual = ?, away_actual = ?, status = ? WHERE id = ?", 
-                         (h_act, a_act, m['status'].lower(), mid))
+                          (h_act, a_act, m['status'].lower(), mid))
                 c.execute("SELECT id, home_score, away_score FROM bets WHERE fixture_id = ?", (mid,))
                 for bet_id, u_h, u_a in c.fetchall():
                     pts = 0
@@ -64,8 +62,6 @@ def update_points_logic():
         conn.commit(); conn.close()
         return True
     except: return False
-
-# --- RUTER ---
 
 @app.route('/')
 def index(): return render_template('index.html')
@@ -118,8 +114,6 @@ def leaderboard(group_id_str):
     rows = c.fetchall()
     conn.close()
     return render_template('leaderboard.html', group=group, leaderboard=rows)
-
-# --- API ---
 
 @app.route('/api/refresh_data')
 def refresh_data():
@@ -177,6 +171,23 @@ def create_group():
     c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", (data['name'], gid, data['admin_name']))
     conn.commit(); conn.close()
     return jsonify({"status": "Suksess"})
+
+@app.route('/api/get_user_bets/<group_id_str>/<user_name>')
+def get_user_bets(group_id_str, user_name):
+    conn = get_db(); c = conn.cursor()
+    c.execute("""SELECT b.home_score, b.away_score, b.points, f.home_team, f.away_team, f.home_logo, f.away_logo
+                 FROM bets b
+                 JOIN fixtures f ON b.fixture_id = f.id
+                 WHERE b.group_id_str = ? AND b.user_name = ?""", (group_id_str, user_name))
+    bets = c.fetchall()
+    conn.close()
+    formatted_bets = []
+    for bet in bets:
+        formatted_bets.append({
+            'home_score': bet[0], 'away_score': bet[1], 'points': bet[2],
+            'home_team': bet[3], 'away_team': bet[4], 'home_logo': bet[5], 'away_logo': bet[6]
+        })
+    return jsonify(formatted_bets)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
