@@ -86,8 +86,7 @@ def index(): return render_template('index.html')
 def super_admin():
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT id, group_name, group_id_str, admin_name FROM groups")
-    grupper = c.fetchall()
-    c.execute("SELECT * FROM fixtures ORDER BY date ASC")
+    grupper = c.fetchall(); c.execute("SELECT * FROM fixtures ORDER BY date ASC")
     raw = c.fetchall(); kamper = []
     for f in raw:
         f_l = list(f); dt = datetime.fromisoformat(f[6].replace('Z', '+00:00'))
