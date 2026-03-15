@@ -97,12 +97,13 @@ def group_view(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
+    if not group: return "Gruppe ikke funnet", 404
     c.execute("SELECT f.* FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id WHERE gm.group_id = ?", (group[0],))
     raw = c.fetchall(); kamper = []
     for f in raw:
         f_l = list(f); f_l[6] = format_date(f[6]); kamper.append(f_l)
     conn.close()
-    return render_template('group_view.html', group_id=group_id_str, group=group, kamper=kamper)
+    return render_template('group_view.html', group=group, kamper=kamper)
 
 @app.route('/group/<group_id_str>/leaderboard')
 def leaderboard(group_id_str):
