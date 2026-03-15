@@ -3,54 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MatchDay | Konkurranse & Live Odds</title>
+    <title>MatchDay | {{ group[1] }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root { --md-red: #cc0000; --md-dark: #1a1a1a; }
         body { background-color: #f8f9fa; font-family: 'Inter', sans-serif; }
         .navbar { background-color: var(--md-dark); border-bottom: 3px solid var(--md-red); }
-        
-        /* Modul 10: Premie-banner */
-        .prize-banner {
-            background: linear-gradient(45deg, #1a1a1a, #333);
-            color: gold;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-            border: 1px solid gold;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .match-card {
-            background: white;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: 0.3s;
-        }
-
-        /* Modul 10: Odds-knapp (Monetisering) */
-        .odds-trigger {
-            background-color: #fef9c3;
-            border: 1px dashed #ca8a04;
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 15px;
-            font-size: 0.9rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-        .odds-trigger:hover { background-color: #fef3c7; }
-        .odds-badge { background: #ca8a04; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
-
+        .prize-banner { background: linear-gradient(45deg, #1a1a1a, #333); color: gold; border-radius: 12px; padding: 20px; margin-bottom: 30px; border: 1px solid gold; display: flex; align-items: center; justify-content: space-between; }
+        .match-card { background: white; border-radius: 12px; margin-bottom: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .score-input { width: 60px; height: 50px; text-align: center; font-size: 1.5rem; font-weight: bold; border: 2px solid #eee; border-radius: 8px; }
         .leaderboard-card { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
-        .table thead { background: var(--md-dark); color: white; }
         .rank-1 { background-color: #fffbeb !important; border-left: 5px solid gold; }
     </style>
 </head>
@@ -59,95 +21,67 @@
     <nav class="navbar navbar-dark p-3">
         <div class="container d-flex justify-content-between">
             <a class="navbar-brand fw-bold" href="/">MATCHDAY</a>
-            <span class="text-white small">ID: {{ group_id }}</span>
+            <span class="text-white small">{{ group[1] }}</span>
         </div>
     </nav>
 
     <div class="container mt-4">
-        
         <div class="prize-banner shadow">
             <div>
-                <h5 class="mb-0">🏆 HOVEDPREMIE</h5>
-                <p class="mb-0 small">Gavekort på 5000,- fra Marine AS</p>
+                <h5 class="mb-0">🏆 PREMIE</h5>
+                <p class="mb-0 small">{{ group[5] or 'Ingen premie satt ennå' }}</p>
             </div>
             <div class="text-end">
-                <span class="small d-block">LEDER AKKURAT NÅ:</span>
-                <strong id="current-leader">Ola Nordmann</strong>
+                <span class="small d-block">LEDER:</span>
+                <strong id="current-leader">{% if leaderboard %}{{ leaderboard[0][0] }}{% else %}-{% endif %}</strong>
             </div>
         </div>
 
         <div class="row">
             <div class="col-lg-7">
                 <h4 class="mb-3 fw-bold">Dine Tips</h4>
-                
+                {% for k in kamper %}
                 <div class="match-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="text-center" style="width: 35%;">
-                            <img src="https://media.api-sports.io/football/teams/33.png" class="mb-2" style="width: 50px;">
-                            <div class="fw-bold">Man United</div>
+                            <img src="{{ k[4] }}" class="mb-2" style="width: 40px;">
+                            <div class="small fw-bold">{{ k[2] }}</div>
                         </div>
                         <div class="d-flex align-items-center">
-                            <input type="number" class="score-input" value="2">
+                            <input type="number" class="score-input" placeholder="0">
                             <span class="mx-2 fw-bold">-</span>
-                            <input type="number" class="score-input" value="0">
+                            <input type="number" class="score-input" placeholder="0">
                         </div>
                         <div class="text-center" style="width: 35%;">
-                            <img src="https://media.api-sports.io/football/teams/40.png" class="mb-2" style="width: 50px;">
-                            <div class="fw-bold">Liverpool</div>
+                            <img src="{{ k[5] }}" class="mb-2" style="width: 40px;">
+                            <div class="small fw-bold">{{ k[3] }}</div>
                         </div>
                     </div>
-
-                    <div class="odds-trigger" onclick="window.open('https://www.norsk-tipping.no', '_blank')">
-                        <span><i class="bi bi-graph-up"></i> Du trenger 2-0 for 3 poeng. Sjekk odds på 2-0:</span>
-                        <span class="odds-badge">4.50 @ Norsk Tipping</span>
-                    </div>
                 </div>
-
-                <button class="btn btn-danger w-100 py-3 fw-bold shadow">OPPDATER TIPS</button>
+                {% endfor %}
+                <button class="btn btn-danger w-100 py-3 fw-bold shadow">LAGRE MINE TIPS</button>
             </div>
 
             <div class="col-lg-5">
                 <h4 class="mb-3 fw-bold">Live Tabell</h4>
                 <div class="leaderboard-card">
                     <table class="table mb-0">
-                        <thead>
-                            <tr>
-                                <th class="ps-3">#</th>
-                                <th>Bruker</th>
-                                <th class="text-end pe-3">Poeng</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th class="ps-3">#</th><th>Bruker</th><th class="text-end pe-3">Poeng</th></tr></thead>
                         <tbody>
-                            <tr class="rank-1">
-                                <td class="ps-3">1</td>
-                                <td><strong>Ola Nordmann</strong></td>
-                                <td class="text-end pe-3">12</td>
+                            {% for d in leaderboard %}
+                            <tr class="{% if loop.first %}rank-1{% endif %}">
+                                <td class="ps-3">{{ loop.index }}</td>
+                                <td><strong>{{ d[0] }}</strong></td>
+                                <td class="text-end pe-3">{{ d[1] }}</td>
                             </tr>
-                            <tr>
-                                <td class="ps-3">2</td>
-                                <td>Thomas (Ditt tips: 2-0)</td>
-                                <td class="text-end pe-3">9</td>
-                            </tr>
-                            <tr>
-                                <td class="ps-3">3</td>
-                                <td>Kari B.</td>
-                                <td class="text-end pe-3">7</td>
-                            </tr>
+                            {% else %}
+                            <tr><td colspan="3" class="text-center py-3 text-muted">Ingen tips registrert ennå.</td></tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
-                <p class="small text-muted mt-3">Tabellen oppdateres hvert 30. sekund basert på live-score.</p>
             </div>
         </div>
     </div>
-
-    <script>
-        // Simulering av Modul 5: Automatisk poengoppdatering
-        setInterval(function() {
-            console.log("Sjekker live scores...");
-            // Her ville vi kalt /api/update_live_scores
-        }, 30000);
-    </script>
-
 </body>
 </html>
