@@ -56,26 +56,22 @@
 
         <div id="single-extras" style="display: {% if group[4] == 'single' %}block{% else %}none{% endif %}; background: #fdfdfd; padding: 15px; border-radius: 15px; border: 2px dashed #eee;">
             <label class="fw-bold small text-uppercase text-muted d-block mb-2">Tie-breakers (Kun Single Game)</label>
-            <button class="smart-btn" onclick="addQ('Blir det straffespark?')">+ Straffe?</button>
-            <button class="smart-btn" onclick="addQ('Blir det rødt kort?')">+ Rødt kort?</button>
+            <button class="smart-btn" onclick="saveAndAddQ('Blir det straffespark?')">+ Straffe?</button>
+            <button class="smart-btn" onclick="saveAndAddQ('Blir det rødt kort?')">+ Rødt kort?</button>
             
             <div class="mt-3">
                 <select id="player-select" class="form-select form-select-sm mb-2">
                     {% for p in players %}<option value="Scorer {{ p.name }}?">{{ p.name }} ({{ p.team }})</option>{% endfor %}
                 </select>
-                <button class="btn btn-sm btn-dark w-100 fw-bold" onclick="addQ(document.getElementById('player-select').value)">LEGG TIL SPILLER-MÅL</button>
+                <button class="btn btn-sm btn-dark w-100 fw-bold" onclick="saveAndAddQ(document.getElementById('player-select').value)">LEGG TIL SPILLER-MÅL</button>
             </div>
             <div id="q-list" class="mt-2">
                 {% for q in questions %}<div class="small fw-bold text-success">✓ {{ q[1] }}</div>{% endfor %}
             </div>
         </div>
 
-        <button class="btn-save shadow" onclick="saveAll()">LAGRE INNSTILLINGER 💾</button>
+        <button class="btn-save shadow" onclick="saveAll(true)">LAGRE ALT 💾</button>
         <a href="/group/{{ group[2] }}" class="btn-view shadow">GÅ TIL TIPPESIDEN ⚽</a>
-        
-        <div class="text-center mt-3">
-            <a href="/group/{{ group[2] }}/leaderboard" class="text-muted small fw-bold text-decoration-none">Se tabellen</a>
-        </div>
     </div>
 
     <script>
@@ -90,30 +86,38 @@
             alert("Link kopiert!");
         }
 
-        function saveAll() {
+        async function saveAll(showAlert = false) {
             const mode = document.getElementById('mode').value;
             const prize = document.getElementById('prize').value;
             const matches = [];
             document.querySelectorAll('.match-check:checked').forEach(cb => matches.push(cb.value));
 
-            fetch('/api/update_group_settings', {
+            const response = await fetch('/api/update_group_settings', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ group_id_str: '{{ group[2] }}', mode: mode, prize: prize, matches: matches })
-            }).then(() => {
-                alert("Innstillingene er lagret!");
-                window.location.reload();
             });
+
+            if (showAlert) alert("Alt er lagret!");
+            return response;
         }
 
-        function addQ(text) {
+        async function saveAndAddQ(text) {
+            // Først lagrer vi alt som er skrevet (premie, valgte kamper osv)
+            await saveAll(false);
+
+            // Så legger vi til spørsmålet
             const mid = document.querySelector('.match-check:checked')?.value;
             if(!mid) return alert("Velg en kamp først!");
-            fetch('/api/add_smart_question', {
+            
+            await fetch('/api/add_smart_question', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ group_id_str: '{{ group[2] }}', match_id: mid, text: text })
-            }).then(() => window.location.reload());
+            });
+
+            // Nå laster vi på nytt, og alt er i databasen
+            window.location.reload();
         }
     </script>
 </body>
