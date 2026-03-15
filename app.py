@@ -21,26 +21,61 @@ def format_date(iso_date):
         return dt.strftime("%d.%m kl %H:%M")
     except: return iso_date
 
-def init_db():
+# --- LOGIKK FOR POENGBEREGNING ---
+def update_points_logic():
+    url = "https://api.football-data.org/v4/competitions/PL/matches"
+    headers = {'X-Auth-Token': API_KEY}
+    try:
+        res = requests.get(url, headers=headers).json()
+        conn = get_db(); c = conn.cursor()
+        for m in res.get('matches', []):
+            if m['status'] in ['FINISHED', 'LIVE', 'IN_PLAY']:
+                h_act = m['score']['fullTime']['home']
+                a_act = m['score']['fullTime']['away']
+                mid = m['id']
+                
+                # Oppdater kampstatus i fixtures
+                c.execute("UPDATE fixtures SET home_actual = ?, away_actual = ?, status = ? WHERE id = ?", 
+                         (h_act, a_act, m['status'].lower(), mid))
+                
+                # Finn alle tips for denne kampen
+                c.execute("SELECT id, home_score, away_score FROM bets WHERE fixture_id = ?", (mid,))
+                for bet_id, u_h, u_a in c.fetchall():
+                    pts = 0
+                    if h_act is not None and a_act is not None:
+                        # 3 poeng for helt riktig score
+                        if u_h == h_act and u_a == a_act:
+                            pts = 3
+                        # 1 poeng for riktig HUB
+                        elif (u_h > u_a and h_act > a_act) or (u_h < u_a and h_act < a_act) or (u_h == u_a and h_act == a_act):
+                            pts = 1
+                        c.execute("UPDATE bets SET points = ? WHERE id = ?", (pts, bet_id))
+        conn.commit(); conn.close()
+        return True
+    except Exception as e:
+        print(f"Feil ved oppdatering: {e}")
+        return False
+
+# --- RUTER ---
+
+@app.route('/api/refresh_data')
+def refresh_data():
+    success = update_points_logic()
+    return jsonify({"status": "Oppdatert" if success else "Feil"})
+
+@app.route('/group/<group_id_str>/leaderboard')
+def leaderboard(group_id_str):
     conn = get_db(); c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS fixtures
-                 (id INTEGER PRIMARY KEY, league_id TEXT, home_team TEXT, 
-                  away_team TEXT, home_logo TEXT, away_logo TEXT, 
-                  date TEXT, status TEXT, home_actual INTEGER, away_actual INTEGER)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS groups
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, group_name TEXT, group_id_str TEXT, 
-                  admin_name TEXT, mode TEXT DEFAULT 'multi', prize_info TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS group_matches
-                 (group_id INTEGER, fixture_id INTEGER)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS bets
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id_str TEXT, user_name TEXT, 
-                  fixture_id INTEGER, home_score INTEGER, away_score INTEGER, points INTEGER DEFAULT 0)''')
-    conn.commit(); conn.close()
+    c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
+    group = c.fetchone()
+    # Henter oppdatert tabell
+    c.execute("""SELECT user_name, SUM(points) as total FROM bets 
+                 WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC""", (group_id_str,))
+    rows = c.fetchall()
+    conn.close()
+    return render_template('leaderboard.html', group=group, leaderboard=rows)
 
-init_db()
-
-# --- SIDER ---
-
+# Gjenbruk resten av rutinene fra forrige app.py (super_admin, group_admin, group_view, submit_tips osv.)
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -81,34 +116,6 @@ def group_view(group_id_str):
         f_l = list(f); f_l[6] = format_date(f[6]); kamper.append(f_l)
     conn.close()
     return render_template('group_view.html', group_id=group_id_str, group=group, kamper=kamper)
-
-@app.route('/group/<group_id_str>/leaderboard')
-def leaderboard(group_id_str):
-    conn = get_db(); c = conn.cursor()
-    c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
-    group = c.fetchone()
-    c.execute("""SELECT user_name, SUM(points) as total FROM bets 
-                 WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC""", (group_id_str,))
-    rows = c.fetchall()
-    conn.close()
-    return render_template('leaderboard.html', group=group, leaderboard=rows)
-
-# --- API ---
-
-@app.route('/api/import_league/<code>')
-def import_league(code):
-    url = "https://api.football-data.org/v4/competitions/PL/matches"
-    headers = {'X-Auth-Token': API_KEY}
-    res = requests.get(url, headers=headers).json()
-    conn = get_db(); c = conn.cursor()
-    for m in res.get('matches', []):
-        if m['status'] in ['SCHEDULED', 'TIMED', 'LIVE']:
-            home = m['homeTeam']['shortName'] or m['homeTeam']['name']
-            away = m['awayTeam']['shortName'] or m['awayTeam']['name']
-            c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
-                (m['id'], 'PL', home, away, m['homeTeam'].get('crest',''), m['awayTeam'].get('crest',''), m['utcDate'], 'upcoming'))
-    conn.commit(); conn.close()
-    return jsonify({"status": "Suksess"})
 
 @app.route('/api/submit_tips', methods=['POST'])
 def submit_tips():
