@@ -21,7 +21,6 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS bets
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id TEXT, user_name TEXT, 
                   fixture_id INTEGER, home_score INTEGER, away_score INTEGER, points INTEGER DEFAULT 0)''')
-    # Tabell for å holde styr på gruppene
     c.execute('''CREATE TABLE IF NOT EXISTS groups
                  (id TEXT PRIMARY KEY, group_name TEXT, company_name TEXT)''')
     conn.commit()
@@ -42,23 +41,30 @@ def super_admin():
 def group_view(group_id):
     return render_template('group_view.html', group_id=group_id)
 
-# --- API: OPPRETT GRUPPE (Denne fikser 404-feilen din!) ---
+# --- API: HENT GRUPPER (Denne biten gjør at listen din dukker opp igjen!) ---
+@app.route('/api/get_groups')
+def get_groups():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT id, group_name, company_name FROM groups")
+    rows = c.fetchall()
+    conn.close()
+    # Vi gjør om dataene fra databasen til et format nettsiden din forstår (JSON)
+    groups = [{"id": r[0], "group_name": r[1], "company_name": r[2]} for r in rows]
+    return jsonify(groups)
+
+# --- API: OPPRETT GRUPPE ---
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     try:
         data = request.get_json()
-        group_id = data.get('group_id')
-        group_name = data.get('group_name')
-        company = data.get('company_name')
-
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("INSERT OR REPLACE INTO groups (id, group_name, company_name) VALUES (?, ?, ?)",
-                  (group_id, group_name, company))
+                  (data.get('group_id'), data.get('group_name'), data.get('company_name')))
         conn.commit()
         conn.close()
-
-        return jsonify({"status": "success", "message": f"Gruppen {group_name} er opprettet!"})
+        return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -81,7 +87,6 @@ def import_league(league_id):
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
-# --- RENDER OPPSTART ---
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
