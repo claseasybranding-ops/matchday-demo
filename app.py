@@ -41,7 +41,7 @@ def super_admin():
 def group_view(group_id):
     return render_template('group_view.html', group_id=group_id)
 
-# --- API: HENT GRUPPER (Denne biten gjør at listen din dukker opp igjen!) ---
+# --- API: HENT GRUPPER (Denne må matche feltnavnene i super_admin.html) ---
 @app.route('/api/get_groups')
 def get_groups():
     conn = sqlite3.connect(DB_PATH)
@@ -49,19 +49,25 @@ def get_groups():
     c.execute("SELECT id, group_name, company_name FROM groups")
     rows = c.fetchall()
     conn.close()
-    # Vi gjør om dataene fra databasen til et format nettsiden din forstår (JSON)
-    groups = [{"id": r[0], "group_name": r[1], "company_name": r[2]} for r in rows]
-    return jsonify(groups)
+    # Her sender vi ut listen slik JavaScriptet ditt forventer den
+    return jsonify([{"id": r[0], "group_name": r[1], "company_name": r[2]} for r in rows])
 
 # --- API: OPPRETT GRUPPE ---
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     try:
         data = request.get_json()
+        g_id = data.get('group_id')
+        g_name = data.get('group_name')
+        c_name = data.get('company_name')
+
+        if not g_id: # Hvis ID mangler, lager vi en basert på navnet
+            g_id = g_name.lower().replace(" ", "-")
+
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("INSERT OR REPLACE INTO groups (id, group_name, company_name) VALUES (?, ?, ?)",
-                  (data.get('group_id'), data.get('group_name'), data.get('company_name')))
+                  (g_id, g_name, c_name))
         conn.commit()
         conn.close()
         return jsonify({"status": "success"})
