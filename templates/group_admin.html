@@ -55,18 +55,28 @@
         </div>
 
         <div id="single-extras" style="display: {% if group[4] == 'single' %}block{% else %}none{% endif %}; background: #fdfdfd; padding: 15px; border-radius: 15px; border: 2px dashed #eee;">
-            <label class="fw-bold small text-uppercase text-muted d-block mb-2">Tie-breakers (Kun Single Game)</label>
-            <button class="smart-btn" onclick="saveAndAddQ('Blir det straffespark?')">+ Straffe?</button>
-            <button class="smart-btn" onclick="saveAndAddQ('Blir det rødt kort?')">+ Rødt kort?</button>
+            <label class="fw-bold small text-uppercase text-muted d-block mb-2 text-center">TIE-BREAKERS (KUN SINGLE GAME)</label>
+            <div class="text-center">
+                <button class="smart-btn" onclick="saveAndAddQ('Blir det straffespark?')">+ Straffe?</button>
+                <button class="smart-btn" onclick="saveAndAddQ('Blir det rødt kort?')">+ Rødt kort?</button>
+            </div>
             
             <div class="mt-3">
+                {% if players %}
                 <select id="player-select" class="form-select form-select-sm mb-2">
-                    {% for p in players %}<option value="Scorer {{ p.name }}?">{{ p.name }} ({{ p.team }})</option>{% endfor %}
+                    <option value="">Velg en spiller...</option>
+                    {% for p in players %}<option value="Scorer {{ p.name }} ({{ p.team }})?">{{ p.name }} ({{ p.team }})</option>{% endfor %}
                 </select>
-                <button class="btn btn-sm btn-dark w-100 fw-bold" onclick="saveAndAddQ(document.getElementById('player-select').value)">LEGG TIL SPILLER-MÅL</button>
+                {% else %}
+                <input type="text" id="player-manual" class="form-control form-select-sm mb-2" placeholder="Skriv spillerens navn (f.eks Salah)">
+                {% endif %}
+                <button class="btn btn-sm btn-dark w-100 fw-bold" onclick="addPlayerQ()">LEGG TIL SPILLER-MÅL</button>
             </div>
-            <div id="q-list" class="mt-2">
-                {% for q in questions %}<div class="small fw-bold text-success">✓ {{ q[1] }}</div>{% endfor %}
+            
+            <div id="q-list" class="mt-2 text-center">
+                {% for q in questions %}
+                <div class="small fw-bold text-success">✓ {{ q[1] }}</div>
+                {% endfor %}
             </div>
         </div>
 
@@ -102,11 +112,26 @@
             return response;
         }
 
-        async function saveAndAddQ(text) {
-            // Først lagrer vi alt som er skrevet (premie, valgte kamper osv)
-            await saveAll(false);
+        function addPlayerQ() {
+            const select = document.getElementById('player-select');
+            const manual = document.getElementById('player-manual');
+            let qText = "";
+            
+            if (select) {
+                if(!select.value) return alert("Velg en spiller!");
+                qText = select.value;
+            } else if (manual) {
+                if(!manual.value) return alert("Skriv et navn!");
+                qText = "Scorer " + manual.value + "?";
+            }
+            
+            saveAndAddQ(qText);
+        }
 
-            // Så legger vi til spørsmålet
+        async function saveAndAddQ(text) {
+            if(!text || text.trim() === "") return;
+            
+            await saveAll(false);
             const mid = document.querySelector('.match-check:checked')?.value;
             if(!mid) return alert("Velg en kamp først!");
             
@@ -115,8 +140,6 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ group_id_str: '{{ group[2] }}', match_id: mid, text: text })
             });
-
-            // Nå laster vi på nytt, og alt er i databasen
             window.location.reload();
         }
     </script>
