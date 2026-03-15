@@ -8,62 +8,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --md-red: #cc0000; --md-dark: #1a1a1a; --md-bg: #f8f9fa; }
-        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #333; }
-        
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; }
         .leaderboard-container { max-width: 500px; margin: 40px auto; padding: 20px; }
-        
-        /* Premie-banner */
-        .prize-notice {
-            background: white; border-radius: 12px; padding: 15px;
-            margin-bottom: 25px; border-left: 4px solid #FFD700;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            display: flex; align-items: center;
-        }
-
-        /* Leaderboard Card */
-        .leaderboard-card { 
-            background: white; border-radius: 20px; border: 1px solid rgba(0,0,0,0.05); 
-            overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        }
-
-        .table thead { background: #fdfdfd; }
-        .table th { padding: 20px; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; color: #888; border-bottom: 2px solid #f1f1f1; }
-        .table td { padding: 20px; vertical-align: middle; border-bottom: 1px solid #f8f8f8; cursor: pointer; transition: 0.2s; }
-        .table tr:hover td { background-color: #fafafa; }
-
-        .rank-badge { 
-            width: 35px; height: 35px; background: #f1f1f1; border-radius: 10px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-weight: 800; font-size: 0.9rem;
-        }
-
-        .rank-1 { background-color: rgba(204, 0, 0, 0.03); }
-        .rank-1 .rank-badge { background: #FFD700; color: #000; box-shadow: 0 4px 10px rgba(255, 215, 0, 0.3); }
-
+        .prize-notice { background: white; border-radius: 12px; padding: 15px; margin-bottom: 25px; border-left: 4px solid #FFD700; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; align-items: center; }
+        .leaderboard-card { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; }
+        .table td { padding: 20px; vertical-align: middle; cursor: pointer; border-bottom: 1px solid #f8f8f8; }
+        .rank-badge { width: 35px; height: 35px; background: #f1f1f1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; }
         .points-col { font-weight: 800; text-align: right; font-size: 1.2rem; color: var(--md-dark); }
-
         .live-dot { height: 8px; width: 8px; background-color: var(--md-red); border-radius: 50%; display: inline-block; margin-right: 5px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 70% { transform: scale(1.5); opacity: 0; } 100% { transform: scale(0.95); opacity: 0; } }
-
-        .btn-outline-custom { border: 2px solid #eee; color: #444; font-weight: 700; border-radius: 14px; padding: 15px; background: white; text-decoration: none; display: block; text-align: center; transition: 0.3s; }
-        .btn-outline-custom:hover { border-color: var(--md-red); color: var(--md-red); }
         
-        .refresh-status { text-align: center; font-size: 0.65rem; color: #bbb; margin-top: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        /* Modal / Popup */
-        .modal-dialog { max-width: 400px; }
-        .modal-content { border-radius: 20px; border: none; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
-        .match-bet-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f9f9f9; }
-        .team-logo-small { width: 25px; height: 25px; object-fit: contain; margin: 0 5px; }
-        .bet-score-box { font-weight: 800; font-size: 0.9rem; background: #f1f1f1; padding: 5px 10px; border-radius: 7px; min-width: 45px; text-align: center; }
-        .bet-pts-badge { font-weight: 800; font-size: 0.7rem; color: white; background: var(--md-red); padding: 3px 7px; border-radius: 5px; margin-left: 6px; }
+        /* Modal styling */
+        .modal-content { border-radius: 24px; border: none; }
+        .bet-info-card { background: #f8f9fa; border-radius: 16px; padding: 15px; margin-bottom: 10px; }
+        .extra-bet-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+        .gg-badge { background: var(--md-red); color: white; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; }
     </style>
 </head>
 <body>
 
     <div class="leaderboard-container">
         <div class="text-center mb-4">
-            <h1 class="fw-800 mb-1" style="letter-spacing: -1px; font-size: 2.2rem;">{{ group[1] }}</h1>
+            <h1 class="fw-800 mb-1">{{ group[1] }}</h1>
             <div class="d-flex align-items-center justify-content-center mb-3">
                 <span class="live-dot"></span>
                 <span class="small fw-bold text-uppercase" style="color: var(--md-red); letter-spacing: 1px;">Live Leaderboard</span>
@@ -81,37 +47,29 @@
         <div class="leaderboard-card">
             <table class="table mb-0">
                 <thead>
-                    <tr><th style="width: 80px;">Rank</th><th>Deltaker</th><th class="text-end">Poeng</th></tr>
+                    <tr><th class="ps-4">Rank</th><th>Deltaker</th><th class="text-end pe-4">Poeng</th></tr>
                 </thead>
                 <tbody>
                     {% for row in leaderboard %}
-                    <tr class="{% if loop.first %}rank-1{% endif %}" onclick="openBetsModal('{{ row[0] }}')">
-                        <td><div class="rank-badge">{{ loop.index }}</div></td>
-                        <td>
-                            <div class="fw-bold">{{ row[0] }}</div>
-                            {% if loop.first %}<small class="text-muted fw-bold" style="font-size: 0.6rem; text-transform: uppercase;">Leder akkurat nå</small>{% endif %}
-                        </td>
-                        <td class="points-col">{{ row[1] }}</td>
+                    <tr onclick="openBetsModal('{{ row[0] }}')">
+                        <td class="ps-4"><div class="rank-badge">{{ loop.index }}</div></td>
+                        <td><div class="fw-bold">{{ row[0] }}</div></td>
+                        <td class="points-col pe-4">{{ row[1] }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-
-        <div class="mt-4">
-            <a href="/group/{{ group[2] }}" class="btn btn-outline-custom shadow-sm">← ENDRE MINE TIPS</a>
-            <p id="refresh-indicator" class="refresh-status">Oppdateres automatisk hvert 2. minutt</p>
         </div>
     </div>
 
     <div class="modal fade" id="betsModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow-lg">
-                <div class="modal-header border-0 pb-0">
+                <div class="modal-header border-0">
                     <h5 class="modal-title fw-800">Tips for <span id="modalUserName" style="color:var(--md-red)"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="modalBetsBody">
+                <div class="modal-body pt-0" id="modalBetsBody">
                     </div>
             </div>
         </div>
@@ -119,53 +77,54 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Funksjon for å hente og vise tips i popup
         function openBetsModal(userName) {
             document.getElementById('modalUserName').innerText = userName;
             const modalBody = document.getElementById('modalBetsBody');
-            modalBody.innerHTML = '<p class="text-center text-muted small">Henter tips...</p>';
+            modalBody.innerHTML = '<p class="text-center py-4">Henter detaljer...</p>';
 
             fetch(`/api/get_user_bets/{{ group[2] }}/${userName}`)
                 .then(res => res.json())
-                .then(bets => {
+                .then(data => {
                     let html = '';
-                    bets.forEach(bet => {
+                    
+                    // 1. Vis hovedtips
+                    data.main.forEach(bet => {
                         html += `
-                            <div class="match-bet-row">
-                                <div class="d-flex align-items-center">
-                                    <img src="${bet.home_logo}" class="team-logo-small">
-                                    <span class="fw-bold small" style="font-size: 0.75rem;">${bet.home_team}</span>
-                                    <span class="mx-1 text-muted">-</span>
-                                    <span class="fw-bold small" style="font-size: 0.75rem;">${bet.away_team}</span>
-                                    <img src="${bet.away_logo}" class="team-logo-small">
+                            <div class="bet-info-card shadow-sm mb-3 text-center">
+                                <div class="d-flex justify-content-around align-items-center mb-2">
+                                    <div><img src="${bet.hl}" style="width:30px"><br><small class="fw-bold">${bet.ht}</small></div>
+                                    <div class="h3 fw-800 m-0">${bet.h} - ${bet.a}</div>
+                                    <div><img src="${bet.al}" style="width:30px"><br><small class="fw-bold">${bet.at}</small></div>
                                 </div>
-                                <div class="d-flex align-items-center">
-                                    <div class="bet-score-box">${bet.home_score}-${bet.away_score}</div>
-                                    ${bet.points > 0 ? `<div class="bet-pts-badge">${bet.points}P</div>` : ''}
-                                </div>
-                            </div>`;
+                                <div class="gg-badge">GOLDEN GOAL: ${bet.gg}. MIN</div>
+                            </div>
+                        `;
                     });
-                    modalBody.innerHTML = html || '<p class="text-center small">Ingen tips funnet.</p>';
+
+                    // 2. Vis tilleggssvar
+                    if(data.extras.length > 0) {
+                        html += '<h6 class="fw-800 text-uppercase small mt-4 mb-2">Tilleggssvar</h6>';
+                        data.extras.forEach(ext => {
+                            html += `
+                                <div class="extra-bet-row">
+                                    <span class="text-muted">${ext.q}</span>
+                                    <span class="fw-800">${ext.ans}</span>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    modalBody.innerHTML = html;
                 });
             new bootstrap.Modal(document.getElementById('betsModal')).show();
         }
 
-        // AUTO-REFRESH LOGIKK: Snakker med den nye poeng-motoren i app.py
-        function autoRefresh() {
-            console.log("Sjekker for nye poeng og resultater...");
-            fetch('/api/refresh_data')
-                .then(res => res.json())
-                .then(data => {
-                    if(data.status === "OK") {
-                        // Vi laster siden på nytt slik at Jinja2 kan tegne tabellen med de nye poengene
-                        window.location.reload();
-                    }
-                })
-                .catch(err => console.log("Refresh feilet:", err));
-        }
-
-        // Kjører sjekk hvert 2. minutt
-        setInterval(autoRefresh, 120000);
+        // Auto-refresh hvert 2. minutt
+        setInterval(() => {
+            fetch('/api/refresh_data').then(res => res.json()).then(data => {
+                if(data.status === "OK") window.location.reload();
+            });
+        }, 120000);
     </script>
 </body>
 </html>
