@@ -79,11 +79,8 @@ def get_players(fixture_id):
         return players
     except: return []
 
-# --- ALLE RUTER STARTER HER ---
-
 @app.route('/')
-def index(): 
-    return render_template('index.html')
+def index(): return render_template('index.html')
 
 @app.route('/super_admin_dashboard')
 def super_admin():
@@ -103,7 +100,6 @@ def group_admin(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
-    if not group: return "Gruppe ikke funnet", 404
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
     alle = c.fetchall()
     c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
@@ -121,7 +117,6 @@ def group_view(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
-    if not group: return "Gruppe ikke funnet", 404
     c.execute("SELECT f.* FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id WHERE gm.group_id = ?", (group[0],))
     raw = c.fetchall(); kamper = []
     for f in raw:
@@ -138,35 +133,9 @@ def leaderboard(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
-    if not group: return "Gruppe ikke funnet", 404
     c.execute("SELECT user_name, SUM(points) as total FROM bets WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC", (group_id_str,))
     rows = c.fetchall(); conn.close()
     return render_template('leaderboard.html', group=group, leaderboard=rows)
-
-# --- API RUTER ---
-
-@app.route('/api/create_group', methods=['POST'])
-def create_group():
-    data = request.get_json()
-    gid = data['name'].lower().replace(" ", "-")
-    conn = get_db(); c = conn.cursor()
-    c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", (data['name'], gid, data['admin_name']))
-    conn.commit(); conn.close()
-    return jsonify({"status": "Suksess"})
-
-@app.route('/api/import_league/<code>')
-def import_league(code):
-    url = "https://api.football-data.org/v4/competitions/PL/matches"
-    headers = {'X-Auth-Token': API_KEY}
-    res = requests.get(url, headers=headers).json()
-    conn = get_db(); c = conn.cursor()
-    for m in res.get('matches', []):
-        h = m['homeTeam']['shortName'] or m['homeTeam']['name']
-        a = m['awayTeam']['shortName'] or m['awayTeam']['name']
-        c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
-            (m['id'], 'PL', h, a, m['homeTeam'].get('crest',''), m['awayTeam'].get('crest',''), m['utcDate'], 'upcoming'))
-    conn.commit(); conn.close()
-    return jsonify({"status": "Suksess"})
 
 @app.route('/api/update_group_settings', methods=['POST'])
 def update_group_settings():
@@ -174,7 +143,7 @@ def update_group_settings():
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT id FROM groups WHERE group_id_str = ?", (data['group_id_str'],))
     gid = c.fetchone()[0]
-    c.execute("UPDATE groups SET mode = ? WHERE id = ?", (data['mode'], gid))
+    c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data['mode'], data['prize'], gid))
     c.execute("DELETE FROM group_matches WHERE group_id = ?", (gid,))
     for mid in data['matches']:
         c.execute("INSERT INTO group_matches (group_id, fixture_id) VALUES (?, ?)", (gid, int(mid)))
@@ -205,6 +174,29 @@ def submit_tips():
                       (data['group_id'], data['user_name'], int(q_id), val))
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
+
+@app.route('/api/create_group', methods=['POST'])
+def create_group():
+    data = request.get_json()
+    gid = data['name'].lower().replace(" ", "-")
+    conn = get_db(); c = conn.cursor()
+    c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", (data['name'], gid, data['admin_name']))
+    conn.commit(); conn.close()
+    return jsonify({"status": "Suksess"})
+
+@app.route('/api/import_league/<code>')
+def import_league(code):
+    url = "https://api.football-data.org/v4/competitions/PL/matches"
+    headers = {'X-Auth-Token': API_KEY}
+    res = requests.get(url, headers=headers).json()
+    conn = get_db(); c = conn.cursor()
+    for m in res.get('matches', []):
+        h = m['homeTeam']['shortName'] or m['homeTeam']['name']
+        a = m['awayTeam']['shortName'] or m['awayTeam']['name']
+        c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
+            (m['id'], 'PL', h, a, m['homeTeam'].get('crest',''), m['awayTeam'].get('crest',''), m['utcDate'], 'upcoming'))
+    conn.commit(); conn.close()
+    return jsonify({"status": "Suksess"})
 
 @app.route('/api/refresh_data')
 def refresh_data():
