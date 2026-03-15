@@ -2,22 +2,30 @@ import os
 import sqlite3
 import requests
 from flask import Flask, render_template, request, jsonify
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = "matchday_secret_key"
 
 DB_PATH = 'matchday_pro.db'
-# Nøkkelen din fra e-posten i går:
 API_KEY = '58f8589c07824c2495869fa6b7b815e5' 
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     return conn
 
+def format_date(iso_date):
+    try:
+        # Håndterer både Z og +0000 format fra football-data.org
+        iso_date = iso_date.replace('Z', '+00:00')
+        dt = datetime.fromisoformat(iso_date)
+        return dt.strftime("%d.%m kl %H:%M")
+    except:
+        return iso_date
+
 def init_db():
     conn = get_db()
     c = conn.cursor()
-    # Vi bruker samme tabellstruktur, men fyller den med data fra Daniel
     c.execute('''CREATE TABLE IF NOT EXISTS fixtures
                  (id INTEGER PRIMARY KEY, league_id TEXT, home_team TEXT, 
                   away_team TEXT, home_logo TEXT, away_logo TEXT, 
@@ -42,15 +50,20 @@ def super_admin():
     c.execute("SELECT id, group_name, group_id_str, admin_name FROM groups")
     grupper = c.fetchall()
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
-    kamper = c.fetchall()
+    raw_fixtures = c.fetchall()
+    
+    kamper = []
+    for f in raw_fixtures:
+        f_list = list(f)
+        f_list[6] = format_date(f[6])
+        kamper.append(f_list)
+        
     conn.close()
     return render_template('super_admin.html', grupper=grupper, kamper=kamper)
 
 @app.route('/api/import_league/<code>')
 def import_league(code):
-    # Denne URL-en er spesifikk for football-data.org (Premier League = PL)
     url = "https://api.football-data.org/v4/competitions/PL/matches"
-    # Her bruker vi 'X-Auth-Token' slik Daniel beskrev i mailen
     headers = {'X-Auth-Token': API_KEY}
     
     try:
@@ -61,14 +74,11 @@ def import_league(code):
         conn = get_db()
         c = conn.cursor()
         count = 0
-        
         for m in matches:
-            # Vi henter bare kamper som ikke er ferdigspilt (SCHEDULED eller TIMED)
             if m['status'] in ['SCHEDULED', 'TIMED']:
                 mid = m['id']
-                home = m['homeTeam']['name']
-                away = m['awayTeam']['name']
-                # Logoer/Crests fra Football-Data
+                home = m['homeTeam']['shortName'] or m['homeTeam']['name']
+                away = m['awayTeam']['shortName'] or m['awayTeam']['name']
                 h_logo = m['homeTeam'].get('crest', '')
                 a_logo = m['awayTeam'].get('crest', '')
                 m_date = m['utcDate']
@@ -78,26 +88,50 @@ def import_league(code):
                     VALUES (?,?,?,?,?,?,?,?)""",
                     (mid, 'PL', home, away, h_logo, a_logo, m_date, 'upcoming'))
                 count += 1
-            
         conn.commit()
         conn.close()
-        return jsonify({"status": f"Suksess! Hentet {count} kamper fra ny kilde."})
+        return jsonify({"status": f"Suksess! Hentet {count} kamper."})
     except Exception as e:
         return jsonify({"status": f"Feil: {str(e)}"})
 
-# --- STANDARD FUNKSJONALITET ---
-
-@app.route('/api/create_group', methods=['POST'])
-def create_group():
-    data = request.get_json()
-    name, admin = data.get('name'), data.get('admin_name')
-    gid = name.lower().replace(" ", "-")
+# --- DENNE RUTEN SØRGER FOR AT DU KOMMER TIL ADMIN-SIDEN FOR GRUPPA ---
+@app.route('/group/<group_id_str>/admin')
+def group_admin(group_id_str):
     conn = get_db()
     c = conn.cursor()
-    c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", (name, gid, admin))
+    c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
+    group = c.fetchone()
+    
+    if not group:
+        return "Gruppen ble ikke funnet", 404
+
+    c.execute("SELECT * FROM fixtures ORDER BY date ASC")
+    raw_fixtures = c.fetchall()
+    all_fixtures = []
+    for f in raw_fixtures:
+        f_list = list(f)
+        f_list[6] = format_date(f[6])
+        all_fixtures.append(f_list)
+
+    c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
+    selected_ids = [r[0] for r in c.fetchall()]
+    conn.close()
+    return render_template('group_admin.html', group=group, all_fixtures=all_fixtures, selected_ids=selected_ids)
+
+@app.route('/api/toggle_match', methods=['POST'])
+def toggle_match():
+    data = request.get_json()
+    gid, fid = data.get('group_id'), data.get('fixture_id')
+    conn = get_db()
+    c = conn.cursor()
+    c.execute("SELECT * FROM group_matches WHERE group_id = ? AND fixture_id = ?", (gid, fid))
+    if c.fetchone():
+        c.execute("DELETE FROM group_matches WHERE group_id = ? AND fixture_id = ?", (gid, fid))
+    else:
+        c.execute("INSERT INTO group_matches (group_id, fixture_id) VALUES (?, ?)", (gid, fid))
     conn.commit()
     conn.close()
-    return jsonify({"status": "Suksess"})
+    return jsonify({"status": "OK"})
 
 @app.route('/group/<group_id_str>')
 def group_view(group_id_str):
@@ -106,11 +140,14 @@ def group_view(group_id_str):
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
     c.execute("SELECT f.* FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id WHERE gm.group_id = ?", (group[0],))
-    kamper = c.fetchall()
-    c.execute("SELECT user_name, SUM(points) as total FROM bets WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC", (group_id_str,))
-    leaderboard = c.fetchall()
+    raw_fixtures = c.fetchall()
+    kamper = []
+    for f in raw_fixtures:
+        f_list = list(f)
+        f_list[6] = format_date(f[6])
+        kamper.append(f_list)
     conn.close()
-    return render_template('group_view.html', group_id=group_id_str, group=group, kamper=kamper, leaderboard=leaderboard)
+    return render_template('group_view.html', group_id=group_id_str, group=group, kamper=kamper)
 
 @app.route('/')
 def index(): return render_template('index.html')
