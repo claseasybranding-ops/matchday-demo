@@ -8,91 +8,65 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --md-red: #cc0000; --md-dark: #1a1a1a; }
-        body { background-color: #f8f9fa; font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 60px; }
+        body { background-color: #f8f9fa; font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 40px; }
         .navbar { background-color: var(--md-dark); border-bottom: 3px solid var(--md-red); }
-        .prize-banner { background: linear-gradient(45deg, #1a1a1a, #333); color: gold; border-radius: 12px; padding: 20px; margin-bottom: 30px; border: 1px solid gold; display: flex; align-items: center; justify-content: space-between; }
+        .prize-banner { background: linear-gradient(45deg, #1a1a1a, #333); color: gold; border-radius: 12px; padding: 20px; margin-bottom: 30px; border: 1px solid gold; text-align: center; }
         .match-card { background: white; border-radius: 12px; margin-bottom: 15px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         .score-input { width: 60px; height: 50px; text-align: center; font-size: 1.5rem; font-weight: bold; border: 2px solid #eee; border-radius: 8px; }
-        .leaderboard-card { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
-        .table thead { background: var(--md-dark); color: white; }
-        .rank-1 { background-color: #fffbeb !important; border-left: 5px solid gold; }
-        .btn-main { background: var(--md-red); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 700; width: 100%; }
+        .btn-main { background: var(--md-red); color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 700; width: 100%; text-transform: uppercase; }
+        .name-input { padding: 15px; border-radius: 12px; border: 2px solid #e5e7eb; width: 100%; margin-bottom: 10px; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-dark p-3">
-        <div class="container d-flex justify-content-between">
+        <div class="container d-flex justify-content-center">
             <a class="navbar-brand fw-bold" href="/">MATCHDAY</a>
-            <span class="text-white small">{{ group[1] }}</span>
         </div>
     </nav>
 
-    <div class="container mt-4">
+    <div class="container mt-4" style="max-width: 600px;">
         <div class="prize-banner shadow">
-            <div>
-                <h5 class="mb-0">🏆 PREMIE</h5>
-                <p class="mb-0 small">{{ group[5] or 'Ingen premie satt ennå' }}</p>
-            </div>
-            <div class="text-end">
-                <span class="small d-block">LEDER:</span>
-                <strong id="current-leader">{% if leaderboard %}{{ leaderboard[0][0] }}{% else %}-{% endif %}</strong>
-            </div>
+            <h5 class="mb-0">🏆 PREMIE I RUNDEN</h5>
+            <p class="mb-0 fw-bold" style="font-size: 1.4rem;">{{ group[5] or 'Ære og berømmelse' }}</p>
         </div>
 
-        <div class="row">
-            <div class="col-lg-7">
-                <h4 class="mb-3 fw-bold">Dine Tips</h4>
-                {% for k in kamper %}
-                <div class="match-card" data-id="{{ k[0] }}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="text-center" style="width: 35%;">
-                            <img src="{{ k[4] }}" class="mb-2" style="width: 45px; height: 45px; object-fit: contain;">
-                            <div class="fw-bold small">{{ k[2] }}</div>
-                        </div>
-                        <div class="d-flex align-items-center">
-                            <input type="number" class="score-input h-score" value="0">
-                            <span class="mx-2 fw-bold">-</span>
-                            <input type="number" class="score-input b-score" value="0">
-                        </div>
-                        <div class="text-center" style="width: 35%;">
-                            <img src="{{ k[5] }}" class="mb-2" style="width: 45px; height: 45px; object-fit: contain;">
-                            <div class="fw-bold small">{{ k[3] }}</div>
-                        </div>
-                    </div>
+        <h4 class="mb-3 fw-bold">Sett dine tips:</h4>
+        
+        {% for k in kamper %}
+        <div class="match-card" data-id="{{ k[0] }}">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-center" style="width: 35%;">
+                    <img src="{{ k[4] }}" class="mb-2" style="width: 45px; height: 45px; object-fit: contain;">
+                    <div class="fw-bold small">{{ k[2] }}</div>
                 </div>
-                {% endfor %}
-                <button class="btn-main shadow mt-3" onclick="saveTips()">LAGRE MINE TIPS</button>
+                <div class="d-flex align-items-center">
+                    <input type="number" class="score-input h-score" value="0">
+                    <span class="mx-2 fw-bold">-</span>
+                    <input type="number" class="score-input b-score" value="0">
+                </div>
+                <div class="text-center" style="width: 35%;">
+                    <img src="{{ k[5] }}" class="mb-2" style="width: 45px; height: 45px; object-fit: contain;">
+                    <div class="fw-bold small">{{ k[3] }}</div>
+                </div>
             </div>
+        </div>
+        {% endfor %}
 
-            <div class="col-lg-5">
-                <h4 class="mb-3 fw-bold">Live Tabell</h4>
-                <div class="leaderboard-card">
-                    <table class="table mb-0">
-                        <thead>
-                            <tr><th class="ps-3">#</th><th>Bruker</th><th class="text-end pe-3">Poeng</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for row in leaderboard %}
-                            <tr class="{% if loop.first %}rank-1{% endif %}">
-                                <td class="ps-3">{{ loop.index }}</td>
-                                <td><strong>{{ row[0] }}</strong></td>
-                                <td class="text-end pe-3">{{ row[1] }}</td>
-                            </tr>
-                            {% else %}
-                            <tr><td colspan="3" class="text-center py-4 text-muted">Ingen tips ennå.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="mt-4 p-3 bg-white rounded shadow-sm border">
+            <label class="small fw-bold text-muted text-uppercase mb-2 d-block">Ditt Navn</label>
+            <input type="text" id="user-name-field" class="name-input" placeholder="Skriv navnet ditt her...">
+            <button class="btn-main shadow" onclick="saveTips()">SEND INN TIPS & SE TABELL</button>
         </div>
     </div>
 
     <script>
         function saveTips() {
-            const userName = prompt("Skriv inn navnet ditt for å lagre tipsene:");
-            if (!userName) return;
+            const userName = document.getElementById('user-name-field').value;
+            if (!userName || userName.trim() === "") {
+                alert("Du må skrive navnet ditt for å delta!");
+                return;
+            }
 
             const tipsData = [];
             document.querySelectorAll('.match-card').forEach(card => {
@@ -112,8 +86,8 @@
                     tips: tipsData
                 })
             }).then(() => {
-                alert("Tips lagret!");
-                location.reload();
+                // Sender brukeren direkte til leaderboard-siden
+                window.location.href = "/group/{{ group[2] }}/leaderboard";
             });
         }
     </script>
