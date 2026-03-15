@@ -5,34 +5,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tabell | {{ group[1] }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; font-family: sans-serif; }
-        .leaderboard-card { background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; margin-top: 20px; }
-        .rank-1 { background-color: #fffbeb !important; border-left: 5px solid gold; }
+        :root { --md-dark: #0f172a; --md-red: #cc0000; }
+        body { background-color: #f1f5f9; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .leaderboard-container { max-width: 500px; margin: 40px auto; padding: 20px; }
+        .leaderboard-card { background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; }
+        .table { margin-bottom: 0; }
+        .table thead { background: var(--md-dark); color: white; border: none; }
+        .table th { padding: 18px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; border: none; }
+        .table td { padding: 18px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
+        .rank-badge { width: 28px; height: 28px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; }
+        .rank-1 .rank-badge { background: gold; color: #92400e; }
+        .points-col { font-weight: 800; color: var(--md-dark); text-align: right; font-size: 1.1rem; }
+        .refresh-notice { text-align: center; font-size: 0.7rem; color: #94a3b8; margin-top: 15px; text-transform: uppercase; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
-    <div class="container mt-5" style="max-width: 500px;">
-        <h3 class="fw-bold text-center">{{ group[1] }}</h3>
-        <p class="text-center text-muted">Live Leaderboard</p>
+
+    <div class="leaderboard-container">
+        <div class="text-center mb-4">
+            <h2 class="fw-extrabold mb-1" style="letter-spacing: -1px;">{{ group[1] }}</h2>
+            <span class="badge bg-dark">LIVE TABELL</span>
+        </div>
         
         <div class="leaderboard-card">
-            <table class="table mb-0">
-                <thead class="table-dark">
-                    <tr><th class="ps-3">#</th><th>Bruker</th><th class="text-end pe-3">Poeng</th></tr>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;">#</th>
+                        <th>Deltager</th>
+                        <th class="text-end">Poeng</th>
+                    </tr>
                 </thead>
                 <tbody>
                     {% for row in leaderboard %}
                     <tr class="{% if loop.first %}rank-1{% endif %}">
-                        <td class="ps-3">{{ loop.index }}</td>
-                        <td><strong>{{ row[0] }}</strong></td>
-                        <td class="text-end pe-3">{{ row[1] }}</td>
+                        <td><div class="rank-badge">{{ loop.index }}</div></td>
+                        <td><span class="fw-bold">{{ row[0] }}</span></td>
+                        <td class="points-col">{{ row[1] }}</td>
                     </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="text-center py-5 text-muted">Ingen tips registrert ennå.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <a href="/group/{{ group[2] }}" class="btn btn-outline-dark w-100 mt-4">ENDRE MINE TIPS</a>
+
+        <p class="refresh-notice">Oppdateres automatisk hvert 5. minutt...</p>
+        
+        <div class="mt-4">
+            <a href="/group/{{ group[2] }}" class="btn btn-outline-secondary w-100 py-3 fw-bold rounded-pill">ENDRE MINE TIPS</a>
+        </div>
     </div>
+
+    <script>
+        // Funksjon som ber serveren hente nye resultater og så refresher siden
+        function refreshLeaderboard() {
+            console.log("Sjekker for nye resultater...");
+            fetch('/api/refresh_data')
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Data oppdatert:", data);
+                    location.reload(); // Laster siden på nytt for å vise nye poeng
+                })
+                .catch(err => console.error("Kunne ikke oppdatere:", err));
+        }
+
+        // Sett opp intervall til hvert 5. minutt (300 000 ms)
+        setInterval(refreshLeaderboard, 300000);
+    </script>
 </body>
 </html>
