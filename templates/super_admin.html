@@ -58,7 +58,11 @@
                 <thead class="table-light"><tr><th class="small">Dato</th><th class="small">Kamp</th><th class="small text-end">Status</th></tr></thead>
                 <tbody>
                     {% for k in kamper %}
-                    <tr><td class="small text-muted">{{ k[6][:10] }}</td><td class="small fw-bold">{{ k[2] }} - {{ k[3] }}</td><td class="small text-end"><span class="badge bg-light text-success border">Klar</span></td></tr>
+                    <tr>
+                        <td class="small text-muted">{{ k[6][:10] if k[6] else 'TBA' }}</td>
+                        <td class="small fw-bold">{{ k[2] }} - {{ k[3] }}</td>
+                        <td class="small text-end"><span class="badge bg-light text-success border">Klar</span></td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -91,7 +95,6 @@
     }
 
     function createGroup() {
-        // Henter data fra de riktige ID-ene
         const nameVal = document.getElementById('new-group-name').value;
         const adminVal = document.getElementById('new-admin-name').value;
         
@@ -107,6 +110,7 @@
         })
         .then(res => res.json())
         .then(data => { 
+            // Endret fra "success" til "Suksess" for å matche Python-koden
             if(data.status === "Suksess") {
                 location.reload(); 
             } else {
@@ -119,7 +123,10 @@
     function importLeague(code) {
         fetch('/api/import_league/' + code)
         .then(res => res.json())
-        .then(data => { alert(data.status); location.reload(); });
+        .then(data => { 
+            alert(data.status); 
+            location.reload(); 
+        });
     }
 
     function pushResults() {
@@ -135,9 +142,12 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({scores: sc})
-        }).then(() => { 
-            alert("Resultater pushet!"); 
-            location.reload(); 
+        }).then(res => res.json())
+        .then(data => { 
+            if(data.status === "Suksess") {
+                alert("Resultater pushet og poeng beregnet!"); 
+                location.reload(); 
+            }
         });
     }
 </script>
