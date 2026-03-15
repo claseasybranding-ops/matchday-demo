@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --md-red: #cc0000; --md-dark: #1a1a1a; --md-bg: #f8f9fa; }
-        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 120px; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 140px; }
         
         .navbar { background-color: white; border-bottom: 2px solid var(--md-red); padding: 15px 0; }
         .navbar-brand { color: var(--md-dark) !important; letter-spacing: -1px; font-weight: 800; }
@@ -16,34 +16,36 @@
         .prize-banner { 
             background: linear-gradient(135deg, #1a1a1a 0%, #333 100%); 
             color: #FFD700; border-radius: 16px; padding: 25px; margin-bottom: 30px; 
-            border: 1px solid rgba(255, 215, 0, 0.3);
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
 
         .match-card { 
-            background: white; border-radius: 16px; margin-bottom: 15px; padding: 25px; 
-            border: 1px solid rgba(0,0,0,0.05); shadow: 0 4px 12px rgba(0,0,0,0.03);
+            background: white; border-radius: 20px; margin-bottom: 15px; padding: 25px; 
+            border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         }
         
-        /* Styling for låst kamp */
-        .match-locked { opacity: 0.6; background: #eee; pointer-events: none; }
-        .lock-badge { font-size: 0.7rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 10px; display: block; }
-
         .team-name { font-size: 0.85rem; font-weight: 700; margin-top: 8px; color: #444; }
-        .score-input { 
-            width: 55px; height: 55px; text-align: center; font-size: 1.6rem; 
-            font-weight: 800; border: 2px solid #eee; border-radius: 12px;
+
+        /* Stepper Styling */
+        .stepper { display: flex; align-items: center; background: #f1f1f1; border-radius: 12px; padding: 5px; }
+        .step-btn { 
+            width: 35px; height: 35px; border: none; background: white; 
+            border-radius: 8px; font-weight: 800; color: var(--md-dark);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
+        .step-btn:active { transform: scale(0.9); background: #eee; }
+        .score-display { width: 30px; text-align: center; font-size: 1.4rem; font-weight: 800; margin: 0 5px; }
 
         .action-container {
             position: fixed; bottom: 0; left: 0; right: 0; background: white;
             padding: 20px; border-top: 1px solid #eee; box-shadow: 0 -10px 25px rgba(0,0,0,0.05); z-index: 1000;
         }
 
-        .name-input { padding: 12px 15px; border-radius: 10px; border: 2px solid #eee; width: 100%; margin-bottom: 12px; font-weight: 600; }
+        .name-input { padding: 15px; border-radius: 12px; border: 2px solid #eee; width: 100%; margin-bottom: 12px; font-weight: 600; background: #f9f9f9; }
         .btn-main { 
-            background: var(--md-red); color: white; border: none; padding: 16px; 
-            border-radius: 12px; font-weight: 800; width: 100%; text-transform: uppercase;
+            background: var(--md-red); color: white; border: none; padding: 18px; 
+            border-radius: 15px; font-weight: 800; width: 100%; text-transform: uppercase;
         }
     </style>
 </head>
@@ -64,26 +66,30 @@
         <h5 class="mb-3 fw-800 text-muted text-uppercase small">Dine Tips</h5>
         
         {% for k in kamper %}
-        <div class="match-card {% if k[10] %}match-locked{% endif %}" data-id="{{ k[0] }}">
-            {% if k[10] %}
-            <span class="lock-badge">🔒 Låst (Kampstart er nær)</span>
-            {% endif %}
-            
+        <div class="match-card {% if k[10] %}opacity-50{% endif %}" data-id="{{ k[0] }}">
             <div class="d-flex justify-content-between align-items-center">
-                <div class="text-center" style="width: 33%;">
-                    <img src="{{ k[4] }}" style="width: 48px; height: 48px; object-fit: contain;">
-                    <div class="team-name">{{ k[2] }}</div>
+                <div class="text-center" style="width: 30%;">
+                    <img src="{{ k[4] }}" style="width: 45px; height: 45px; object-fit: contain;">
+                    <div class="team-name text-truncate">{{ k[2] }}</div>
                 </div>
 
-                <div class="d-flex align-items-center gap-2">
-                    <input type="number" class="score-input h-score" value="0" {% if k[10] %}disabled{% endif %}>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stepper">
+                        <button class="step-btn" onclick="changeScore(this, -1)">-</button>
+                        <div class="score-display h-score">0</div>
+                        <button class="step-btn" onclick="changeScore(this, 1)">+</button>
+                    </div>
                     <span class="fw-800 text-muted">:</span>
-                    <input type="number" class="score-input b-score" value="0" {% if k[10] %}disabled{% endif %}>
+                    <div class="stepper">
+                        <button class="step-btn" onclick="changeScore(this, -1)">-</button>
+                        <div class="score-display b-score">0</div>
+                        <button class="step-btn" onclick="changeScore(this, 1)">+</button>
+                    </div>
                 </div>
 
-                <div class="text-center" style="width: 33%;">
-                    <img src="{{ k[5] }}" style="width: 48px; height: 48px; object-fit: contain;">
-                    <div class="team-name">{{ k[3] }}</div>
+                <div class="text-center" style="width: 30%;">
+                    <img src="{{ k[5] }}" style="width: 45px; height: 45px; object-fit: contain;">
+                    <div class="team-name text-truncate">{{ k[3] }}</div>
                 </div>
             </div>
         </div>
@@ -92,22 +98,31 @@
 
     <div class="action-container">
         <div class="container" style="max-width: 460px;">
-            <input type="text" id="user-name-field" class="name-input" placeholder="Skriv navnet ditt her...">
-            <button class="btn-main" onclick="saveTips()">Lagre alle tips 🚀</button>
+            <input type="text" id="user-name-field" class="name-input" placeholder="Ditt navn...">
+            <button class="btn-main shadow" onclick="saveTips()">Lagre alle tips 🚀</button>
         </div>
     </div>
 
     <script>
+        // Funksjon for å endre tall med knapper
+        function changeScore(btn, delta) {
+            const display = btn.parentElement.querySelector('.score-display');
+            let current = parseInt(display.innerText);
+            let newVal = current + delta;
+            if (newVal < 0) newVal = 0;
+            display.innerText = newVal;
+        }
+
         function saveTips() {
             const userName = document.getElementById('user-name-field').value;
-            if (!userName) return alert("Du må skrive navnet ditt!");
+            if (!userName) return alert("Vennligst skriv navnet ditt!");
 
             const tipsData = [];
-            document.querySelectorAll('.match-card:not(.match-locked)').forEach(card => {
+            document.querySelectorAll('.match-card').forEach(card => {
                 tipsData.push({
                     match_id: card.getAttribute('data-id'),
-                    h: card.querySelector('.h-score').value || 0,
-                    a: card.querySelector('.b-score').value || 0
+                    h: card.querySelector('.h-score').innerText,
+                    a: card.querySelector('.b-score').innerText
                 });
             });
 
@@ -119,9 +134,8 @@
                     user_name: userName,
                     tips: tipsData
                 })
-            }).then(res => {
-                if(res.ok) window.location.href = "/group/{{ group[2] }}/leaderboard";
-                else alert("Kunne ikke lagre. Kanskje deadlinen gikk ut?");
+            }).then(() => {
+                window.location.href = "/group/{{ group[2] }}/leaderboard";
             });
         }
     </script>
