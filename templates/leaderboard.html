@@ -7,17 +7,20 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-dark: #1a1a1a; }
-        body { background-color: #f8f9fa; font-family: 'Plus Jakarta Sans', sans-serif; color: #333; }
+        :root { --md-red: #cc0000; --md-dark: #1a1a1a; --md-bg: #f8f9fa; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #333; }
         
         .leaderboard-container { max-width: 500px; margin: 40px auto; padding: 20px; }
         
+        /* Premie-banner */
         .prize-notice {
-            background: white; border-radius: 12px; padding: 12px;
+            background: white; border-radius: 12px; padding: 15px;
             margin-bottom: 25px; border-left: 4px solid #FFD700;
             box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            display: flex; align-items: center;
         }
 
+        /* Leaderboard Card */
         .leaderboard-card { 
             background: white; border-radius: 20px; border: 1px solid rgba(0,0,0,0.05); 
             overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
@@ -25,7 +28,8 @@
 
         .table thead { background: #fdfdfd; }
         .table th { padding: 20px; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; color: #888; border-bottom: 2px solid #f1f1f1; }
-        .table td { padding: 20px; vertical-align: middle; border-bottom: 1px solid #f8f8f8; cursor: pointer; }
+        .table td { padding: 20px; vertical-align: middle; border-bottom: 1px solid #f8f8f8; cursor: pointer; transition: 0.2s; }
+        .table tr:hover td { background-color: #fafafa; }
 
         .rank-badge { 
             width: 35px; height: 35px; background: #f1f1f1; border-radius: 10px; 
@@ -41,30 +45,32 @@
         .live-dot { height: 8px; width: 8px; background-color: var(--md-red); border-radius: 50%; display: inline-block; margin-right: 5px; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 70% { transform: scale(1.5); opacity: 0; } 100% { transform: scale(0.95); opacity: 0; } }
 
-        .btn-outline-custom { border: 2px solid #eee; color: #444; font-weight: 700; border-radius: 14px; padding: 15px; background: white; text-decoration: none; display: block; text-align: center; }
+        .btn-outline-custom { border: 2px solid #eee; color: #444; font-weight: 700; border-radius: 14px; padding: 15px; background: white; text-decoration: none; display: block; text-align: center; transition: 0.3s; }
+        .btn-outline-custom:hover { border-color: var(--md-red); color: var(--md-red); }
         
+        .refresh-status { text-align: center; font-size: 0.65rem; color: #bbb; margin-top: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Modal / Popup */
         .modal-dialog { max-width: 400px; }
-        .modal-content { border-radius: 20px; border: none; }
-        .match-bet-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
+        .modal-content { border-radius: 20px; border: none; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+        .match-bet-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f9f9f9; }
         .team-logo-small { width: 25px; height: 25px; object-fit: contain; margin: 0 5px; }
-        .bet-score-box { font-weight: 800; font-size: 0.9rem; background: #f1f1f1; padding: 5px 10px; border-radius: 7px; }
+        .bet-score-box { font-weight: 800; font-size: 0.9rem; background: #f1f1f1; padding: 5px 10px; border-radius: 7px; min-width: 45px; text-align: center; }
         .bet-pts-badge { font-weight: 800; font-size: 0.7rem; color: white; background: var(--md-red); padding: 3px 7px; border-radius: 5px; margin-left: 6px; }
-        
-        .refresh-notice { text-align: center; font-size: 0.7rem; color: #bbb; margin-top: 15px; font-weight: 600; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
     <div class="leaderboard-container">
         <div class="text-center mb-4">
-            <h1 class="fw-800 mb-1" style="letter-spacing: -1px;">{{ group[1] }}</h1>
+            <h1 class="fw-800 mb-1" style="letter-spacing: -1px; font-size: 2.2rem;">{{ group[1] }}</h1>
             <div class="d-flex align-items-center justify-content-center mb-3">
                 <span class="live-dot"></span>
-                <span class="small fw-bold text-uppercase" style="color: var(--md-red);">Live Leaderboard</span>
+                <span class="small fw-bold text-uppercase" style="color: var(--md-red); letter-spacing: 1px;">Live Leaderboard</span>
             </div>
         </div>
 
-        <div class="prize-notice d-flex align-items-center">
+        <div class="prize-notice">
             <span class="me-3" style="font-size: 1.5rem;">🏆</span>
             <div>
                 <div class="small fw-bold text-muted text-uppercase" style="font-size: 0.6rem;">Premie i runden</div>
@@ -83,7 +89,7 @@
                         <td><div class="rank-badge">{{ loop.index }}</div></td>
                         <td>
                             <div class="fw-bold">{{ row[0] }}</div>
-                            {% if loop.first %}<small class="text-muted fw-bold" style="font-size: 0.6rem; text-transform: uppercase;">Leader</small>{% endif %}
+                            {% if loop.first %}<small class="text-muted fw-bold" style="font-size: 0.6rem; text-transform: uppercase;">Leder akkurat nå</small>{% endif %}
                         </td>
                         <td class="points-col">{{ row[1] }}</td>
                     </tr>
@@ -94,25 +100,26 @@
 
         <div class="mt-4">
             <a href="/group/{{ group[2] }}" class="btn btn-outline-custom shadow-sm">← ENDRE MINE TIPS</a>
-            <p id="refresh-timer" class="refresh-notice">Oppdateres om et øyeblikk...</p>
+            <p id="refresh-indicator" class="refresh-status">Oppdateres automatisk hvert 2. minutt</p>
         </div>
     </div>
 
     <div class="modal fade" id="betsModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content shadow-lg">
-                <div class="modal-header border-0">
+                <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-800">Tips for <span id="modalUserName" style="color:var(--md-red)"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="modalBetsBody"></div>
+                <div class="modal-body" id="modalBetsBody">
+                    </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Modal logikk
+        // Funksjon for å hente og vise tips i popup
         function openBetsModal(userName) {
             document.getElementById('modalUserName').innerText = userName;
             const modalBody = document.getElementById('modalBetsBody');
@@ -143,19 +150,22 @@
             new bootstrap.Modal(document.getElementById('betsModal')).show();
         }
 
-        // AUTO-REFRESH LOGIKK
-        function refreshData() {
-            console.log("Oppdaterer tabell...");
+        // AUTO-REFRESH LOGIKK: Snakker med den nye poeng-motoren i app.py
+        function autoRefresh() {
+            console.log("Sjekker for nye poeng og resultater...");
             fetch('/api/refresh_data')
-                .then(() => {
-                    // Vi reloader siden for å vise nye poeng i tabellen
-                    window.location.reload();
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === "OK") {
+                        // Vi laster siden på nytt slik at Jinja2 kan tegne tabellen med de nye poengene
+                        window.location.reload();
+                    }
                 })
-                .catch(err => console.log("Refresh feilet", err));
+                .catch(err => console.log("Refresh feilet:", err));
         }
 
-        // Kjører refresh hvert 5. minutt (300 000 millisekunder)
-        setInterval(refreshData, 300000);
+        // Kjører sjekk hvert 2. minutt
+        setInterval(autoRefresh, 120000);
     </script>
 </body>
 </html>
