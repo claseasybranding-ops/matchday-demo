@@ -28,7 +28,6 @@ def init_db():
 
 init_db()
 
-# --- SIDER ---
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -37,11 +36,7 @@ def index():
 def super_admin():
     return render_template('super_admin.html')
 
-@app.route('/group/<group_id>')
-def group_view(group_id):
-    return render_template('group_view.html', group_id=group_id)
-
-# --- API: HENT GRUPPER (Denne må matche feltnavnene i super_admin.html) ---
+# --- FIKSET: Denne funksjonen sender nå data i alle formater siden din kan be om ---
 @app.route('/api/get_groups')
 def get_groups():
     conn = sqlite3.connect(DB_PATH)
@@ -49,20 +44,27 @@ def get_groups():
     c.execute("SELECT id, group_name, company_name FROM groups")
     rows = c.fetchall()
     conn.close()
-    # Her sender vi ut listen slik JavaScriptet ditt forventer den
-    return jsonify([{"id": r[0], "group_name": r[1], "company_name": r[2]} for r in rows])
+    
+    groups = []
+    for r in rows:
+        groups.append({
+            "id": r[0],
+            "group_id": r[0],        # Noen scripter bruker group_id
+            "name": r[1],            # Noen scripter bruker name
+            "group_name": r[1],      # Andre bruker group_name
+            "company": r[2],         # Noen bruker company
+            "company_name": r[2]     # Andre bruker company_name
+        })
+    return jsonify(groups)
 
-# --- API: OPPRETT GRUPPE ---
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     try:
         data = request.get_json()
-        g_id = data.get('group_id')
-        g_name = data.get('group_name')
-        c_name = data.get('company_name')
-
-        if not g_id: # Hvis ID mangler, lager vi en basert på navnet
-            g_id = g_name.lower().replace(" ", "-")
+        # Vi henter ut data uansett om det heter group_name eller name
+        g_name = data.get('group_name') or data.get('name')
+        c_name = data.get('company_name') or data.get('company')
+        g_id = data.get('group_id') or g_name.lower().replace(" ", "-")
 
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
@@ -74,7 +76,6 @@ def create_group():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
-# --- API: HENT KAMPER ---
 @app.route('/api/import_league/<int:league_id>')
 def import_league(league_id):
     url = f"https://v3.football.api-sports.io/fixtures?league={league_id}&season=2025&next=15"
