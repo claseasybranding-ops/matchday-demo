@@ -62,14 +62,23 @@ def update_points_logic():
                 c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=?, first_goal_min=? WHERE id=?", 
                          (h_score, a_score, status, f_goal, mid))
                 
-                c.execute("SELECT id, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
-                for bet_id, u_h, u_a, u_gg in c.fetchall():
+                c.execute("SELECT id, group_id_str, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
+                for bet_id, gid, u_h, u_a, u_gg in c.fetchall():
                     pts = 0
                     if u_h == h_score and u_a == a_score: pts = 3
                     elif (u_h > u_a and h_score > a_score) or (u_h < u_a and h_score < a_score) or (u_h == u_a and h_score == a_score): pts = 1
                     
                     if f_goal > 0 and u_gg == f_goal: pts += 5
                     c.execute("UPDATE bets SET points=? WHERE id=?", (pts, bet_id))
+
+                if f_goal > 0:
+                    c.execute("SELECT DISTINCT group_id_str FROM bets WHERE fixture_id=?", (mid,))
+                    for (group_id,) in c.fetchall():
+                        c.execute("SELECT MIN(ABS(golden_goal - ?)) FROM bets WHERE fixture_id=? AND group_id_str=? AND golden_goal > 0", (f_goal, mid, group_id))
+                        min_diff = c.fetchone()[0]
+                        if min_diff is not None and min_diff > 0:
+                            c.execute("UPDATE bets SET points = points + 2 WHERE fixture_id=? AND group_id_str=? AND ABS(golden_goal - ?) = ?", (mid, group_id, f_goal, min_diff))
+
         conn.commit(); conn.close()
         return True
     except: return False
@@ -152,7 +161,6 @@ def update_group_settings():
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT id FROM groups WHERE group_id_str = ?", (data['group_id_str'],))
     gid = c.fetchone()[0]
-    # Gjenopprettet prize_info i databsen
     c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data.get('mode', 'multi'), data.get('prize', ''), gid))
     c.execute("DELETE FROM group_matches WHERE group_id = ?", (gid,))
     for mid in data['matches']:
@@ -184,6 +192,12 @@ def submit_tips():
     c.execute("DELETE FROM bets WHERE group_id_str = ? AND user_name = ?", (data['group_id'], data['user_name']))
     for t in data['tips']:
         c.execute("INSERT INTO bets (group_id_str, user_name, fixture_id, home_score, away_score, golden_goal) VALUES (?,?,?,?,?,?)", (data['group_id'], data['user_name'], int(t['match_id']), int(t['h']), int(t['a']), data.get('golden_goal', 0)))
+    
+    if 'extras' in data:
+        c.execute("DELETE FROM extra_bets WHERE group_id_str = ? AND user_name = ?", (data['group_id'], data['user_name']))
+        for q_id, val in data['extras'].items():
+            c.execute("INSERT INTO extra_bets (group_id_str, user_name, question_id, user_answer) VALUES (?,?,?,?)", (data['group_id'], data['user_name'], int(q_id), val))
+            
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
 
@@ -193,26 +207,28 @@ def import_league():
     headers = {'X-Auth-Token': API_KEY}
     res = requests.get(url, headers=headers).json()
     conn = get_db(); c = conn.cursor()
+    
+    # RENSING: Sletter alt gammelt innhold for å starte en helt ren ny runde
+    c.execute("DELETE FROM fixtures")
+    c.execute("DELETE FROM extra_questions")
+    c.execute("DELETE FROM extra_bets")
+    c.execute("DELETE FROM group_matches")
+    c.execute("DELETE FROM bets") # Sletter også alle tips fra forrige runde
+    
     for m in res.get('matches', []):
         c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
             (m['id'], 'PL', m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam'].get('crest',''), m['awayTeam'].get('crest',''), m['utcDate'], 'upcoming'))
+    
     conn.commit(); conn.close()
     return jsonify({"status": "Suksess"})
 
 @app.route('/api/get_user_bets/<group_id_str>/<user_name>')
 def get_user_bets(group_id_str, user_name):
     conn = get_db(); c = conn.cursor()
-    c.execute("""SELECT b.home_score, b.away_score, b.points, b.golden_goal, f.home_team, f.away_team, f.home_logo, f.away_logo 
-                 FROM bets b JOIN fixtures f ON b.fixture_id = f.id 
-                 WHERE b.group_id_str = ? AND b.user_name = ?""", (group_id_str, user_name))
+    c.execute("SELECT b.home_score, b.away_score, b.points, b.golden_goal, f.home_team, f.away_team, f.home_logo, f.away_logo FROM bets b JOIN fixtures f ON b.fixture_id = f.id WHERE b.group_id_str = ? AND b.user_name = ?", (group_id_str, user_name))
     main_bet = c.fetchall()
-    
-    # Gjenopprettet spørsmålene for popup
-    c.execute("""SELECT q.question_text, eb.user_answer 
-                 FROM extra_bets eb JOIN extra_questions q ON eb.question_id = q.id 
-                 WHERE eb.group_id_str = ? AND eb.user_name = ?""", (group_id_str, user_name))
+    c.execute("SELECT q.question_text, eb.user_answer FROM extra_bets eb JOIN extra_questions q ON eb.question_id = q.id WHERE eb.group_id_str = ? AND eb.user_name = ?", (group_id_str, user_name))
     extras = c.fetchall()
-    
     conn.close()
     return jsonify({
         'main': [{'h': b[0], 'a': b[1], 'pts': b[2], 'gg': b[3], 'ht': b[4], 'at': b[5], 'hl': b[6], 'al': b[7]} for b in main_bet],
