@@ -3,142 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>System Admin | MatchDay</title>
+    <title>MatchDay | System Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-card: #ffffff; --md-border: #e2e8f0; }
-        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 60px; }
-        
-        .navbar-custom { background: white; padding: 15px 0; border-bottom: 2px solid var(--md-red); margin-bottom: 30px; }
-        .logo-brand { font-weight: 800; font-size: 1.5rem; color: #1a1a1a; text-decoration: none; }
-        
-        .card-custom { background: var(--md-card); border: 1px solid var(--md-border); border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-        .btn-main { background: var(--md-red); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
-        
-        .investor-drawer { background: #fff1f2; border: 2px dashed var(--md-red); border-radius: 16px; padding: 25px; display: none; margin-top: 20px; }
-        .table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #888; border-bottom: 2px solid #eee; }
+        :root { --md-red: #cc0000; --md-bg: #f4f7f6; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; }
+        .navbar { background: white; border-bottom: 2px solid #eee; padding: 15px 0; }
+        .admin-card { background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .btn-md { background: var(--md-red); color: white; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 800; transition: 0.3s; }
+        .btn-md:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(204,0,0,0.3); color: white; }
+        .club-row { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .fixture-row { font-size: 0.85rem; padding: 10px 0; border-bottom: 1px solid #f9f9f9; }
+        .status-badge { padding: 5px 10px; border-radius: 8px; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; background: #e8f5e9; color: #2e7d32; }
     </style>
 </head>
 <body>
-
-<nav class="navbar-custom shadow-sm">
-    <div class="container d-flex justify-content-between align-items-center">
-        <a href="/" class="logo-brand">MATCHDAY<span style="color:var(--md-red)">.</span> <small class="text-muted fw-bold" style="font-size: 0.7rem;">SYSTEM ADMIN</small></a>
-        <button class="btn btn-sm btn-dark fw-bold px-3" style="border-radius: 8px;" onclick="toggleInvestor()">INVESTOR MODUS</button>
-    </div>
-</nav>
-
-<div class="container" style="max-width: 900px;">
-    
-    <div class="card-custom">
-        <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Opprett ny kunde / Supporterklubb</label>
-        <div class="row g-2">
-            <div class="col-md-5"><input type="text" id="new-group-name" class="form-control form-control-lg" placeholder="Navn på klubb" style="font-size: 0.9rem; border-radius: 10px;"></div>
-            <div class="col-md-4"><input type="text" id="new-admin-name" class="form-control form-control-lg" placeholder="Navn på Admin" style="font-size: 0.9rem; border-radius: 10px;"></div>
-            <div class="col-md-3"><button class="btn-main w-100 h-100" onclick="createGroup()">Opprett 🚀</button></div>
+    <nav class="navbar mb-5">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h4 class="fw-800 m-0">MATCHDAY. <span class="text-muted small fw-400">SYSTEM ADMIN</span></h4>
+            <button class="btn btn-dark fw-800 rounded-pill px-4">INVESTOR MODUS</button>
         </div>
-    </div>
+    </nav>
 
-    <div class="card-custom">
-        <label class="small fw-bold text-muted text-uppercase mb-3 d-block">Aktive Supporterklubber</label>
-        {% for g in grupper %}
-        <div class="d-flex justify-content-between align-items-center border-bottom py-3">
-            <div>
-                <div class="fw-800" style="font-size: 1.1rem;">{{ g[1] }}</div>
-                <small class="text-muted fw-bold">ID: {{ g[2] }}</small>
-            </div>
-            <div class="d-flex gap-2">
-                <a href="/group/{{ g[2] }}" target="_blank" class="btn btn-sm btn-outline-secondary fw-bold">SE SIDE</a>
-                <a href="/group/{{ g[2] }}/admin" class="btn btn-sm btn-outline-dark fw-bold">KONTROLLPANEL</a>
+    <div class="container" style="max-width: 900px;">
+        <div class="admin-card">
+            <h6 class="fw-800 text-uppercase text-muted mb-4 small">Opprett ny kunde / supporterklubb</h6>
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" id="club-name" class="form-control p-3 fw-bold" placeholder="Navn på klubb (f.eks TV2)">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" id="admin-name" class="form-control p-3 fw-bold" placeholder="Navn på Admin">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn-md w-100 h-100" onclick="createClub()">OPPRETT 🚀</button>
+                </div>
             </div>
         </div>
-        {% endfor %}
+
+        <div class="admin-card p-0 overflow-hidden">
+            <div class="p-4 border-bottom"><h6 class="fw-800 text-uppercase text-muted m-0 small">Aktive Supporterklubber</h6></div>
+            <div id="club-list">
+                {% for g in grupper %}
+                <div class="club-row">
+                    <div>
+                        <div class="fw-800 h5 m-0">{{ g[1] }}</div>
+                        <div class="text-muted small">ID: {{ g[2] }} | Admin: {{ g[3] or 'Ikke satt' }}</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="/group/{{ g[2] }}" class="btn btn-outline-dark fw-800 rounded-pill px-3">SE SIDE</a>
+                        <a href="/group/{{ g[2] }}/admin" class="btn btn-dark fw-800 rounded-pill px-3">KONTROLLPANEL</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h6 class="fw-800 text-uppercase text-muted m-0 small">Globalt Kamp-lager (PL)</h6>
+                <button class="btn btn-outline-danger fw-800 btn-sm" onclick="importMatches()">Hent ferske kamper</button>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr class="text-muted small"><th>DATO</th><th>KAMP</th><th class="text-end">STATUS</th></tr></thead>
+                    <tbody>
+                        {% for k in kamper %}
+                        <tr class="fixture-row">
+                            <td class="fw-bold">{{ k[6] }}</td>
+                            <td class="fw-800">{{ k[2] }} – {{ k[3] }}</td>
+                            <td class="text-end"><span class="status-badge">Klar for spill</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <div class="card-custom">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <label class="small fw-bold text-muted text-uppercase m-0">Globalt Kamp-lager (PL)</label>
-            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="importLeague('PL')">Hent ferske kamper</button>
-        </div>
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead><tr><th>Dato</th><th>Kamp</th><th class="text-end">Status</th></tr></thead>
-                <tbody>
-                    {% for k in kamper %}
-                    <tr>
-                        <td class="small text-muted">{{ k[6] }}</td>
-                        <td class="fw-bold">{{ k[2] }} - {{ k[3] }}</td>
-                        <td class="text-end"><span class="badge bg-light text-success border">Klar for spill</span></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+    <script>
+        function createClub() {
+            const name = document.getElementById('club-name').value;
+            const admin = document.getElementById('admin-name').value;
+            if(!name) return alert("Mangler navn!");
 
-    <div id="investor-panel" class="investor-drawer">
-        <div class="text-center mb-4">
-            <h5 class="fw-800 text-danger mb-1">DEMO-KONTROLL: PUSH LIVE DATA</h5>
-            <p class="small text-muted">Simuler mål i sanntid for å imponere investorer</p>
-        </div>
-        
-        <div class="bg-white rounded-4 border p-3 mb-4">
-            <table class="table table-borderless m-0 align-middle">
-                <tbody id="push-list">
-                    {% for k in kamper %}
-                    <tr data-id="{{ k[0] }}">
-                        <td class="fw-bold small">{{ k[2] }} - {{ k[3] }}</td>
-                        <td><input type="number" class="h-score form-control form-control-sm text-center fw-bold" style="width:60px; border-radius: 8px;" value="{{ k[8] or 0 }}"></td>
-                        <td><input type="number" class="b-score form-control form-control-sm text-center fw-bold" style="width:60px; border-radius: 8px;" value="{{ k[9] or 0 }}"></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <button class="btn btn-danger w-100 py-3 fw-800 shadow" style="border-radius: 14px;" onclick="pushResults()">OPPDATER ALLE RESULTATER NÅ ⚡</button>
-    </div>
-</div>
-
-<script>
-    function toggleInvestor() {
-        const panel = document.getElementById('investor-panel');
-        panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
-    }
-
-    function createGroup() {
-        const nameVal = document.getElementById('new-group-name').value;
-        const adminVal = document.getElementById('new-admin-name').value;
-        if(!nameVal || !adminVal) return alert("Fyll ut begge feltene.");
-        
-        fetch('/api/create_group', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ name: nameVal, admin_name: adminVal })
-        })
-        .then(res => res.json())
-        .then(data => { location.reload(); });
-    }
-
-    function importLeague(code) {
-        fetch('/api/import_league/' + code).then(() => location.reload());
-    }
-
-    function pushResults() {
-        const sc = [];
-        document.querySelectorAll('#push-list tr').forEach(r => {
-            sc.push({
-                match_id: r.getAttribute('data-id'), 
-                h: r.querySelector('.h-score').value, 
-                b: r.querySelector('.b-score').value
+            fetch('/api/create_group', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name: name, admin_name: admin })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "Suksess") {
+                    window.location.reload();
+                }
             });
-        });
-        fetch('/api/admin_push_scores', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({scores: sc})
-        }).then(() => { alert("Resultater pushet!"); location.reload(); });
-    }
-</script>
+        }
+
+        function importMatches() {
+            fetch('/api/import_league/PL')
+            .then(() => {
+                alert("Kamper er oppdatert!");
+                window.location.reload();
+            });
+        }
+    </script>
 </body>
 </html>
