@@ -8,32 +8,54 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --md-red: #cc0000; --md-bg: #f8f9fa; }
-        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 140px; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; 
+               /* Økt padding i bunn slik at innholdet kan scrolles helt opp over knappen */
+               padding-bottom: 220px; }
+        
         .header { background: white; padding: 25px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center; margin-bottom: 30px; }
+        
         .match-card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .team-logo { width: 50px; height: 50px; object-fit: contain; margin-bottom: 10px; }
         .score-box { background: #f1f1f1; border-radius: 15px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; }
         .btn-adjust { width: 40px; height: 40px; border-radius: 12px; border: 2px solid #eee; background: white; font-weight: 800; }
+        
         .gg-input { background: #fff; border: 2px solid var(--md-red); border-radius: 18px; padding: 20px; text-align: center; font-size: 1.2rem; font-weight: 800; width: 100%; color: var(--md-red); }
+        
         .extra-card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .btn-check:checked + .btn-outline-danger { background-color: var(--md-red); color: white; }
-        .footer-action { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 20px; border-radius: 30px 30px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; }
-        .btn-submit { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; }
+        
+        /* Oppgradert Footer: Glass-effekt og mer luft */
+        .footer-action { 
+            position: fixed; 
+            bottom: 0; left: 0; right: 0; 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px);
+            padding: 20px 20px 30px 20px; 
+            border-radius: 30px 30px 0 0; 
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.08); 
+            z-index: 1000; 
+        }
+        .btn-submit { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; transition: 0.3s; }
+        .btn-submit:active { transform: scale(0.98); }
+
+        /* Regler-boks */
+        .rules-badge { border-left: 5px solid var(--md-red); background: #fffcfc; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1 class="fw-800 m-0">{{ group[1] }}</h1>
-        <span class="badge bg-light text-dark mt-2 fw-bold">RUNDE 1</span>
+        <span class="badge bg-light text-dark mt-2 fw-bold">RUNDE {{ group[4]|upper }}</span>
     </div>
 
     <div class="container" style="max-width: 500px;">
-        <div class="match-card p-3 mb-4" style="border-left: 5px solid var(--md-red); background: #fffcfc;">
-            <h6 class="fw-800 text-uppercase small mb-2 text-center">Poengsystem:</h6>
+        <div class="match-card p-3 mb-4 rules-badge">
+            <h6 class="fw-800 text-uppercase small mb-2 text-center">Slik får du poeng:</h6>
             <div class="d-flex justify-content-between text-center mt-2">
-                <div><div class="fw-800 h5 m-0">3p</div><div class="small text-muted fw-bold" style="font-size: 0.6rem;">SCORE</div></div>
-                <div><div class="fw-800 h5 m-0">1p</div><div class="small text-muted fw-bold" style="font-size: 0.6rem;">HUB</div></div>
-                <div><div class="fw-800 h5 m-0" style="color: #cc0000">+5p</div><div class="small text-muted fw-bold" style="font-size: 0.6rem;">G.GOAL</div></div>
+                <div><div class="fw-800 h5 m-0">3p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">SCORE</div></div>
+                <div><div class="fw-800 h5 m-0">1p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">HUB</div></div>
+                <div><div class="fw-800 h5 m-0" style="color: var(--md-red)">+5p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">GG TREFF</div></div>
+                <div><div class="fw-800 h5 m-0" style="color: #28a745">+2p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">GG NÆRMEST</div></div>
             </div>
         </div>
 
@@ -69,7 +91,7 @@
 
         <div class="match-card">
             <label class="fw-800 small text-uppercase text-muted d-block text-center mb-3">Golden Goal (Første målminutt)</label>
-            <input type="number" id="golden-goal" class="gg-input" placeholder="Eks: 24">
+            <input type="number" id="golden-goal" class="gg-input" placeholder="Hvilket minutt? Eks: 24">
         </div>
 
         {% if questions %}
@@ -77,12 +99,13 @@
             <h6 class="fw-800 text-uppercase small text-muted mb-4 text-center">Tilleggsspørsmål</h6>
             {% for q in questions %}
             <div class="mb-4 extra-q-row" data-qid="{{ q[0] }}">
-                <label class="fw-bold d-block mb-2 text-center">{{ q[1] }}</label>
+                <label class="fw-bold d-block mb-3 text-center">{{ q[1] }}</label>
                 <div class="d-flex justify-content-center gap-3">
                     <input type="radio" class="btn-check" name="q{{ q[0] }}" id="q{{ q[0] }}y" value="JA">
-                    <label class="btn btn-outline-danger fw-bold px-4 rounded-pill" for="q{{ q[0] }}y">JA</label>
+                    <label class="btn btn-outline-danger fw-bold px-4 py-2 rounded-pill" for="q{{ q[0] }}y">JA</label>
+
                     <input type="radio" class="btn-check" name="q{{ q[0] }}" id="q{{ q[0] }}n" value="NEI" checked>
-                    <label class="btn btn-outline-danger fw-bold px-4 rounded-pill" for="q{{ q[0] }}n">NEI</label>
+                    <label class="btn btn-outline-danger fw-bold px-4 py-2 rounded-pill" for="q{{ q[0] }}n">NEI</label>
                 </div>
             </div>
             {% endfor %}
@@ -108,6 +131,7 @@
         function sendTips() {
             const name = document.getElementById('user-name').value;
             if(!name) return alert("Husk navn!");
+            
             const tips = [];
             document.querySelectorAll('.match-row').forEach(row => {
                 tips.push({
@@ -116,6 +140,7 @@
                     a: row.querySelector('.a-score').innerText
                 });
             });
+
             const extras = {};
             document.querySelectorAll('.extra-q-row').forEach(row => {
                 const qid = row.dataset.qid;
