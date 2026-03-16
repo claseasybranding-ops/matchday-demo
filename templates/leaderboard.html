@@ -9,50 +9,35 @@
     <style>
         :root { --md-red: #cc0000; --md-dark: #1a1a1a; --md-bg: #f8f9fa; --md-gold: #FFD700; }
         body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--md-dark); }
-        
         .leaderboard-container { max-width: 500px; margin: 40px auto; padding: 20px; }
-        
-        /* Header & Live Status */
         .live-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 5px; }
         .live-dot { height: 10px; width: 10px; background-color: var(--md-red); border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 70% { transform: scale(1.6); opacity: 0; } 100% { transform: scale(0.95); opacity: 0; } }
-        
-        /* Prize Card */
         .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); }
         .prize-icon { font-size: 2rem; margin-right: 20px; }
-        
-        /* Leaderboard Table */
         .leaderboard-card { background: white; border-radius: 28px; box-shadow: 0 15px 45px rgba(0,0,0,0.07); overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
         .table { margin-bottom: 0; }
         .table thead th { background: #fafafa; border-bottom: 1px solid #eee; padding: 15px 20px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
         .table tbody tr { transition: 0.2s; cursor: pointer; }
         .table tbody tr:hover { background: #fdfdfd; }
         .table td { padding: 18px 20px; vertical-align: middle; border-bottom: 1px solid #f8f8f8; }
-        
         .rank-box { width: 36px; height: 36px; background: #f1f1f1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; }
         tr:nth-child(1) .rank-box { background: var(--md-gold); color: white; }
-        
         .user-name { font-weight: 700; font-size: 1.05rem; }
         .points-display { font-weight: 800; color: var(--md-red); font-size: 1.2rem; text-align: right; }
-
-        /* Detail Modal */
         .modal-content { border-radius: 32px; border: none; box-shadow: 0 25px 60px rgba(0,0,0,0.2); }
         .modal-header { border-bottom: 1px solid #f0f0f0; padding: 25px 30px; }
         .modal-body { padding: 30px; }
-        
         .bet-detail-card { background: #f9f9f9; border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid #eee; }
         .team-mini { text-align: center; width: 35%; }
         .team-mini img { width: 35px; height: 35px; object-fit: contain; margin-bottom: 5px; }
         .team-mini span { display: block; font-size: 0.75rem; font-weight: 800; }
-        
         .score-display { width: 30%; text-align: center; font-size: 1.8rem; font-weight: 800; color: var(--md-dark); }
         .gg-badge { display: inline-block; background: var(--md-dark); color: white; padding: 5px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 10px; }
-        
         .extra-list { margin-top: 20px; }
         .extra-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
         .extra-q { font-size: 0.85rem; color: #666; font-weight: 600; }
         .extra-a { font-weight: 800; color: var(--md-red); }
-
         .footer-info { text-align: center; margin-top: 25px; font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
@@ -106,8 +91,7 @@
                     <h5 class="fw-800 m-0">Tips for <span id="modalName" style="color:var(--md-red)"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="modalBody">
-                    </div>
+                <div class="modal-body" id="modalBody"></div>
             </div>
         </div>
     </div>
@@ -124,6 +108,7 @@
             .then(data => {
                 let html = '';
                 
+                // 1. Vis kampscore og Golden Goal
                 data.main.forEach(b => {
                     html += `
                         <div class="bet-detail-card shadow-sm">
@@ -145,8 +130,10 @@
                     `;
                 });
 
+                // 2. Vis Tilleggsspørsmål (Målscorere etc)
                 if(data.extras && data.extras.length > 0) {
-                    html += '<div class="extra-list">';
+                    html += '<div class="extra-list mt-4">';
+                    html += '<h6 class="fw-800 text-uppercase small text-muted mb-3">Tilleggsspørsmål</h6>';
                     data.extras.forEach(e => {
                         html += `
                             <div class="extra-item">
@@ -164,7 +151,6 @@
             new bootstrap.Modal(document.getElementById('betModal')).show();
         }
 
-        // Auto-refresh
         setInterval(() => {
             fetch('/api/refresh_data').then(() => window.location.reload());
         }, 120000);
