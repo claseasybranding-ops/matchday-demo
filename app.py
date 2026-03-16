@@ -80,18 +80,17 @@ def get_players_from_api(fixture_id):
     except: pass
     return players
 
-# --- HOVEDRUTER ---
-
 @app.route('/')
-def index():
-    return render_template('index.html')
+def index(): return render_template('index.html')
 
 @app.route('/super_admin_dashboard')
 def super_admin():
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT id, group_name, group_id_str, admin_name FROM groups")
     grupper = c.fetchall()
-    c.execute("SELECT * FROM fixtures ORDER BY date ASC")
+    # KUN fremtidige kamper i oversikten
+    now_iso = datetime.utcnow().isoformat()
+    c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (now_iso,))
     raw = c.fetchall(); kamper = []
     for f in raw:
         f_l = list(f); dt = datetime.fromisoformat(f[6].replace('Z', '+00:00'))
@@ -121,8 +120,9 @@ def group_admin(group_id_str):
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
     if not group: return "Gruppe ikke funnet", 404
-    now_iso = (datetime.utcnow() - timedelta(days=1)).isoformat()
-    c.execute("SELECT * FROM fixtures WHERE date > ? ORDER BY date ASC", (now_iso,))
+    # KUN fremtidige kamper å velge mellom
+    now_iso = datetime.utcnow().isoformat()
+    c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (now_iso,))
     alle = c.fetchall()
     c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
     valgte = [r[0] for r in c.fetchall()]
@@ -143,8 +143,6 @@ def leaderboard(group_id_str):
     c.execute("SELECT user_name, SUM(points) as total FROM bets WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC", (group_id_str,))
     rows = c.fetchall(); conn.close()
     return render_template('leaderboard.html', group=group, leaderboard=rows)
-
-# --- API RUTER ---
 
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
@@ -202,9 +200,12 @@ def import_league(code):
     res = requests.get(url, headers=headers).json()
     conn = get_db(); c = conn.cursor()
     now = datetime.utcnow()
+    # Sletter gamle kamper fra lageret før ny import for å holde det rent
+    c.execute("DELETE FROM fixtures WHERE date < ?", (now.isoformat(),))
     for m in res.get('matches', []):
         m_date = datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00')).replace(tzinfo=None)
-        if m_date > (now - timedelta(days=1)):
+        # KUN kamper fra nå og fremover
+        if m_date >= now:
             h = m['homeTeam']['shortName'] or m['homeTeam']['name']
             a = m['awayTeam']['shortName'] or m['awayTeam']['name']
             c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
