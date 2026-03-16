@@ -12,8 +12,9 @@
         .admin-card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
         .share-box { background: #fff5f5; border: 2px dashed var(--md-red); padding: 15px; border-radius: 16px; margin-bottom: 25px; text-align: center; }
         .match-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .smart-btn { background: #f1f1f1; border: none; padding: 10px 15px; border-radius: 12px; font-weight: 700; margin: 5px; font-size: 0.8rem; }
         .btn-save { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; margin-top: 20px; }
-        .btn-refresh { background: #28a745; color: white; border: none; padding: 12px; border-radius: 16px; font-weight: 800; width: 100%; margin-bottom: 20px; }
+        .btn-refresh { background: #28a745; color: white; border: none; padding: 12px; border-radius: 16px; font-weight: 800; width: 100%; margin-bottom: 20px; cursor: pointer; }
         .match-list { max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 16px; padding: 10px; margin-top: 10px; }
     </style>
 </head>
@@ -72,34 +73,54 @@
         </div>
 
         <button class="btn-save shadow-lg" onclick="saveSettings(true)">LAGRE ALT OG AKTIVER 🚀</button>
-        <a href="/group/{{ group[2] }}" class="btn btn-outline-dark w-100 mt-3 fw-bold" style="border-radius: 16px; padding: 12px;">GÅ TIL TIPPESIDEN ⚽</a>
+        <a href="/group/{{ group[2] }}" class="btn btn-outline-dark w-100 mt-3 fw-bold" style="border-radius: 16px; padding: 12px; text-decoration: none; text-align: center; display: block;">GÅ TIL TIPPESIDEN ⚽</a>
     </div>
 
     <script>
         function toggleExtras() {
             const mode = document.getElementById('mode').value;
-            document.getElementById('extras-section').style.display = (mode === 'single') ? 'block' : 'none';
+            const section = document.getElementById('extras-section');
+            if (section) {
+                section.style.display = (mode === 'single') ? 'block' : 'none';
+            }
         }
 
         function refreshMatches() {
-            fetch('/api/import_league/PL').then(() => window.location.reload());
+            if(confirm("Vil du oppdatere kamp-lageret?")) {
+                fetch('/api/import_league/PL')
+                .then(response => response.json())
+                .then(data => {
+                    window.location.reload();
+                })
+                .catch(err => alert("Feil ved oppdatering: " + err));
+            }
         }
 
         async function saveSettings(showAlert) {
             const matches = [];
             document.querySelectorAll('.match-check:checked').forEach(cb => matches.push(cb.value));
             
-            await fetch('/api/update_group_settings', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    group_id_str: '{{ group[2] }}',
-                    mode: document.getElementById('mode').value,
-                    prize: document.getElementById('prize').value, # Gjenopprettet
-                    matches: matches
-                })
-            });
-            if(showAlert) window.location.reload();
+            const mode = document.getElementById('mode').value;
+            const prize = document.getElementById('prize').value;
+
+            try {
+                const response = await fetch('/api/update_group_settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        group_id_str: '{{ group[2] }}',
+                        mode: mode,
+                        prize: prize,
+                        matches: matches
+                    })
+                });
+                if(showAlert) {
+                    alert("Alt lagret!");
+                    window.location.reload();
+                }
+            } catch (err) {
+                alert("Feil ved lagring: " + err);
+            }
         }
 
         async function addSmartQ() {
@@ -107,15 +128,24 @@
             const text = select.value;
             if(!text || text.includes("Velg én kamp")) return;
             
-            const matchId = document.querySelector('.match-check:checked')?.value;
-            if(!matchId) return alert("Velg kampen først!");
+            const matchCheck = document.querySelector('.match-check:checked');
+            if(!matchCheck) return alert("Du må velge og lagre en kamp først!");
+            const matchId = matchCheck.value;
 
-            await fetch('/api/add_smart_question', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ group_id_str: '{{ group[2] }}', match_id: matchId, text: text })
-            });
-            window.location.reload();
+            try {
+                await fetch('/api/add_smart_question', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        group_id_str: '{{ group[2] }}', 
+                        match_id: matchId, 
+                        text: text 
+                    })
+                });
+                window.location.reload();
+            } catch (err) {
+                alert("Feil ved tillegging: " + err);
+            }
         }
     </script>
 </body>
