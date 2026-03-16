@@ -11,13 +11,16 @@
         body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--md-dark); }
         .leaderboard-container { max-width: 500px; margin: 40px auto; padding: 20px; }
         
+        /* Live-puls øverst */
         .live-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 5px; }
         .live-dot { height: 8px; width: 8px; background-color: var(--md-red); border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 70% { transform: scale(1.6); opacity: 0; } 100% { transform: scale(0.95); opacity: 0; } }
         
+        /* Premie-kortet */
         .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); }
         .prize-icon { font-size: 2rem; margin-right: 20px; }
         
+        /* Tabellen og kortet */
         .leaderboard-card { background: white; border-radius: 28px; box-shadow: 0 15px 45px rgba(0,0,0,0.07); overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
         .table { margin-bottom: 0; }
         .table thead th { background: #fafafa; border-bottom: 1px solid #eee; padding: 15px 20px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
@@ -35,6 +38,7 @@
         .chevron { width: 18px; height: 18px; transition: transform 0.3s; color: #bbb; }
         .open .chevron { transform: rotate(180deg); color: var(--md-red); }
 
+        /* Ekspanderings-detaljer */
         .details-row { display: none; background: #fafafa; }
         .details-content { padding: 20px; border-bottom: 1px solid #eee; }
         
@@ -67,7 +71,7 @@
             <div class="prize-icon">🎁</div>
             <div>
                 <div class="small fw-800 text-muted text-uppercase" style="font-size: 0.65rem;">Rundens Premie</div>
-                <div class="fw-800 h5 m-0">{{ group[5] or 'Ære og berømmelse' }}</div>
+                <div class="fw-800 h5 m-0">{{ group[5] or 'Middag' }}</div>
             </div>
         </div>
         
@@ -146,7 +150,9 @@
                     });
 
                     html += '<div class="extra-box">';
-                    if(data.main[0].gg) {
+                    
+                    // KUN VIS GOLDEN GOAL HVIS MODUS ER SINGLE
+                    if("{{ group[4] }}" === "single" && data.main[0].gg && data.main[0].gg !== 0) {
                         html += `
                             <div class="extra-line">
                                 <span class="fw-bold text-muted">Golden Goal:</span>
@@ -154,6 +160,7 @@
                             </div>
                         `;
                     }
+                    
                     if (data.extras) {
                         data.extras.forEach(e => {
                             html += `
@@ -171,6 +178,10 @@
                 content.innerHTML = html;
             });
         }
+
+        setInterval(() => {
+            fetch('/api/refresh_data').then(() => window.location.reload());
+        }, 120000);
     </script>
 </body>
 </html>
