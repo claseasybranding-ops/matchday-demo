@@ -14,7 +14,7 @@
         .match-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
         .btn-save { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; margin-top: 20px; transition: 0.3s; }
         .btn-save:hover { background: #a30000; transform: translateY(-2px); }
-        .btn-refresh { background: #28a745; color: white; border: none; padding: 12px; border-radius: 16px; font-weight: 800; width: 100%; margin-bottom: 20px; }
+        .btn-refresh { background: #28a745; color: white; border: none; padding: 12px; border-radius: 16px; font-weight: 800; width: 100%; margin-bottom: 20px; cursor: pointer; }
         .match-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 16px; padding: 10px; margin-top: 10px; }
         .locked-overlay { background: #f8f9fa; border-radius: 20px; padding: 20px; text-align: center; border: 2px solid #eee; }
     </style>
@@ -23,7 +23,7 @@
     <div class="admin-card">
         <h2 class="fw-800 mb-4 text-center">Oppsett: {{ group[1] }}</h2>
         
-        <button class="btn-refresh shadow-sm" onclick="refreshMatches()">🔄 OPPDATER KAMP-LISTE</button>
+        <button class="btn-refresh shadow-sm" onclick="refreshMatches()">🔄 HENT FERSKE KAMPER FRA PL</button>
 
         <div class="mb-4">
             <label class="fw-bold small text-uppercase text-muted">Spillmodus</label>
@@ -51,8 +51,8 @@
             <button class="btn-save shadow-sm" onclick="saveSettings(true)">LAGRE KAMPVALG 💾</button>
         </div>
 
-        <div id="extras-section" style="display: {% if group[4] == 'single' %}block{% else %}none{% endif %}; margin-top: 30px; border-top: 2px solid #eee; pt-4">
-            <h5 class="fw-800 mt-4 mb-3">Tilleggsspørsmål</h5>
+        <div id="extras-section" style="display: {% if group[4] == 'single' %}block{% else %}none{% endif %}; margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px;">
+            <h5 class="fw-800 mb-3">Tilleggsspørsmål</h5>
             
             {% if valgte and players %}
                 <div class="p-3" style="background: #fff; border: 2px solid var(--md-red); border-radius: 20px;">
@@ -80,13 +80,16 @@
             </div>
         </div>
 
-        <a href="/group/{{ group[2] }}" class="btn btn-outline-dark w-100 mt-4 fw-800" style="border-radius: 16px; padding: 15px;">TIL TIPPESIDEN ⚽</a>
+        <a href="/group/{{ group[2] }}" class="btn btn-outline-dark w-100 mt-4 fw-800" style="border-radius: 16px; padding: 15px; text-decoration: none; text-align: center; display: block;">TIL TIPPESIDEN ⚽</a>
     </div>
 
     <script>
         function toggleExtras() {
             const mode = document.getElementById('mode').value;
-            document.getElementById('extras-section').style.display = (mode === 'single') ? 'block' : 'none';
+            const section = document.getElementById('extras-section');
+            if (section) {
+                section.style.display = (mode === 'single') ? 'block' : 'none';
+            }
         }
 
         async function saveSettings(reload) {
@@ -95,34 +98,50 @@
             const prize = document.getElementById('prize').value;
             const mode = document.getElementById('mode').value;
 
-            await fetch('/api/update_group_settings', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    group_id_str: '{{ group[2] }}',
-                    mode: mode,
-                    prize: prize,
-                    matches: matches
-                })
-            });
-            if(reload) window.location.reload();
+            try {
+                await fetch('/api/update_group_settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        group_id_str: '{{ group[2] }}',
+                        mode: mode,
+                        prize: prize,
+                        matches: matches
+                    })
+                });
+                if(reload) window.location.reload();
+            } catch (err) {
+                alert("Feil ved lagring: " + err);
+            }
         }
 
         async function addSmartQ() {
             const select = document.getElementById('player-select');
+            if (!select) return;
             const text = select.value;
             const matchId = document.querySelector('.match-check:checked')?.value;
 
-            await fetch('/api/add_smart_question', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ group_id_str: '{{ group[2] }}', match_id: matchId, text: text })
-            });
-            window.location.reload();
+            if (!matchId) return alert("Du må velge en kamp først!");
+
+            try {
+                await fetch('/api/add_smart_question', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ group_id_str: '{{ group[2] }}', match_id: matchId, text: text })
+                });
+                window.location.reload();
+            } catch (err) {
+                alert("Feil ved lagring av spørsmål: " + err);
+            }
         }
 
         function refreshMatches() {
-            fetch('/api/import_league/PL').then(() => window.location.reload());
+            if(confirm("Dette sletter alle nåværende valg og spørsmål for å starte en helt ny runde. Er du sikker?")) {
+                fetch('/api/import_league/PL')
+                .then(res => res.json())
+                .then(data => window.location.reload())
+                .catch(err => alert("Feil ved henting av kamper: " + err));
+            }
         }
     </script>
 </body>
