@@ -11,36 +11,31 @@
         body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--md-dark); }
         .leaderboard-container { max-width: 500px; margin: 40px auto; padding: 20px; }
         
-        /* Header */
         .live-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 5px; }
         .live-dot { height: 8px; width: 8px; background-color: var(--md-red); border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 70% { transform: scale(1.6); opacity: 0; } 100% { transform: scale(0.95); opacity: 0; } }
         
-        /* Prize Card */
         .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); }
         .prize-icon { font-size: 2rem; margin-right: 20px; }
         
-        /* Leaderboard Table */
         .leaderboard-card { background: white; border-radius: 28px; box-shadow: 0 15px 45px rgba(0,0,0,0.07); overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
-        .table { margin-bottom: 0; border-collapse: separate; border-spacing: 0; }
+        .table { margin-bottom: 0; }
         .table thead th { background: #fafafa; border-bottom: 1px solid #eee; padding: 15px 20px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
         
-        .user-row { cursor: pointer; transition: background 0.2s; }
-        .user-row:hover { background: #fdfdfd; }
+        .user-row { cursor: pointer; transition: 0.2s; }
         .user-row td { padding: 18px 20px; vertical-align: middle; border-bottom: 1px solid #f8f8f8; }
         
         .rank-box { width: 32px; height: 32px; background: #f1f1f1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.85rem; }
         tr:nth-child(1) .rank-box { background: var(--md-gold); color: white; }
         
-        .user-name-cell { display: flex; align-items: center; gap: 10px; }
         .user-name { font-weight: 700; font-size: 1.05rem; }
-        .points-display { font-weight: 800; color: var(--md-red); font-size: 1.2rem; text-align: right; }
-
-        /* Pil / Chevron */
-        .chevron { width: 20px; height: 20px; transition: transform 0.3s; color: #ccc; }
+        
+        /* Pilen er nå flyttet til høyre, rett før poengsummen */
+        .points-cell { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+        .points-display { font-weight: 800; color: var(--md-red); font-size: 1.2rem; }
+        .chevron { width: 18px; height: 18px; transition: transform 0.3s; color: #bbb; }
         .open .chevron { transform: rotate(180deg); color: var(--md-red); }
 
-        /* Detaljer som glir ned */
         .details-row { display: none; background: #fafafa; }
         .details-content { padding: 20px; border-bottom: 1px solid #eee; }
         
@@ -51,7 +46,7 @@
         .score-box { width: 30%; text-align: center; font-weight: 800; font-size: 1.2rem; }
         
         .extra-box { background: #fff5f5; border-radius: 12px; padding: 12px; margin-top: 15px; }
-        .extra-line { display: flex; justify-content: space-between; font-size: 0.75rem; padding: 4px 0; border-bottom: 1px solid #ffebeb; }
+        .extra-line { display: flex; justify-content: space-between; font-size: 0.75rem; padding: 6px 0; border-bottom: 1px solid #ffebeb; }
         .extra-line:last-child { border: none; }
 
         .footer-info { text-align: center; margin-top: 25px; font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
@@ -89,18 +84,17 @@
                     {% for row in leaderboard %}
                     <tr class="user-row" onclick="toggleDetails('{{ loop.index }}', '{{ row[0] }}')">
                         <td class="ps-4" style="width: 70px;"><div class="rank-box">{{ loop.index }}</div></td>
-                        <td>
-                            <div class="user-name-cell">
-                                <span class="user-name">{{ row[0] }}</span>
+                        <td><span class="user-name">{{ row[0] }}</span></td>
+                        <td class="pe-4">
+                            <div class="points-cell">
                                 <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                                <span class="points-display">{{ row[1] }}p</span>
                             </div>
                         </td>
-                        <td class="points-display pe-4">{{ row[1] }}p</td>
                     </tr>
                     <tr class="details-row" id="details-{{ loop.index }}">
                         <td colspan="3">
-                            <div class="details-content" id="content-{{ loop.index }}">
-                                </div>
+                            <div class="details-content" id="content-{{ loop.index }}"></div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -117,14 +111,16 @@
             const userRow = detailRow.previousElementSibling;
             const content = document.getElementById(`content-${index}`);
 
-            // Hvis den allerede er åpen, lukk den
             if (detailRow.style.display === 'table-row') {
                 detailRow.style.display = 'none';
                 userRow.classList.remove('open');
                 return;
             }
 
-            // Vis laste-spinner mens vi henter data
+            // Lukk andre åpne rader for å holde det ryddig (valgfritt, men proffere)
+            document.querySelectorAll('.details-row').forEach(row => row.style.display = 'none');
+            document.querySelectorAll('.user-row').forEach(row => row.classList.remove('open'));
+
             detailRow.style.display = 'table-row';
             userRow.classList.add('open');
             content.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm text-danger"></div></div>';
@@ -134,27 +130,27 @@
             .then(data => {
                 let html = '';
                 
-                data.main.forEach(b => {
-                    html += `
-                        <div class="bet-mini-card shadow-sm">
-                            <div class="team-box">
-                                <img src="${b.hl}">
-                                <span>${b.ht}</span>
+                if (data.main && data.main.length > 0) {
+                    data.main.forEach(b => {
+                        html += `
+                            <div class="bet-mini-card shadow-sm">
+                                <div class="team-box">
+                                    <img src="${b.hl}">
+                                    <span>${b.ht}</span>
+                                </div>
+                                <div class="score-box">${b.h} - ${b.a}</div>
+                                <div class="team-box">
+                                    <img src="${b.al}">
+                                    <span>${b.at}</span>
+                                </div>
                             </div>
-                            <div class="score-box">${b.h} - ${b.a}</div>
-                            <div class="team-box">
-                                <img src="${b.al}">
-                                <span>${b.at}</span>
-                            </div>
-                        </div>
-                    `;
-                });
+                        `;
+                    });
 
-                // Legg til Golden Goal og Ekstra spørsmål i en fin boks i bunnen av detaljene
-                if ((data.main && data.main.length > 0) || (data.extras && data.extras.length > 0)) {
                     html += '<div class="extra-box">';
                     
-                    if(data.main[0] && data.main[0].gg) {
+                    // Golden Goal
+                    if(data.main[0].gg) {
                         html += `
                             <div class="extra-line">
                                 <span class="fw-bold text-muted">Golden Goal:</span>
@@ -163,22 +159,29 @@
                         `;
                     }
 
-                    data.extras.forEach(e => {
-                        html += `
-                            <div class="extra-line">
-                                <span class="fw-bold text-muted">${e.q}</span>
-                                <span class="fw-800 text-danger">${e.ans}</span>
-                            </div>
-                        `;
-                    });
+                    // Tilleggsspørsmål
+                    if (data.extras) {
+                        data.extras.forEach(e => {
+                            html += `
+                                <div class="extra-line">
+                                    <span class="fw-bold text-muted">${e.q}</span>
+                                    <span class="fw-800 text-danger">${e.ans}</span>
+                                </div>
+                            `;
+                        });
+                    }
                     html += '</div>';
+                } else {
+                    html = '<div class="text-center p-2 small text-muted">Ingen tips registrert</div>';
                 }
 
                 content.innerHTML = html;
+            })
+            .catch(err => {
+                content.innerHTML = '<div class="text-center p-2 small text-danger">Feil ved henting av data</div>';
             });
         }
 
-        // Auto-refresh
         setInterval(() => {
             fetch('/api/refresh_data').then(() => window.location.reload());
         }, 120000);
