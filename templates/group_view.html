@@ -3,76 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tips | MatchDay</title>
+    <title>MatchDay | Tipp</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { background: #f8f9fa; font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 120px; }
-        .card { border-radius: 20px; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        .score-input { width: 60px; height: 60px; font-size: 1.5rem; font-weight: 800; text-align: center; border: 2px solid #eee; border-radius: 12px; }
-        .golden-input { width: 100%; padding: 15px; border-radius: 15px; border: 2px solid #cc0000; font-weight: 800; text-align: center; }
-        .btn-save { background: #cc0000; color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; position: fixed; bottom: 20px; left: 0; right: 0; max-width: 440px; margin: auto; }
+        :root { --md-red: #cc0000; --md-bg: #f8f9fa; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 140px; }
+        .header { background: white; padding: 25px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center; margin-bottom: 30px; }
+        .match-card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .team-logo { width: 50px; height: 50px; object-fit: contain; margin-bottom: 10px; }
+        .score-box { background: #f1f1f1; border-radius: 15px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; }
+        .btn-adjust { width: 40px; height: 40px; border-radius: 12px; border: 2px solid #eee; background: white; font-weight: 800; transition: 0.2s; }
+        .btn-adjust:active { background: #eee; }
+        .gg-input { background: #fff5f5; border: 2px solid var(--md-red); border-radius: 18px; padding: 20px; text-align: center; font-size: 1.2rem; font-weight: 800; width: 100%; color: var(--md-red); }
+        .footer-action { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 20px; border-radius: 30px 30px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; }
+        .btn-submit { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
-    <div class="container mt-4" style="max-width: 480px;">
-        <h2 class="fw-800 text-center mb-4">{{ group[1] }}</h2>
+    <div class="header">
+        <h1 class="fw-800 m-0" style="letter-spacing: -1px;">{{ group[1] }}</h1>
+        <span class="badge bg-light text-dark mt-2 fw-bold">RUNDE 1</span>
+    </div>
 
+    <div class="container" style="max-width: 500px;">
         {% for k in kamper %}
-        <div class="card p-4 text-center match-row" data-id="{{ k[0] }}">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="fw-bold">{{ k[2] }}</div>
-                <div class="d-flex gap-2">
-                    <input type="number" class="score-input h-score" value="0">
-                    <input type="number" class="score-input a-score" value="0">
+        <div class="match-card text-center match-row" data-id="{{ k[0] }}">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div style="width: 35%;">
+                    <img src="{{ k[4] }}" class="team-logo"><br>
+                    <span class="fw-800 small">{{ k[2] }}</span>
                 </div>
-                <div class="fw-bold">{{ k[3] }}</div>
+                
+                <div class="d-flex align-items-center gap-2">
+                    <div class="score-box h-score">0</div>
+                    <div class="fw-800 text-muted">:</div>
+                    <div class="score-box a-score">0</div>
+                </div>
+
+                <div style="width: 35%;">
+                    <img src="{{ k[5] }}" class="team-logo"><br>
+                    <span class="fw-800 small">{{ k[3] }}</span>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-center gap-5 mt-2">
+                <div class="d-flex gap-2">
+                    <button class="btn-adjust" onclick="adj(this, 'h', -1)">-</button>
+                    <button class="btn-adjust" onclick="adj(this, 'h', 1)">+</button>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn-adjust" onclick="adj(this, 'a', -1)">-</button>
+                    <button class="btn-adjust" onclick="adj(this, 'a', 1)">+</button>
+                </div>
             </div>
         </div>
         {% endfor %}
 
-        <div class="card p-4">
-            <label class="fw-bold small text-uppercase text-muted d-block text-center mb-2">TIE-BREAKER: GOLDEN GOAL</label>
-            <input type="number" id="golden-goal" class="golden-input" placeholder="Hvilket minutt scores første mål?">
+        <div class="match-card">
+            <label class="fw-800 small text-uppercase text-muted d-block text-center mb-3">Golden Goal (Første målminutt)</label>
+            <input type="number" id="golden-goal" class="gg-input" placeholder="Eks: 24">
         </div>
+    </div>
 
-        {% if questions %}
-        <div class="card p-4">
-            <h6 class="fw-800 mb-3">TILLEGGSSVAR</h6>
-            {% for q in questions %}
-            <div class="mb-3 q-row" data-qid="{{ q[0] }}">
-                <p class="small fw-bold mb-2">{{ q[1] }}</p>
-                <div class="btn-group w-100">
-                    <input type="radio" class="btn-check" name="q{{ q[0] }}" id="y{{ q[0] }}" value="JA">
-                    <label class="btn btn-outline-dark fw-bold" for="y{{ q[0] }}">JA</label>
-                    <input type="radio" class="btn-check" name="q{{ q[0] }}" id="n{{ q[0] }}" value="NEI" checked>
-                    <label class="btn btn-outline-dark fw-bold" for="n{{ q[0] }}">NEI</label>
-                </div>
-            </div>
-            {% endfor %}
+    <div class="footer-action">
+        <div class="container" style="max-width: 460px;">
+            <input type="text" id="user-name" class="form-control mb-3 p-3 fw-bold" placeholder="Ditt navn..." style="border-radius:15px; border: 2px solid #eee;">
+            <button class="btn-submit shadow-lg" onclick="sendTips()">Lagre mine tips 🚀</button>
         </div>
-        {% endif %}
-
-        <input type="text" id="user-name" class="form-control p-3 fw-bold mb-4" placeholder="DITT NAVN..." style="border-radius:15px;">
-        <button class="btn-save shadow-lg" onclick="sendTips()">SEND TIPS 🚀</button>
     </div>
 
     <script>
+        function adj(btn, side, d) {
+            const card = btn.closest('.match-row');
+            const el = card.querySelector('.' + side + '-score');
+            let val = parseInt(el.innerText) + d;
+            if (val >= 0) el.innerText = val;
+        }
+
         function sendTips() {
             const name = document.getElementById('user-name').value;
-            if(!name) return alert("Navn mangler!");
+            if(!name) return alert("Husk navn!");
             const tips = [];
             document.querySelectorAll('.match-row').forEach(row => {
-                tips.push({ match_id: row.dataset.id, h: row.querySelector('.h-score').value, a: row.querySelector('.a-score').value });
+                tips.push({
+                    match_id: row.dataset.id,
+                    h: row.querySelector('.h-score').innerText,
+                    a: row.querySelector('.a-score').innerText
+                });
             });
-            const extras = {};
-            document.querySelectorAll('.q-row').forEach(row => {
-                extras[row.dataset.qid] = row.querySelector('input:checked').value;
-            });
-
             fetch('/api/submit_tips', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ group_id: '{{ group[2] }}', user_name: name, tips: tips, golden_goal: document.getElementById('golden-goal').value, extras: extras })
+                body: JSON.stringify({
+                    group_id: '{{ group[2] }}',
+                    user_name: name,
+                    tips: tips,
+                    golden_goal: document.getElementById('golden-goal').value
+                })
             }).then(() => window.location.href = "/group/{{ group[2] }}/leaderboard");
         }
     </script>
