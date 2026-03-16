@@ -39,6 +39,7 @@ def init_db():
 
 init_db()
 
+# --- HOVEDLOGIKK FOR POENG OG AUTOMATISERING ---
 def update_points_logic():
     url = "https://api.football-data.org/v4/competitions/PL/matches"
     headers = {'X-Auth-Token': API_KEY}
@@ -54,49 +55,41 @@ def update_points_logic():
             h_act = m['score']['fullTime']['home']
             a_act = m['score']['fullTime']['away']
             
-            # Vi sjekker kun kamper som er i gang eller ferdige
             if status in ['finished', 'in_play', 'live']:
                 h_score = h_act if h_act is not None else 0
                 a_score = a_act if a_act is not None else 0
                 
-                # Automatisk henting av Golden Goal minutt fra API
+                # Finn faktisk første målminutt fra API-et
                 f_goal = 0
                 if (h_score + a_score) > 0:
-                    # Henter detaljer for denne spesifikke kampen for å finne minutter
-                    match_detail_url = f"https://api.football-data.org/v4/matches/{mid}"
-                    md_res = requests.get(match_detail_url, headers=headers).json()
-                    
+                    detail_url = f"https://api.football-data.org/v4/matches/{mid}"
+                    md_res = requests.get(detail_url, headers=headers).json()
                     if 'goals' in md_res and len(md_res['goals']) > 0:
-                        # Goals er sortert kronologisk, så [0] er det første målet
                         f_goal = md_res['goals'][0].get('minute', 0)
 
                 c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=?, first_goal_min=? WHERE id=?", 
                          (h_score, a_score, status, f_goal, mid))
                 
-                # Oppdater poeng for alle tips på denne kampen
+                # Oppdater poeng for hver deltaker
                 c.execute("SELECT id, group_id_str, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
                 for bet_id, gid, u_h, u_a, u_gg in c.fetchall():
                     pts = 0
-                    # 3p for riktig resultat, 1p for riktig HUB
                     if u_h == h_score and u_a == a_score: pts = 3
                     elif (u_h > u_a and h_score > a_score) or (u_h < u_a and h_score < a_score) or (u_h == u_a and h_score == a_score): pts = 1
                     
-                    # Golden Goal Bonus: Nøyaktig treff gir +5p
                     if f_goal > 0 and u_gg == f_goal:
                         pts += 5
                     
                     c.execute("UPDATE bets SET points=? WHERE id=?", (pts, bet_id))
 
-                # TIE-BREAKER: Finn de som er nærmest i hver gruppe og gi +2p
+                # TIE-BREAKER: Gi +2p til nærmeste GG i gruppa hvis ingen traff 100%
                 if f_goal > 0:
                     c.execute("SELECT DISTINCT group_id_str FROM bets WHERE fixture_id=?", (mid,))
                     for (group_id,) in c.fetchall():
-                        # Finn minste differanse i gruppen (ekskluder nøyaktige treff som fikk 5p)
                         c.execute("""SELECT MIN(ABS(golden_goal - ?)) FROM bets 
                                      WHERE fixture_id=? AND group_id_str=? AND golden_goal > 0 
                                      AND golden_goal != ?""", (f_goal, mid, group_id, f_goal))
                         min_diff = c.fetchone()[0]
-                        
                         if min_diff is not None:
                             c.execute("""UPDATE bets SET points = points + 2 
                                          WHERE fixture_id=? AND group_id_str=? 
@@ -104,9 +97,7 @@ def update_points_logic():
 
         conn.commit(); conn.close()
         return True
-    except Exception as e:
-        print(f"Feil i poenglogikk: {e}")
-        return False
+    except: return False
 
 def get_players_from_api(fixture_id):
     headers = {'X-Auth-Token': API_KEY}
@@ -122,22 +113,10 @@ def get_players_from_api(fixture_id):
     except: pass
     return players
 
+# --- RUTENE FOR NETTSIDEN ---
+
 @app.route('/')
 def index(): return render_template('index.html')
-
-@app.route('/super_admin_dashboard')
-def super_admin():
-    conn = get_db(); c = conn.cursor()
-    c.execute("SELECT id, group_name, group_id_str, admin_name FROM groups")
-    grupper = c.fetchall()
-    now_iso = datetime.utcnow().isoformat()
-    c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (now_iso,))
-    raw = c.fetchall(); kamper = []
-    for f in raw:
-        f_l = list(f); dt = datetime.fromisoformat(f[6].replace('Z', '+00:00'))
-        f_l[6] = dt.strftime("%d.%m kl %H:%M"); kamper.append(f_l)
-    conn.close()
-    return render_template('super_admin.html', grupper=grupper, kamper=kamper)
 
 @app.route('/group/<group_id_str>')
 def group_view(group_id_str):
@@ -180,6 +159,8 @@ def leaderboard(group_id_str):
     rows = c.fetchall(); conn.close()
     return render_template('leaderboard.html', group=group, leaderboard=rows)
 
+# --- API ENDEPUNKTER (KNAPPER OG FUNKSJONER) ---
+
 @app.route('/api/update_group_settings', methods=['POST'])
 def update_group_settings():
     data = request.get_json()
@@ -193,15 +174,6 @@ def update_group_settings():
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
 
-@app.route('/api/create_group', methods=['POST'])
-def create_group():
-    data = request.get_json()
-    gid_str = data['name'].lower().replace(" ", "-")
-    conn = get_db(); c = conn.cursor()
-    c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", (data['name'], gid_str, data['admin_name']))
-    conn.commit(); conn.close()
-    return jsonify({"status": "Suksess"})
-
 @app.route('/api/add_smart_question', methods=['POST'])
 def add_smart_question():
     data = request.get_json()
@@ -209,6 +181,14 @@ def add_smart_question():
     c.execute("INSERT INTO extra_questions (group_id_str, fixture_id, question_text) VALUES (?,?,?)", (data['group_id_str'], data['match_id'], data['text']))
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
+
+@app.route('/api/delete_question/<int:q_id>', methods=['POST'])
+def delete_question(q_id):
+    conn = get_db(); c = conn.cursor()
+    c.execute("DELETE FROM extra_questions WHERE id = ?", (q_id,))
+    c.execute("DELETE FROM extra_bets WHERE question_id = ?", (q_id,))
+    conn.commit(); conn.close()
+    return jsonify({"status": "Suksess"})
 
 @app.route('/api/submit_tips', methods=['POST'])
 def submit_tips():
@@ -222,7 +202,6 @@ def submit_tips():
         c.execute("DELETE FROM extra_bets WHERE group_id_str = ? AND user_name = ?", (data['group_id'], data['user_name']))
         for q_id, val in data['extras'].items():
             c.execute("INSERT INTO extra_bets (group_id_str, user_name, question_id, user_answer) VALUES (?,?,?,?)", (data['group_id'], data['user_name'], int(q_id), val))
-            
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
 
@@ -232,17 +211,14 @@ def import_league():
     headers = {'X-Auth-Token': API_KEY}
     res = requests.get(url, headers=headers).json()
     conn = get_db(); c = conn.cursor()
-    
     c.execute("DELETE FROM fixtures")
     c.execute("DELETE FROM extra_questions")
     c.execute("DELETE FROM extra_bets")
     c.execute("DELETE FROM group_matches")
     c.execute("DELETE FROM bets")
-    
     for m in res.get('matches', []):
         c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
             (m['id'], 'PL', m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam'].get('crest',''), m['awayTeam'].get('crest',''), m['utcDate'], 'upcoming'))
-    
     conn.commit(); conn.close()
     return jsonify({"status": "Suksess"})
 
@@ -254,10 +230,7 @@ def get_user_bets(group_id_str, user_name):
     c.execute("SELECT q.question_text, eb.user_answer FROM extra_bets eb JOIN extra_questions q ON eb.question_id = q.id WHERE eb.group_id_str = ? AND eb.user_name = ?", (group_id_str, user_name))
     extras = c.fetchall()
     conn.close()
-    return jsonify({
-        'main': [{'h': b[0], 'a': b[1], 'pts': b[2], 'gg': b[3], 'ht': b[4], 'at': b[5], 'hl': b[6], 'al': b[7]} for b in main_bet],
-        'extras': [{'q': e[0], 'ans': e[1]} for e in extras]
-    })
+    return jsonify({'main': [{'h': b[0], 'a': b[1], 'pts': b[2], 'gg': b[3], 'ht': b[4], 'at': b[5], 'hl': b[6], 'al': b[7]} for b in main_bet], 'extras': [{'q': e[0], 'ans': e[1]} for e in extras]})
 
 @app.route('/api/refresh_data')
 def refresh_data():
