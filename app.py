@@ -39,7 +39,8 @@ def init_db():
 
 init_db()
 
-# --- HJELPEFUNKSJONER FOR TID ---
+# --- HJELPEFUNKSJONER FOR TID OG LÅSING ---
+
 def get_round_start(group_id_str):
     """Finner starttidspunktet for den aller første kampen i runden for en gruppe."""
     conn = get_db(); c = conn.cursor()
@@ -72,7 +73,7 @@ def update_points_logic():
             if status in ['finished', 'live', 'in_play', 'paused'] or now > m_time:
                 h_score = h_act if h_act is not None else 0
                 a_score = a_act if a_act is not None else 0
-                # Golden Goal logikk (forenklet eksempel, her kan du legge inn faktisk minutt fra API)
+                # Golden Goal logikk (setter 25 min som default ved mål i ferdig kamp)
                 f_goal = 25 if (status == 'finished' and h_score+a_score > 0) else 0
 
                 c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=?, first_goal_min=? WHERE id=?", 
@@ -113,6 +114,8 @@ def get_players_from_api(fixture_id):
     except: pass
     return players
 
+# --- RUTENE ---
+
 @app.route('/')
 def index(): return render_template('index.html')
 
@@ -144,13 +147,29 @@ def group_view(group_id_str):
     for f in raw:
         f_l = list(f)
         m_time = datetime.fromisoformat(f[6].replace('Z', '+00:00'))
-        f_l[6] = m_time.strftime("%d.%m kl %H:%M") # Viser full dato og tid
+        f_l[6] = m_time.strftime("%d.%m kl %H:%M") 
         kamper.append(f_l)
         
     c.execute("SELECT id, question_text FROM extra_questions WHERE group_id_str = ?", (group_id_str,))
     questions = c.fetchall()
     conn.close()
     return render_template('group_view.html', group=group, kamper=kamper, questions=questions, is_locked=is_locked)
+
+@app.route('/group/<group_id_str>/admin')
+def group_admin(group_id_str):
+    conn = get_db(); c = conn.cursor()
+    c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
+    group = c.fetchone()
+    now_iso = (datetime.utcnow() - timedelta(hours=2)).isoformat()
+    c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (now_iso,))
+    alle = c.fetchall()
+    c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
+    valgte = [r[0] for r in c.fetchall()]
+    players = get_players_from_api(valgte[0]) if valgte else []
+    c.execute("SELECT id, question_text FROM extra_questions WHERE group_id_str = ?", (group_id_str,))
+    questions = c.fetchall()
+    conn.close()
+    return render_template('group_admin.html', group=group, kamper=alle, valgte=valgte, players=players, questions=questions)
 
 @app.route('/group/<group_id_str>/leaderboard')
 def leaderboard(group_id_str):
@@ -166,12 +185,13 @@ def leaderboard(group_id_str):
     rows = c.fetchall(); conn.close()
     return render_template('leaderboard.html', group=group, leaderboard=rows, start_time=start_str)
 
+# --- API ENDEPUNKTER ---
+
 @app.route('/api/submit_tips', methods=['POST'])
 def submit_tips():
     data = request.get_json()
     group_id = data['group_id']
     
-    # --- SIKKERHETSSJEKK: Er runden låst? ---
     round_start = get_round_start(group_id)
     if round_start and datetime.utcnow() > round_start:
         return jsonify({"status": "LOCKED", "msg": "Runden har startet og er låst for tips!"}), 403
@@ -190,7 +210,6 @@ def submit_tips():
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
 
-# ... Resten av API-rutene (import_league, get_user_bets etc) forblir som i din original ...
 @app.route('/api/update_group_settings', methods=['POST'])
 def update_group_settings():
     data = request.get_json()
@@ -203,6 +222,33 @@ def update_group_settings():
         c.execute("INSERT INTO group_matches (group_id, fixture_id) VALUES (?, ?)", (gid, int(mid)))
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
+
+@app.route('/api/add_smart_question', methods=['POST'])
+def add_smart_question():
+    data = request.get_json()
+    conn = get_db(); c = conn.cursor()
+    c.execute("INSERT INTO extra_questions (group_id_str, fixture_id, question_text) VALUES (?,?,?)", (data['group_id_str'], data['match_id'], data['text']))
+    conn.commit(); conn.close()
+    return jsonify({"status": "OK"})
+
+@app.route('/api/delete_question', methods=['POST'])
+def delete_question():
+    data = request.get_json()
+    q_id = data.get('q_id')
+    conn = get_db(); c = conn.cursor()
+    c.execute("DELETE FROM extra_questions WHERE id = ?", (q_id,))
+    c.execute("DELETE FROM extra_bets WHERE question_id = ?", (q_id,)) 
+    conn.commit(); conn.close()
+    return jsonify({"status": "OK"})
+
+@app.route('/api/create_group', methods=['POST'])
+def create_group():
+    data = request.get_json()
+    gid_str = data['name'].lower().replace(" ", "-")
+    conn = get_db(); c = conn.cursor()
+    c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", (data['name'], gid_str, data['admin_name']))
+    conn.commit(); conn.close()
+    return jsonify({"status": "Suksess"})
 
 @app.route('/api/import_league/PL')
 def import_league():
