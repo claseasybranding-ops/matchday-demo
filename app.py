@@ -20,7 +20,7 @@ def init_db():
                  (id INTEGER PRIMARY KEY, league_id TEXT, home_team TEXT, 
                   away_team TEXT, home_logo TEXT, away_logo TEXT, 
                   date TEXT, status TEXT, home_actual INTEGER, away_actual INTEGER,
-                  first_goal_min INTEGER DEFAULT NULL)''') # Lagt til for Golden Goal
+                  first_goal_min INTEGER DEFAULT NULL)''')
     c.execute('''CREATE TABLE IF NOT EXISTS groups
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_name TEXT, group_id_str TEXT, 
                   admin_name TEXT, mode TEXT DEFAULT 'multi', prize_info TEXT)''')
@@ -53,17 +53,19 @@ def update_points_logic():
             h_act = m['score']['fullTime']['home']
             a_act = m['score']['fullTime']['away']
             status = m['status'].lower()
-            m_time = datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00')).replace(tzinfo=None)
+            m_date_str = m['utcDate'].replace('Z', '+00:00')
+            m_time = datetime.fromisoformat(m_date_str).replace(tzinfo=None)
             
             if status in ['finished', 'live', 'in_play', 'paused'] or now > m_time:
                 h_score = h_act if h_act is not None else 0
                 a_score = a_act if a_act is not None else 0
                 
-                # Finn første målminutt (Golden Goal) hvis kampen er ferdig
-                # (I en fullversjon henter vi m['goals'][0]['minute'] her)
+                # Finn første målminutt (Golden Goal) for ferdige kamper
                 f_goal = 0
                 if status == 'finished' and (h_score + a_score > 0):
-                    f_goal = 25 # Demo-verdi til vi kobler på detalj-API
+                    # For demo: Vi setter et fiktivt målminutt (f.eks 25) 
+                    # Dette kan senere hentes fra kampdetaljer i API-et
+                    f_goal = 25 
 
                 c.execute("UPDATE fixtures SET home_actual = ?, away_actual = ?, status = ?, first_goal_min = ? WHERE id = ?", 
                          (h_score, a_score, status, f_goal, mid))
@@ -71,12 +73,11 @@ def update_points_logic():
                 c.execute("SELECT id, home_score, away_score, golden_goal FROM bets WHERE fixture_id = ?", (mid,))
                 for bet_id, u_h, u_a, u_gg in c.fetchall():
                     pts = 0
-                    # Standard poeng
                     if u_h == h_score and u_a == a_score: pts = 3
                     elif (u_h > u_a and h_score > a_score) or (u_h < u_a and h_score < a_score) or (u_h == u_a and h_score == a_score): pts = 1
                     
-                    # Golden Goal Bonus (Treff innenfor +/- 1 minutt gir +5p)
-                    if f_goal > 0 and abs(u_gg - f_goal) <= 1:
+                    # Golden Goal Bonus: Nøyaktig treff gir +5p
+                    if f_goal > 0 and u_gg == f_goal:
                         pts += 5
                         
                     c.execute("UPDATE bets SET points = ? WHERE id = ?", (pts, bet_id))
@@ -84,7 +85,6 @@ def update_points_logic():
         return True
     except: return False
 
-# --- RESTEN AV DINE ORIGINALE FUNKSJONER (UENDRET) ---
 def get_players_from_api(fixture_id):
     headers = {'X-Auth-Token': API_KEY}
     players = []
@@ -139,7 +139,7 @@ def group_admin(group_id_str):
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
     if not group: return "Gruppe ikke funnet", 404
-    now_iso = (datetime.utcnow() - timedelta(hours=2)).isoformat() # Liten buffer for å se dagens kamper
+    now_iso = (datetime.utcnow() - timedelta(hours=2)).isoformat()
     c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (now_iso,))
     alle = c.fetchall()
     c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
@@ -158,11 +158,11 @@ def leaderboard(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
+    # Sorterer nå på poeng, deretter navn
     c.execute("SELECT user_name, SUM(points) as total FROM bets WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC, user_name ASC", (group_id_str,))
     rows = c.fetchall(); conn.close()
     return render_template('leaderboard.html', group=group, leaderboard=rows)
 
-# --- API ENDEPUNKTER ---
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     data = request.get_json()
@@ -219,7 +219,6 @@ def import_league(code):
     res = requests.get(url, headers=headers).json()
     conn = get_db(); c = conn.cursor()
     now = datetime.utcnow()
-    # Sletter kun gamle kamper for å holde databasen ren
     c.execute("DELETE FROM fixtures WHERE date < ?", ((now - timedelta(days=1)).isoformat(),))
     for m in res.get('matches', []):
         m_date = datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00')).replace(tzinfo=None)
