@@ -14,8 +14,11 @@
         .match-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
         .smart-btn { background: #f1f1f1; border: none; padding: 10px 15px; border-radius: 12px; font-weight: 700; margin: 5px; font-size: 0.8rem; }
         .btn-save { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; margin-top: 20px; }
-        .btn-refresh { background: #28a745; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 700; width: 100%; margin-bottom: 20px; }
+        /* Din originale match-list stil */
         .match-list { max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 16px; padding: 10px; margin-top: 10px; }
+        /* Ny knapp-stil som matcher profilen din */
+        .btn-refresh { background: #28a745; color: white; border: none; padding: 12px; border-radius: 16px; font-weight: 800; width: 100%; margin-bottom: 15px; transition: 0.3s; }
+        .btn-refresh:hover { background: #218838; transform: translateY(-2px); }
     </style>
 </head>
 <body>
@@ -55,7 +58,7 @@
         </div>
 
         <div id="extras-section" class="p-3" style="background: #fdfdfd; border-radius: 20px; border: 2px dashed #eee;">
-            <label class="fw-bold small text-uppercase text-muted mb-2 d-block">Smarte spørsmål</label>
+            <label class="fw-bold small text-uppercase text-muted mb-2 d-block">Smarte spørsmål (Single Game)</label>
             <div class="d-flex flex-wrap mb-3">
                 <button class="smart-btn" onclick="addSmartQ('Blir det straffespark?')">+ Straffe?</button>
                 <button class="smart-btn" onclick="addSmartQ('Blir det rødt kort?')">+ Rødt kort?</button>
@@ -86,7 +89,7 @@
 
     <script>
         function refreshMatches() {
-            if(confirm("Vil du oppdatere kamp-lageret fra Premier League?")) {
+            if(confirm("Vil du oppdatere kamp-lageret?")) {
                 fetch('/api/import_league/PL').then(() => window.location.reload());
             }
         }
