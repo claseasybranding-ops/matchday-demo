@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, jsonify
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.secret_key = "matchday_final_v5_key"
+app.secret_key = "matchday_v5_final_key"
 
 DB_PATH = 'matchday_v3.db'
 API_KEY = '58f8589c07824c2495869fa6b7b815e5' 
@@ -39,7 +39,7 @@ def init_db():
 
 init_db()
 
-# --- AUTOMATISK POENG- OG RESULTATLOGIKK ---
+# --- POENG OG AUTOMATISERING ---
 def update_points_logic():
     url = "https://api.football-data.org/v4/competitions/PL/matches"
     headers = {'X-Auth-Token': API_KEY}
@@ -47,36 +47,29 @@ def update_points_logic():
         res = requests.get(url, headers=headers).json()
         if 'matches' not in res: return False
         conn = get_db(); c = conn.cursor()
-        
         for m in res.get('matches', []):
             mid = m['id']
             status = m['status'].lower()
             h_act = m['score']['fullTime']['home']
             a_act = m['score']['fullTime']['away']
-            
             if status in ['finished', 'in_play', 'live']:
                 h_score = h_act if h_act is not None else 0
                 a_score = a_act if a_act is not None else 0
                 f_goal = 0
-                
                 if (h_score + a_score) > 0:
                     detail_url = f"https://api.football-data.org/v4/matches/{mid}"
                     md_res = requests.get(detail_url, headers=headers).json()
                     if 'goals' in md_res and len(md_res['goals']) > 0:
                         f_goal = md_res['goals'][0].get('minute', 0)
-
                 c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=?, first_goal_min=? WHERE id=?", 
                          (h_score, a_score, status, f_goal, mid))
-                
                 c.execute("SELECT id, group_id_str, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
                 for bet_id, gid, u_h, u_a, u_gg in c.fetchall():
                     pts = 0
                     if u_h == h_score and u_a == a_score: pts = 3
                     elif (u_h > u_a and h_score > a_score) or (u_h < u_a and h_score < a_score) or (u_h == u_a and h_score == a_score): pts = 1
-                    
                     if f_goal > 0 and u_gg == f_goal: pts += 5
                     c.execute("UPDATE bets SET points=? WHERE id=?", (pts, bet_id))
-
                 if f_goal > 0:
                     c.execute("SELECT DISTINCT group_id_str FROM bets WHERE fixture_id=?", (mid,))
                     for (group_id,) in c.fetchall():
@@ -222,8 +215,7 @@ def submit_tips():
                          (data['group_id'], data['user_name'], int(q_id), val))
         conn.commit(); conn.close()
         return jsonify({"status": "OK"})
-    except Exception as e:
-        return jsonify({"status": "Error", "message": str(e)}), 500
+    except: return jsonify({"status": "Error"}), 500
 
 @app.route('/api/import_league/PL')
 def import_league():
