@@ -8,11 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-gold: #FFD700; }
-        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 220px; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 180px; }
         
         .header { background: white; padding: 25px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center; margin-bottom: 25px; }
         
-        /* Premie-kortet på tippesiden */
         .prize-card { background: white; border-radius: 24px; padding: 15px 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); text-align: left; }
         .prize-icon { font-size: 1.8rem; margin-right: 15px; }
         
@@ -20,13 +19,33 @@
         .team-logo { width: 50px; height: 50px; object-fit: contain; margin-bottom: 10px; }
         .score-box { background: #f1f1f1; border-radius: 15px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; }
         .btn-adjust { width: 40px; height: 40px; border-radius: 12px; border: 2px solid #eee; background: white; font-weight: 800; }
-        .btn-adjust:disabled { opacity: 0.3; }
         
         .gg-input { background: #fff; border: 2px solid var(--md-red); border-radius: 18px; padding: 20px; text-align: center; font-size: 1.2rem; font-weight: 800; width: 100%; color: var(--md-red); }
-        .extra-card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         
-        .footer-action { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 20px 20px 30px 20px; border-radius: 30px 30px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.08); z-index: 1000; }
-        .btn-submit { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; transition: 0.3s; }
+        /* MODERNISERT FOOTER */
+        .footer-action { 
+            position: fixed; 
+            bottom: 0; left: 0; right: 0; 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 15px 20px 35px 20px; 
+            border-top: 1px solid rgba(0,0,0,0.05);
+            z-index: 1000; 
+        }
+
+        /* En liten skygge-overgang som viser at man kan scrolle bak footeren */
+        .scroll-indicator {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(to top, rgba(0,0,0,0.05), transparent);
+            pointer-events: none;
+        }
+
+        .btn-submit { background: var(--md-red); color: white; border: none; padding: 16px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; transition: 0.3s; box-shadow: 0 8px 20px rgba(204, 0, 0, 0.2); }
         .rules-badge { border-left: 5px solid var(--md-red); background: #fffcfc; }
     </style>
 </head>
@@ -40,22 +59,16 @@
             <div class="prize-icon">🎁</div>
             <div>
                 <div class="small fw-800 text-muted text-uppercase" style="font-size: 0.65rem;">Rundens Premie</div>
-                <div class="fw-800 h5 m-0" style="color: var(--md-dark);">{{ group[5] or 'Ære og berømmelse' }}</div>
+                <div class="fw-800 h5 m-0">{{ group[5] or 'Middag' }}</div>
             </div>
         </div>
 
         <div class="match-card p-3 mb-4 rules-badge">
-            <h6 class="fw-800 text-uppercase small mb-2 text-center">Slik får du poeng:</h6>
-            <div class="d-flex justify-content-between text-center mt-2">
-                <div><div class="fw-800 h5 m-0">3p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">SCORE</div></div>
-                <div><div class="fw-800 h5 m-0">1p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">HUB</div></div>
-                <div><div class="fw-800 h5 m-0" style="color: var(--md-red)">+5p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">GG TREFF</div></div>
-                <div><div class="fw-800 h5 m-0" style="color: #28a745">+2p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">GG NÆRMEST</div></div>
-            </div>
+            <h6 class="fw-800 text-uppercase small mb-2 text-center">Poeng: 3p (Resultat) | 1p (HUB) | +5p (GG)</h6>
         </div>
 
         {% for k in kamper %}
-        <div class="text-muted small fw-800 mb-1 ps-2" style="font-size: 0.7rem; letter-spacing: 0.5px; color: #4a90e2;">
+        <div class="text-muted small fw-800 mb-1 ps-2" style="font-size: 0.7rem; color: #4a90e2;">
             ⚽ START: {{ k[6] }}
         </div>
         <div class="match-card text-center match-row" data-id="{{ k[0] }}">
@@ -88,8 +101,8 @@
         {% endfor %}
 
         <div class="match-card">
-            <label class="fw-800 small text-uppercase text-muted d-block text-center mb-3">Golden Goal (Første målminutt)</label>
-            <input type="number" id="golden-goal" class="gg-input" placeholder="Hvilket minutt? Eks: 24" {% if is_locked %}disabled{% endif %}>
+            <label class="fw-800 small text-uppercase text-muted d-block text-center mb-3">Golden Goal (Minutt)</label>
+            <input type="number" id="golden-goal" class="gg-input" placeholder="Eks: 24" {% if is_locked %}disabled{% endif %}>
         </div>
 
         {% if questions %}
@@ -112,12 +125,19 @@
     </div>
 
     <div class="footer-action">
+        <div class="scroll-indicator"></div>
         <div class="container" style="max-width: 460px;">
             {% if is_locked %}
-                <div class="alert alert-dark fw-800 text-center rounded-pill shadow-sm" style="border: 2px solid #333;">🔒 KONKURRANSEN ER LÅST</div>
+                <div class="alert alert-dark fw-800 text-center rounded-pill m-0">🔒 RUNDEN ER LÅST</div>
             {% else %}
-                <input type="text" id="user-name" class="form-control mb-3 p-3 fw-bold shadow-sm" placeholder="Ditt navn..." style="border-radius:15px; border: 1px solid #eee;">
-                <button class="btn-submit shadow-lg" onclick="sendTips()">Lagre mine tips 🚀</button>
+                <div class="row g-2">
+                    <div class="col-5">
+                        <input type="text" id="user-name" class="form-control p-3 fw-bold shadow-sm" placeholder="Navn..." style="border-radius:15px; border: 1px solid #ddd;">
+                    </div>
+                    <div class="col-7">
+                        <button class="btn-submit" onclick="sendTips()">Lagre tips 🚀</button>
+                    </div>
+                </div>
             {% endif %}
         </div>
     </div>
