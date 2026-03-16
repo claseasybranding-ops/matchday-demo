@@ -11,11 +11,10 @@
         body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
         .admin-card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
         
-        /* Dele-boks design */
         .share-box { background: #f0f7ff; border: 2px dashed var(--md-blue); padding: 20px; border-radius: 20px; margin-bottom: 30px; }
         .share-input-group { display: flex; gap: 10px; margin-top: 10px; }
-        .share-url { background: white; border: 1px solid #d1e3ff; border-radius: 12px; padding: 10px; flex-grow: 1; font-size: 0.85rem; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .btn-copy { background: var(--md-blue); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 800; font-size: 0.8rem; transition: 0.3s; }
+        .share-url { background: white; border: 1px solid #d1e3ff; border-radius: 12px; padding: 10px; flex-grow: 1; font-size: 0.85rem; color: #555; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+        .btn-copy { background: var(--md-blue); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 800; font-size: 0.8rem; transition: 0.3s; min-width: 100px; }
         .btn-copy:active { transform: scale(0.95); }
 
         .match-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
@@ -32,11 +31,12 @@
         <h2 class="fw-800 mb-4 text-center">Oppsett: {{ group[1] }}</h2>
         
         <div class="share-box">
-            <label class="fw-800 small text-uppercase text-blue" style="color: var(--md-blue);">🔗 Del tippesiden med gruppen din</label>
+            <label class="fw-800 small text-uppercase" style="color: var(--md-blue);">🔗 DEL DENNE LENKEN MED DELTAKERNE</label>
             <div class="share-input-group">
                 <div id="shareUrl" class="share-url">Laster lenke...</div>
                 <button class="btn-copy" onclick="copyLink()">KOPIER</button>
             </div>
+            <small class="text-muted mt-2 d-block" style="font-size: 0.65rem;">Dette er lenken til selve tippesiden, ikke admin-panelet.</small>
         </div>
 
         <button class="btn-refresh shadow-sm" onclick="refreshMatches()">🔄 HENT FERSKE KAMPER FRA PL</button>
@@ -96,10 +96,11 @@
     </div>
 
     <script>
-        // Sett URL-en automatisk basert på nåværende adresse
+        // FIKSET LOGIKK FOR LENKE:
         window.onload = function() {
             const baseUrl = window.location.origin;
-            const shareUrl = baseUrl + "/group/{{ group[2] }}";
+            // Vi bygger lenken manuelt slik at den alltid peker på tippesiden
+            const shareUrl = baseUrl + "/group/{{ group[2] }}"; 
             document.getElementById('shareUrl').innerText = shareUrl;
         };
 
