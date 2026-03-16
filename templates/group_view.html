@@ -12,7 +12,6 @@
         
         .header { background: white; padding: 25px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
         
-        /* Premie-boks på tippesiden */
         .prize-card { background: white; border-radius: 24px; padding: 15px; margin-bottom: 20px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); }
         .prize-icon { font-size: 1.5rem; margin-right: 15px; }
         
@@ -36,7 +35,7 @@
             box-shadow: 0 -10px 30px rgba(0,0,0,0.08); 
             z-index: 1000; 
         }
-        .btn-submit { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; }
+        .btn-submit { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; cursor: pointer; }
         
         .rules-badge { border-left: 5px solid var(--md-red); background: #fffcfc; }
     </style>
@@ -135,14 +134,17 @@
             if (val >= 0) el.innerText = val;
         }
 
-        function sendTips() {
+        async function sendTips() {
             const name = document.getElementById('user-name').value;
+            const gg = document.getElementById('golden-goal').value;
+            
             if(!name) return alert("Husk navn!");
+            if(!gg) return alert("Husk Golden Goal-minutt!");
             
             const tips = [];
             document.querySelectorAll('.match-row').forEach(row => {
                 tips.push({
-                    match_id: row.dataset.id,
+                    match_id: row.getAttribute('data-id'),
                     h: row.querySelector('.h-score').innerText,
                     a: row.querySelector('.a-score').innerText
                 });
@@ -150,21 +152,35 @@
 
             const extras = {};
             document.querySelectorAll('.extra-q-row').forEach(row => {
-                const qid = row.dataset.qid;
-                extras[qid] = row.querySelector('input:checked').value;
+                const qid = row.getAttribute('data-qid');
+                const selected = row.querySelector('input:checked');
+                if(selected) {
+                    extras[qid] = selected.value;
+                }
             });
 
-            fetch('/api/submit_tips', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    group_id: '{{ group[2] }}',
-                    user_name: name,
-                    tips: tips,
-                    golden_goal: document.getElementById('golden-goal').value,
-                    extras: extras
-                })
-            }).then(() => window.location.href = "/group/{{ group[2] }}/leaderboard");
+            try {
+                const response = await fetch('/api/submit_tips', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        group_id: '{{ group[2] }}',
+                        user_name: name,
+                        tips: tips,
+                        golden_goal: gg,
+                        extras: extras
+                    })
+                });
+                
+                if (response.ok) {
+                    window.location.href = "/group/{{ group[2] }}/leaderboard";
+                } else {
+                    alert("Noe gikk galt ved lagring. Prøv igjen.");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Kunne ikke koble til serveren.");
+            }
         }
     </script>
 </body>
