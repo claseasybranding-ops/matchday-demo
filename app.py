@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, jsonify
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.secret_key = "matchday_v5_final_pro_ultra_complete_fix"
+app.secret_key = "matchday_v5_pro_ultra_final_complete"
 
 # Bruker samme database-fil som før
 DB_PATH = 'matchday_v3.db'
@@ -89,7 +89,7 @@ def update_points_logic():
                 c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=?, first_goal_min=? WHERE id=?", 
                          (h_score, a_score, status, f_goal, mid))
                 
-                # Beregn poeng for alle spillere på denne kampen
+                # Beregn poeng for hver bet
                 c.execute("SELECT id, group_id_str, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
                 for bet in c.fetchall():
                     pts = 0
