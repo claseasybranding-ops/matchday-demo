@@ -12,9 +12,10 @@
         .admin-card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
         .match-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
         .btn-save { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; margin-top: 20px; transition: 0.3s; }
-        .btn-refresh { background: #28a745; color: white; border: none; padding: 12px; border-radius: 16px; font-weight: 800; width: 100%; margin-bottom: 20px; }
+        .btn-save:hover { background: #a30000; transform: translateY(-2px); }
+        .btn-refresh { background: #28a745; color: white; border: none; padding: 12px; border-radius: 16px; font-weight: 800; width: 100%; margin-bottom: 20px; cursor: pointer; }
         .match-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 16px; padding: 10px; margin-top: 10px; }
-        .q-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; mb-2; background: #f0fff4; border-radius: 12px; border: 1px solid #c6f6d5; margin-bottom: 8px; }
+        .q-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #f0fff4; border-radius: 12px; border: 1px solid #c6f6d5; margin-bottom: 8px; }
         .btn-delete-q { background: none; border: none; color: #ff4d4d; font-weight: 800; cursor: pointer; padding: 0 5px; }
         .locked-overlay { background: #f8f9fa; border-radius: 20px; padding: 20px; text-align: center; border: 2px solid #eee; }
     </style>
@@ -31,6 +32,11 @@
                 <option value="multi" {% if group[4] == 'multi' %}selected{% endif %}>Multi Game (Hele runden)</option>
                 <option value="single" {% if group[4] == 'single' %}selected{% endif %}>Single Game (Supporter-modus)</option>
             </select>
+        </div>
+
+        <div class="mb-4">
+            <label class="fw-bold small text-uppercase text-muted">Premie i runden</label>
+            <input type="text" id="prize" class="form-control fw-bold shadow-sm" value="{{ group[5] or '' }}" placeholder="F.eks: En iskald boks Cola" style="border-radius: 12px; padding: 12px;">
         </div>
 
         <div class="mb-4">
@@ -62,7 +68,7 @@
             {% elif group[4] == 'single' %}
                 <div class="locked-overlay">
                     <span class="fs-2">🔒</span>
-                    <p class="small fw-bold text-muted m-0 mt-2">Velg og LAGRE én kamp for å se spillere.</p>
+                    <p class="small fw-bold text-muted m-0 mt-2">Du må velge og LAGRE én kamp for å se spillere.</p>
                 </div>
             {% endif %}
 
@@ -80,7 +86,6 @@
     </div>
 
     <script>
-        // Sørger for at man bare kan velge én kamp i Single-modus
         function handleMatchSelect(checkbox) {
             const mode = document.getElementById('mode').value;
             if (mode === 'single' && checkbox.checked) {
@@ -92,18 +97,25 @@
 
         function toggleExtras() {
             const mode = document.getElementById('mode').value;
-            document.getElementById('extras-section').style.display = (mode === 'single') ? 'block' : 'none';
+            const section = document.getElementById('extras-section');
+            if (section) section.style.display = (mode === 'single') ? 'block' : 'none';
         }
 
         async function saveSettings(reload) {
             const matches = [];
             document.querySelectorAll('.match-check:checked').forEach(cb => matches.push(cb.value));
             const mode = document.getElementById('mode').value;
+            const prize = document.getElementById('prize').value;
 
             await fetch('/api/update_group_settings', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ group_id_str: '{{ group[2] }}', mode: mode, matches: matches })
+                body: JSON.stringify({ 
+                    group_id_str: '{{ group[2] }}', 
+                    mode: mode, 
+                    prize: prize, 
+                    matches: matches 
+                })
             });
             if(reload) window.location.reload();
         }
@@ -119,7 +131,6 @@
             window.location.reload();
         }
 
-        // NY FUNKSJON FOR Å SLETTE SPØRSMÅL
         async function deleteQuestion(qId) {
             if(confirm("Vil du fjerne dette spørsmålet?")) {
                 await fetch(`/api/delete_question/${qId}`, { method: 'POST' });
