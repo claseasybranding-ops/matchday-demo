@@ -13,16 +13,17 @@
         .match-card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .team-logo { width: 50px; height: 50px; object-fit: contain; margin-bottom: 10px; }
         .score-box { background: #f1f1f1; border-radius: 15px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; }
-        .btn-adjust { width: 40px; height: 40px; border-radius: 12px; border: 2px solid #eee; background: white; font-weight: 800; transition: 0.2s; }
-        .btn-adjust:active { background: #eee; }
-        .gg-input { background: #fff5f5; border: 2px solid var(--md-red); border-radius: 18px; padding: 20px; text-align: center; font-size: 1.2rem; font-weight: 800; width: 100%; color: var(--md-red); }
+        .btn-adjust { width: 40px; height: 40px; border-radius: 12px; border: 2px solid #eee; background: white; font-weight: 800; }
+        .gg-input { background: #fff; border: 2px solid var(--md-red); border-radius: 18px; padding: 20px; text-align: center; font-size: 1.2rem; font-weight: 800; width: 100%; color: var(--md-red); }
+        .extra-card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .btn-check:checked + .btn-outline-danger { background-color: var(--md-red); color: white; }
         .footer-action { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 20px; border-radius: 30px 30px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); z-index: 1000; }
-        .btn-submit { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-submit { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1 class="fw-800 m-0" style="letter-spacing: -1px;">{{ group[1] }}</h1>
+        <h1 class="fw-800 m-0">{{ group[1] }}</h1>
         <span class="badge bg-light text-dark mt-2 fw-bold">RUNDE 1</span>
     </div>
 
@@ -34,20 +35,17 @@
                     <img src="{{ k[4] }}" class="team-logo"><br>
                     <span class="fw-800 small">{{ k[2] }}</span>
                 </div>
-                
                 <div class="d-flex align-items-center gap-2">
                     <div class="score-box h-score">0</div>
                     <div class="fw-800 text-muted">:</div>
                     <div class="score-box a-score">0</div>
                 </div>
-
                 <div style="width: 35%;">
                     <img src="{{ k[5] }}" class="team-logo"><br>
                     <span class="fw-800 small">{{ k[3] }}</span>
                 </div>
             </div>
-            
-            <div class="d-flex justify-content-center gap-5 mt-2">
+            <div class="d-flex justify-content-center gap-5">
                 <div class="d-flex gap-2">
                     <button class="btn-adjust" onclick="adj(this, 'h', -1)">-</button>
                     <button class="btn-adjust" onclick="adj(this, 'h', 1)">+</button>
@@ -64,11 +62,29 @@
             <label class="fw-800 small text-uppercase text-muted d-block text-center mb-3">Golden Goal (Første målminutt)</label>
             <input type="number" id="golden-goal" class="gg-input" placeholder="Eks: 24">
         </div>
+
+        {% if questions %}
+        <div class="extra-card">
+            <h6 class="fw-800 text-uppercase small text-muted mb-4 text-center">Tilleggsspørsmål</h6>
+            {% for q in questions %}
+            <div class="mb-4 extra-q-row" data-qid="{{ q[0] }}">
+                <label class="fw-bold d-block mb-2 text-center">{{ q[1] }}</label>
+                <div class="d-flex justify-content-center gap-3">
+                    <input type="radio" class="btn-check" name="q{{ q[0] }}" id="q{{ q[0] }}y" value="JA">
+                    <label class="btn btn-outline-danger fw-bold px-4 rounded-pill" for="q{{ q[0] }}y">JA</label>
+
+                    <input type="radio" class="btn-check" name="q{{ q[0] }}" id="q{{ q[0] }}n" value="NEI" checked>
+                    <label class="btn btn-outline-danger fw-bold px-4 rounded-pill" for="q{{ q[0] }}n">NEI</label>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <div class="footer-action">
         <div class="container" style="max-width: 460px;">
-            <input type="text" id="user-name" class="form-control mb-3 p-3 fw-bold" placeholder="Ditt navn..." style="border-radius:15px; border: 2px solid #eee;">
+            <input type="text" id="user-name" class="form-control mb-3 p-3 fw-bold shadow-sm" placeholder="Ditt navn..." style="border-radius:15px; border: 1px solid #eee;">
             <button class="btn-submit shadow-lg" onclick="sendTips()">Lagre mine tips 🚀</button>
         </div>
     </div>
@@ -84,6 +100,7 @@
         function sendTips() {
             const name = document.getElementById('user-name').value;
             if(!name) return alert("Husk navn!");
+            
             const tips = [];
             document.querySelectorAll('.match-row').forEach(row => {
                 tips.push({
@@ -92,6 +109,13 @@
                     a: row.querySelector('.a-score').innerText
                 });
             });
+
+            const extras = {};
+            document.querySelectorAll('.extra-q-row').forEach(row => {
+                const qid = row.dataset.qid;
+                extras[qid] = row.querySelector('input:checked').value;
+            });
+
             fetch('/api/submit_tips', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -99,7 +123,8 @@
                     group_id: '{{ group[2] }}',
                     user_name: name,
                     tips: tips,
-                    golden_goal: document.getElementById('golden-goal').value
+                    golden_goal: document.getElementById('golden-goal').value,
+                    extras: extras
                 })
             }).then(() => window.location.href = "/group/{{ group[2] }}/leaderboard");
         }
