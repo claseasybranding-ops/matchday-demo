@@ -12,9 +12,8 @@
         .admin-card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 600px; margin: auto; }
         .share-box { background: #fff5f5; border: 2px dashed var(--md-red); padding: 15px; border-radius: 16px; margin-bottom: 25px; text-align: center; }
         .match-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
-        .smart-btn { background: #f1f1f1; border: none; padding: 10px 15px; border-radius: 12px; font-weight: 700; margin: 5px; font-size: 0.8rem; }
         .btn-save { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 800; width: 100%; margin-top: 20px; }
-        .btn-refresh { background: #28a745; color: white; border: none; padding: 12px; border-radius: 16px; font-weight: 800; width: 100%; margin-bottom: 20px; transition: 0.3s; }
+        .btn-refresh { background: #28a745; color: white; border: none; padding: 12px; border-radius: 16px; font-weight: 800; width: 100%; margin-bottom: 20px; }
         .match-list { max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 16px; padding: 10px; margin-top: 10px; }
     </style>
 </head>
@@ -22,7 +21,7 @@
     <div class="admin-card">
         <h2 class="fw-800 mb-4 text-center">Oppsett: {{ group[1] }}</h2>
         
-        <button class="btn-refresh shadow-sm" onclick="refreshMatches()">🔄 HENT FERSKE KAMPER FRA PL</button>
+        <button class="btn-refresh shadow-sm" onclick="refreshMatches()">🔄 OPPDATER KAMP-LAGER</button>
 
         <div class="share-box">
             <span class="small fw-bold text-muted text-uppercase">Link til deltakerne:</span>
@@ -38,11 +37,6 @@
         </div>
 
         <div class="mb-4">
-            <label class="fw-bold small text-uppercase text-muted">Premie i runden</label>
-            <input type="text" id="prize" class="form-control fw-bold" value="{{ group[5] or '' }}" placeholder="F.eks: En signert drakt" style="border-radius: 12px;">
-        </div>
-
-        <div class="mb-4">
             <label class="fw-bold small text-uppercase text-muted">Velg kamper</label>
             <div class="match-list">
                 {% for k in kamper %}
@@ -55,20 +49,16 @@
         </div>
 
         <div id="extras-section" class="p-3" style="background: #fdfdfd; border-radius: 20px; border: 2px dashed #eee; display: {% if group[4] == 'single' %}block{% else %}none{% endif %};">
-            <label class="fw-bold small text-uppercase text-muted mb-2 d-block">Smarte spørsmål (Single Game)</label>
-            <div class="d-flex flex-wrap mb-3">
-                <button class="smart-btn" onclick="addSmartQ('Blir det straffespark?')">+ Straffe?</button>
-                <button class="smart-btn" onclick="addSmartQ('Blir det rødt kort?')">+ Rødt kort?</button>
-            </div>
+            <label class="fw-bold small text-uppercase text-muted mb-2 d-block">Automatiserte spørsmål (API-data)</label>
             
-            <div class="mt-3">
-                <label class="small fw-bold text-muted">Hvem scorer?</label>
+            <div class="mt-2">
+                <label class="small fw-bold text-muted">Hvem scorer i kampen?</label>
                 <div class="d-flex gap-2">
                     <select id="player-select" class="form-select form-select-sm">
                         {% if players %}
                             {% for p in players %}<option value="Scorer {{ p.name }} ({{ p.team }})?">{{ p.name }} ({{ p.team }})</option>{% endfor %}
                         {% else %}
-                            <option value="">Velg kamp og lagre for å se spillere</option>
+                            <option value="">Ingen spillere funnet - velg én kamp og lagre først</option>
                         {% endif %}
                     </select>
                     <button class="btn btn-dark btn-sm fw-bold" onclick="addSmartQ(document.getElementById('player-select').value)">LEGG TIL</button>
@@ -85,23 +75,20 @@
     </div>
 
     <script>
-        // Logikk for å skjule/vise ekstra spørsmål basert på modus
         function toggleExtras() {
             const mode = document.getElementById('mode').value;
             document.getElementById('extras-section').style.display = (mode === 'single') ? 'block' : 'none';
         }
 
         function refreshMatches() {
-            if(confirm("Vil du oppdatere kamp-lageret fra Premier League?")) {
-                fetch('/api/import_league/PL').then(() => window.location.reload());
-            }
+            fetch('/api/import_league/PL').then(() => window.location.reload());
         }
 
         async function saveSettings(showAlert) {
             const matches = [];
             document.querySelectorAll('.match-check:checked').forEach(cb => matches.push(cb.value));
             
-            const response = await fetch('/api/update_group_settings', {
+            await fetch('/api/update_group_settings', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
@@ -111,15 +98,13 @@
                     matches: matches
                 })
             });
-            if(showAlert) { alert("Alt lagret!"); window.location.reload(); }
-            return response;
+            if(showAlert) window.location.reload();
         }
 
         async function addSmartQ(text) {
-            if(!text) return;
-            await saveSettings(false);
+            if(!text || text.includes("Ingen spillere")) return;
             const matchId = document.querySelector('.match-check:checked')?.value;
-            if(!matchId) return alert("Velg en kamp først!");
+            if(!matchId) return alert("Du må velge nøyaktig én kamp i Single-modus for å legge til skårere.");
 
             await fetch('/api/add_smart_question', {
                 method: 'POST',
