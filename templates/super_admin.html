@@ -12,34 +12,25 @@
         .navbar { background: white; padding: 20px 0; border-bottom: 1px solid #eee; }
         .admin-card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 30px; }
         .btn-create { background: var(--md-red); color: white; border: none; padding: 15px; border-radius: 14px; font-weight: 800; text-transform: uppercase; transition: 0.3s; width: 100%; }
-        .btn-create:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(204, 0, 0, 0.2); }
         .match-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #888; border: none; }
         .match-table td { font-weight: 700; font-size: 0.85rem; padding: 15px 10px; border-bottom: 1px solid #f1f1f1; }
-        .status-badge { font-size: 0.6rem; padding: 4px 10px; border-radius: 6px; font-weight: 800; text-transform: uppercase; }
-        .status-upcoming { background: #eef2ff; color: #4338ca; }
+        .status-badge { font-size: 0.6rem; padding: 4px 10px; border-radius: 6px; font-weight: 800; text-transform: uppercase; background: #eef2ff; color: #4338ca; }
     </style>
 </head>
 <body>
     <nav class="navbar mb-5">
         <div class="container d-flex justify-content-between align-items-center">
             <h4 class="m-0 fw-800">MATCHDAY. <span class="text-muted fw-400" style="font-size: 0.8rem;">SYSTEM ADMIN</span></h4>
-            <button class="btn btn-dark fw-800 px-4 rounded-pill">INVESTOR MODUS</button>
         </div>
     </nav>
 
     <div class="container" style="max-width: 1000px;">
         <div class="admin-card">
-            <h6 class="text-uppercase text-muted fw-800 mb-4" style="font-size: 0.7rem; letter-spacing: 1px;">Opprett ny kunde / supporterklubb</h6>
+            <h6 class="text-uppercase text-muted fw-800 mb-4" style="font-size: 0.7rem; letter-spacing: 1px;">Opprett ny supporterklubb</h6>
             <div class="row g-3">
-                <div class="col-md-4">
-                    <input type="text" id="new-group-name" class="form-control p-3 fw-bold" placeholder="TV2" style="background: #eef2ff; border: none; border-radius: 12px;">
-                </div>
-                <div class="col-md-4">
-                    <input type="text" id="new-group-admin" class="form-control p-3 fw-bold" placeholder="Clas Thomas" style="background: #eef2ff; border: none; border-radius: 12px;">
-                </div>
-                <div class="col-md-4">
-                    <button class="btn-create" onclick="createGroup()">OPPRETT 🚀</button>
-                </div>
+                <div class="col-md-4"><input type="text" id="new-group-name" class="form-control p-3 fw-bold" placeholder="Eks: TV2" style="background: #eef2ff; border: none; border-radius: 12px;"></div>
+                <div class="col-md-4"><input type="text" id="new-group-admin" class="form-control p-3 fw-bold" placeholder="Navn på admin" style="background: #eef2ff; border: none; border-radius: 12px;"></div>
+                <div class="col-md-4"><button class="btn-create" onclick="createGroup()">OPPRETT GRUPPE 🚀</button></div>
             </div>
         </div>
 
@@ -57,8 +48,11 @@
 
         <div class="admin-card">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h6 class="text-uppercase text-muted fw-800 m-0" style="font-size: 0.7rem; letter-spacing: 1px;">Globalt kamp-lager (PL)</h6>
-                <button class="btn btn-outline-danger btn-sm fw-800" onclick="importPL()">Hent ferske kamper</button>
+                <h6 class="text-uppercase text-muted fw-800 m-0" style="font-size: 0.7rem; letter-spacing: 1px;">Globalt kamp-lager</h6>
+                <div class="btn-group shadow-sm">
+                    <button class="btn btn-dark btn-sm fw-800 px-3" onclick="importLeague('PL')">HENT PREMIER LEAGUE</button>
+                    <button class="btn btn-primary btn-sm fw-800 px-3" onclick="importLeague('CL')" style="background-color: #003399;">HENT CHAMPIONS LEAGUE</button>
+                </div>
             </div>
             <div class="table-responsive">
                 <table class="table match-table">
@@ -74,7 +68,7 @@
                         <tr>
                             <td>{{ k[6] }}</td>
                             <td>{{ k[2] }} – {{ k[3] }}</td>
-                            <td class="text-end"><span class="status-badge status-upcoming">{{ k[7] }}</span></td>
+                            <td class="text-end"><span class="status-badge">{{ k[7] }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -88,22 +82,17 @@
             const name = document.getElementById('new-group-name').value;
             const admin = document.getElementById('new-group-admin').value;
             if(!name || !admin) return alert("Fyll ut begge felt!");
-
             fetch('/api/create_group', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ name: name, admin_name: admin })
-            })
-            .then(res => res.json())
-            .then(data => {
-                alert("Gruppe opprettet!");
-                window.location.reload();
-            });
+            }).then(() => window.location.reload());
         }
 
-        function importPL() {
-            if(confirm("Dette sletter alle eksisterende tips og starter runden på nytt. Er du sikker?")) {
-                fetch('/api/import_league/PL').then(() => window.location.reload());
+        function importLeague(code) {
+            const msg = code === 'PL' ? "Premier League" : "Champions League";
+            if(confirm("Dette sletter alle nåværende runder og tips for å hente " + msg + ". Er du sikker?")) {
+                fetch('/api/import_league/' + code).then(() => window.location.reload());
             }
         }
     </script>
