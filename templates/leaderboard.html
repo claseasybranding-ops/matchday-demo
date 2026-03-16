@@ -3,73 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tabell | {{ group[1] }}</title>
+    <title>Live Leaderboard | MatchDay</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-dark: #1a1a1a; --md-bg: #f8f9fa; }
-        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; }
-        .leaderboard-container { max-width: 500px; margin: 40px auto; padding: 20px; }
-        .prize-notice { background: white; border-radius: 12px; padding: 15px; margin-bottom: 25px; border-left: 4px solid #FFD700; box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; align-items: center; }
-        .leaderboard-card { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow: hidden; }
-        .table td { padding: 20px; vertical-align: middle; cursor: pointer; border-bottom: 1px solid #f8f8f8; }
-        .rank-badge { width: 35px; height: 35px; background: #f1f1f1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; }
-        .points-col { font-weight: 800; text-align: right; font-size: 1.2rem; color: var(--md-dark); }
-        .live-dot { height: 8px; width: 8px; background-color: var(--md-red); border-radius: 50%; display: inline-block; margin-right: 5px; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 70% { transform: scale(1.5); opacity: 0; } 100% { transform: scale(0.95); opacity: 0; } }
+        :root { --md-red: #cc0000; --md-dark: #1a1a1a; --md-bg: #f8f9fa; --md-gold: #FFD700; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--md-dark); }
         
-        /* Modal styling */
-        .modal-content { border-radius: 24px; border: none; }
-        .bet-info-card { background: #f8f9fa; border-radius: 16px; padding: 15px; margin-bottom: 10px; }
-        .extra-bet-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.85rem; }
-        .gg-badge { background: var(--md-red); color: white; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; }
+        .leaderboard-container { max-width: 500px; margin: 40px auto; padding: 20px; }
+        
+        /* Header & Live Status */
+        .live-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 5px; }
+        .live-dot { height: 10px; width: 10px; background-color: var(--md-red); border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 70% { transform: scale(1.6); opacity: 0; } 100% { transform: scale(0.95); opacity: 0; } }
+        
+        /* Prize Card */
+        .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); }
+        .prize-icon { font-size: 2rem; margin-right: 20px; }
+        
+        /* Leaderboard Table */
+        .leaderboard-card { background: white; border-radius: 28px; box-shadow: 0 15px 45px rgba(0,0,0,0.07); overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
+        .table { margin-bottom: 0; }
+        .table thead th { background: #fafafa; border-bottom: 1px solid #eee; padding: 15px 20px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+        .table tbody tr { transition: 0.2s; cursor: pointer; }
+        .table tbody tr:hover { background: #fdfdfd; }
+        .table td { padding: 18px 20px; vertical-align: middle; border-bottom: 1px solid #f8f8f8; }
+        
+        .rank-box { width: 36px; height: 36px; background: #f1f1f1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem; }
+        tr:nth-child(1) .rank-box { background: var(--md-gold); color: white; }
+        
+        .user-name { font-weight: 700; font-size: 1.05rem; }
+        .points-display { font-weight: 800; color: var(--md-red); font-size: 1.2rem; text-align: right; }
+
+        /* Detail Modal */
+        .modal-content { border-radius: 32px; border: none; box-shadow: 0 25px 60px rgba(0,0,0,0.2); }
+        .modal-header { border-bottom: 1px solid #f0f0f0; padding: 25px 30px; }
+        .modal-body { padding: 30px; }
+        
+        .bet-detail-card { background: #f9f9f9; border-radius: 20px; padding: 20px; margin-bottom: 15px; border: 1px solid #eee; }
+        .team-mini { text-align: center; width: 35%; }
+        .team-mini img { width: 35px; height: 35px; object-fit: contain; margin-bottom: 5px; }
+        .team-mini span { display: block; font-size: 0.75rem; font-weight: 800; }
+        
+        .score-display { width: 30%; text-align: center; font-size: 1.8rem; font-weight: 800; color: var(--md-dark); }
+        .gg-badge { display: inline-block; background: var(--md-dark); color: white; padding: 5px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; margin-top: 10px; }
+        
+        .extra-list { margin-top: 20px; }
+        .extra-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #eee; }
+        .extra-q { font-size: 0.85rem; color: #666; font-weight: 600; }
+        .extra-a { font-weight: 800; color: var(--md-red); }
+
+        .footer-info { text-align: center; margin-top: 25px; font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
     </style>
 </head>
 <body>
 
     <div class="leaderboard-container">
         <div class="text-center mb-4">
-            <h1 class="fw-800 mb-1">{{ group[1] }}</h1>
-            <div class="d-flex align-items-center justify-content-center mb-3">
+            <div class="live-status">
                 <span class="live-dot"></span>
-                <span class="small fw-bold text-uppercase" style="color: var(--md-red); letter-spacing: 1px;">Live Leaderboard</span>
+                <span class="fw-800 small text-uppercase" style="color: var(--md-red); letter-spacing: 1px;">Live Oppdatering</span>
             </div>
+            <h1 class="fw-800">{{ group[1] }}</h1>
         </div>
 
-        <div class="prize-notice">
-            <span class="me-3" style="font-size: 1.5rem;">🏆</span>
+        <div class="prize-card shadow-sm">
+            <div class="prize-icon">🎁</div>
             <div>
-                <div class="small fw-bold text-muted text-uppercase" style="font-size: 0.6rem;">Premie i runden</div>
-                <div class="fw-bold text-dark">{{ group[5] or 'Ære og berømmelse' }}</div>
+                <div class="small fw-800 text-muted text-uppercase" style="font-size: 0.65rem;">Rundens Premie</div>
+                <div class="fw-800 h5 m-0">{{ group[5] or 'Ære og berømmelse' }}</div>
             </div>
         </div>
         
         <div class="leaderboard-card">
-            <table class="table mb-0">
+            <table class="table">
                 <thead>
-                    <tr><th class="ps-4">Rank</th><th>Deltaker</th><th class="text-end pe-4">Poeng</th></tr>
+                    <tr>
+                        <th class="ps-4">Pos</th>
+                        <th>Deltaker</th>
+                        <th class="text-end pe-4">Poeng</th>
+                    </tr>
                 </thead>
                 <tbody>
                     {% for row in leaderboard %}
-                    <tr onclick="openBetsModal('{{ row[0] }}')">
-                        <td class="ps-4"><div class="rank-badge">{{ loop.index }}</div></td>
-                        <td><div class="fw-bold">{{ row[0] }}</div></td>
-                        <td class="points-col pe-4">{{ row[1] }}</td>
+                    <tr onclick="showUserBets('{{ row[0] }}')">
+                        <td class="ps-4" style="width: 80px;"><div class="rank-box">{{ loop.index }}</div></td>
+                        <td><div class="user-name">{{ row[0] }}</div></td>
+                        <td class="points-display pe-4">{{ row[1] }}p</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        
+        <div class="footer-info">Tabellen oppdateres automatisk hvert 2. minutt</div>
     </div>
 
-    <div class="modal fade" id="betsModal" tabindex="-1">
+    <div class="modal fade" id="betModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content shadow-lg">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-800">Tips for <span id="modalUserName" style="color:var(--md-red)"></span></h5>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="fw-800 m-0">Tips for <span id="modalName" style="color:var(--md-red)"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body pt-0" id="modalBetsBody">
+                <div class="modal-body" id="modalBody">
                     </div>
             </div>
         </div>
@@ -77,53 +114,59 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function openBetsModal(userName) {
-            document.getElementById('modalUserName').innerText = userName;
-            const modalBody = document.getElementById('modalBetsBody');
-            modalBody.innerHTML = '<p class="text-center py-4">Henter detaljer...</p>';
-
-            fetch(`/api/get_user_bets/{{ group[2] }}/${userName}`)
-                .then(res => res.json())
-                .then(data => {
-                    let html = '';
-                    
-                    // 1. Vis hovedtips
-                    data.main.forEach(bet => {
-                        html += `
-                            <div class="bet-info-card shadow-sm mb-3 text-center">
-                                <div class="d-flex justify-content-around align-items-center mb-2">
-                                    <div><img src="${bet.hl}" style="width:30px"><br><small class="fw-bold">${bet.ht}</small></div>
-                                    <div class="h3 fw-800 m-0">${bet.h} - ${bet.a}</div>
-                                    <div><img src="${bet.al}" style="width:30px"><br><small class="fw-bold">${bet.at}</small></div>
+        function showUserBets(user) {
+            document.getElementById('modalName').innerText = user;
+            const body = document.getElementById('modalBody');
+            body.innerHTML = '<div class="text-center p-4"><div class="spinner-border text-danger" role="status"></div></div>';
+            
+            fetch(`/api/get_user_bets/{{ group[2] }}/${user}`)
+            .then(res => res.json())
+            .then(data => {
+                let html = '';
+                
+                data.main.forEach(b => {
+                    html += `
+                        <div class="bet-detail-card shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="team-mini">
+                                    <img src="${b.hl}">
+                                    <span>${b.ht}</span>
                                 </div>
-                                <div class="gg-badge">GOLDEN GOAL: ${bet.gg}. MIN</div>
+                                <div class="score-display">${b.h} - ${b.a}</div>
+                                <div class="team-mini">
+                                    <img src="${b.al}">
+                                    <span>${b.at}</span>
+                                </div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <span class="gg-badge">Golden Goal: ${b.gg}. min</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                if(data.extras && data.extras.length > 0) {
+                    html += '<div class="extra-list">';
+                    data.extras.forEach(e => {
+                        html += `
+                            <div class="extra-item">
+                                <span class="extra-q">${e.q}</span>
+                                <span class="extra-a">${e.ans}</span>
                             </div>
                         `;
                     });
+                    html += '</div>';
+                }
 
-                    // 2. Vis tilleggssvar
-                    if(data.extras.length > 0) {
-                        html += '<h6 class="fw-800 text-uppercase small mt-4 mb-2">Tilleggssvar</h6>';
-                        data.extras.forEach(ext => {
-                            html += `
-                                <div class="extra-bet-row">
-                                    <span class="text-muted">${ext.q}</span>
-                                    <span class="fw-800">${ext.ans}</span>
-                                </div>
-                            `;
-                        });
-                    }
-
-                    modalBody.innerHTML = html;
-                });
-            new bootstrap.Modal(document.getElementById('betsModal')).show();
+                body.innerHTML = html;
+            });
+            
+            new bootstrap.Modal(document.getElementById('betModal')).show();
         }
 
-        // Auto-refresh hvert 2. minutt
+        // Auto-refresh
         setInterval(() => {
-            fetch('/api/refresh_data').then(res => res.json()).then(data => {
-                if(data.status === "OK") window.location.reload();
-            });
+            fetch('/api/refresh_data').then(() => window.location.reload());
         }, 120000);
     </script>
 </body>
