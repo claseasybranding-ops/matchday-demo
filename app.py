@@ -39,10 +39,10 @@ def init_db():
 
 init_db()
 
-# --- HJELPEFUNKSJONER FOR TID OG LÅSING ---
+# --- HJELPEFUNKSJONER ---
 
 def get_round_start(group_id_str):
-    """Finner starttidspunktet for den aller første kampen i runden for en gruppe."""
+    """Henter starttid for første kamp i runden for å låse tipping."""
     conn = get_db(); c = conn.cursor()
     c.execute("""
         SELECT MIN(f.date) FROM fixtures f 
@@ -56,49 +56,61 @@ def get_round_start(group_id_str):
     return None
 
 def update_points_logic():
-    url = "https://api.football-data.org/v4/competitions/PL/matches"
+    """Oppdaterer poeng automatisk basert på ferdige kamper i DB."""
+    conn = get_db(); c = conn.cursor()
+    # Vi sjekker alle ligaer som ligger i databasen
+    c.execute("SELECT DISTINCT league_id FROM fixtures")
+    leagues = [row[0] for row in c.fetchall()]
+    
     headers = {'X-Auth-Token': API_KEY}
-    try:
-        res = requests.get(url, headers=headers).json()
-        if 'matches' not in res: return False
-        conn = get_db(); c = conn.cursor()
-        now = datetime.utcnow()
-        for m in res.get('matches', []):
-            mid = m['id']
-            h_act = m['score']['fullTime']['home']
-            a_act = m['score']['fullTime']['away']
-            status = m['status'].lower()
-            m_time = datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00')).replace(tzinfo=None)
+    now = datetime.utcnow()
+
+    for league in leagues:
+        try:
+            url = f"https://api.football-data.org/v4/competitions/{league}/matches"
+            res = requests.get(url, headers=headers).json()
+            if 'matches' not in res: continue
             
-            if status in ['finished', 'live', 'in_play', 'paused'] or now > m_time:
-                h_score = h_act if h_act is not None else 0
-                a_score = a_act if a_act is not None else 0
-                # Golden Goal logikk (setter 25 min som default ved mål i ferdig kamp)
-                f_goal = 25 if (status == 'finished' and h_score+a_score > 0) else 0
-
-                c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=?, first_goal_min=? WHERE id=?", 
-                         (h_score, a_score, status, f_goal, mid))
+            for m in res.get('matches', []):
+                mid = m['id']
+                h_act = m['score']['fullTime']['home']
+                a_act = m['score']['fullTime']['away']
+                status = m['status'].lower()
+                m_time = datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00')).replace(tzinfo=None)
                 
-                c.execute("SELECT id, group_id_str, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
-                for bet_id, gid, u_h, u_a, u_gg in c.fetchall():
-                    pts = 0
-                    if u_h == h_score and u_a == a_score: pts = 3
-                    elif (u_h > u_a and h_score > a_score) or (u_h < u_a and h_score < a_score) or (u_h == u_a and h_score == a_score): pts = 1
+                if status in ['finished', 'live', 'in_play', 'paused'] or now > m_time:
+                    h_score = h_act if h_act is not None else 0
+                    a_score = a_act if a_act is not None else 0
+                    # Standard Golden Goal minutt for test/demo
+                    f_goal = 25 if (status == 'finished' and h_score+a_score > 0) else 0
+
+                    c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=?, first_goal_min=? WHERE id=?", 
+                             (h_score, a_score, status, f_goal, mid))
                     
-                    if f_goal > 0 and u_gg == f_goal: pts += 5
-                    c.execute("UPDATE bets SET points=? WHERE id=?", (pts, bet_id))
+                    c.execute("SELECT id, group_id_str, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
+                    for bet_id, gid, u_h, u_a, u_gg in c.fetchall():
+                        pts = 0
+                        # 3p for riktig resultat
+                        if u_h == h_score and u_a == a_score: pts = 3
+                        # 1p for riktig HUB
+                        elif (u_h > u_a and h_score > a_score) or (u_h < u_a and h_score < a_score) or (u_h == u_a and h_score == a_score): pts = 1
+                        
+                        # +5p for nøyaktig Golden Goal
+                        if f_goal > 0 and u_gg == f_goal: pts += 5
+                        c.execute("UPDATE bets SET points=? WHERE id=?", (pts, bet_id))
 
-                if f_goal > 0:
-                    c.execute("SELECT DISTINCT group_id_str FROM bets WHERE fixture_id=?", (mid,))
-                    for (group_id,) in c.fetchall():
-                        c.execute("SELECT MIN(ABS(golden_goal - ?)) FROM bets WHERE fixture_id=? AND group_id_str=? AND golden_goal > 0", (f_goal, mid, group_id))
-                        min_diff = c.fetchone()[0]
-                        if min_diff is not None and min_diff > 0:
-                            c.execute("UPDATE bets SET points = points + 2 WHERE fixture_id=? AND group_id_str=? AND ABS(golden_goal - ?) = ?", (mid, group_id, f_goal, min_diff))
-
-        conn.commit(); conn.close()
-        return True
-    except: return False
+                    # +2p for nærmeste Golden Goal (Tie-breaker)
+                    if f_goal > 0:
+                        c.execute("SELECT DISTINCT group_id_str FROM bets WHERE fixture_id=?", (mid,))
+                        for (group_id,) in c.fetchall():
+                            c.execute("SELECT MIN(ABS(golden_goal - ?)) FROM bets WHERE fixture_id=? AND group_id_str=? AND golden_goal > 0", (f_goal, mid, group_id))
+                            min_diff = c.fetchone()[0]
+                            if min_diff is not None and min_diff > 0:
+                                c.execute("UPDATE bets SET points = points + 2 WHERE fixture_id=? AND group_id_str=? AND ABS(golden_goal - ?) = ?", (mid, group_id, f_goal, min_diff))
+        except: continue
+        
+    conn.commit(); conn.close()
+    return True
 
 def get_players_from_api(fixture_id):
     headers = {'X-Auth-Token': API_KEY}
@@ -106,15 +118,13 @@ def get_players_from_api(fixture_id):
     try:
         res = requests.get(f"https://api.football-data.org/v4/matches/{fixture_id}", headers=headers, timeout=5).json()
         for team in ['homeTeam', 'awayTeam']:
-            t_id = res[team]['id']
-            t_name = res[team]['shortName']
+            t_id = res[team]['id']; t_name = res[team]['shortName']
             s_res = requests.get(f"https://api.football-data.org/v4/teams/{t_id}", headers=headers, timeout=5).json()
-            for p in s_res.get('squad', []):
-                players.append({'name': p['name'], 'team': t_name})
+            for p in s_res.get('squad', []): players.append({'name': p['name'], 'team': t_name})
     except: pass
     return players
 
-# --- RUTENE ---
+# --- HOVEDRUTER ---
 
 @app.route('/')
 def index(): return render_template('index.html')
@@ -125,7 +135,8 @@ def super_admin():
     c.execute("SELECT id, group_name, group_id_str, admin_name FROM groups")
     grupper = c.fetchall()
     now_iso = datetime.utcnow().isoformat()
-    c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (now_iso,))
+    # Viser kamper fra lageret sortert på dato
+    c.execute("SELECT * FROM fixtures ORDER BY date ASC")
     raw = c.fetchall(); kamper = []
     for f in raw:
         f_l = list(f); dt = datetime.fromisoformat(f[6].replace('Z', '+00:00'))
@@ -140,16 +151,11 @@ def group_view(group_id_str):
     group = c.fetchone()
     c.execute("SELECT f.* FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id WHERE gm.group_id = ?", (group[0],))
     raw = c.fetchall(); kamper = []
-    
     round_start = get_round_start(group_id_str)
     is_locked = datetime.utcnow() > round_start if round_start else False
-
     for f in raw:
-        f_l = list(f)
-        m_time = datetime.fromisoformat(f[6].replace('Z', '+00:00'))
-        f_l[6] = m_time.strftime("%d.%m kl %H:%M") 
-        kamper.append(f_l)
-        
+        f_l = list(f); m_time = datetime.fromisoformat(f[6].replace('Z', '+00:00'))
+        f_l[6] = m_time.strftime("%d.%m kl %H:%M"); kamper.append(f_l)
     c.execute("SELECT id, question_text FROM extra_questions WHERE group_id_str = ?", (group_id_str,))
     questions = c.fetchall()
     conn.close()
@@ -160,8 +166,9 @@ def group_admin(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
-    now_iso = (datetime.utcnow() - timedelta(hours=2)).isoformat()
-    c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (now_iso,))
+    # Henter alle kamper som ikke er altfor gamle
+    limit_date = (datetime.utcnow() - timedelta(days=1)).isoformat()
+    c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (limit_date,))
     alle = c.fetchall()
     c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
     valgte = [r[0] for r in c.fetchall()]
@@ -177,43 +184,35 @@ def leaderboard(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
-    
     round_start = get_round_start(group_id_str)
     start_str = round_start.strftime("%d.%m kl %H:%M") if round_start else "--:--"
-
     c.execute("SELECT user_name, SUM(points) as total FROM bets WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC, user_name ASC", (group_id_str,))
     rows = c.fetchall(); conn.close()
     return render_template('leaderboard.html', group=group, leaderboard=rows, start_time=start_str)
 
-# --- API ENDEPUNKTER ---
+# --- API ---
 
 @app.route('/api/submit_tips', methods=['POST'])
 def submit_tips():
-    data = request.get_json()
-    group_id = data['group_id']
-    
+    data = request.get_json(); group_id = data['group_id']
     round_start = get_round_start(group_id)
     if round_start and datetime.utcnow() > round_start:
-        return jsonify({"status": "LOCKED", "msg": "Runden har startet og er låst for tips!"}), 403
-
+        return jsonify({"status": "LOCKED"}), 403
     conn = get_db(); c = conn.cursor()
     c.execute("DELETE FROM bets WHERE group_id_str = ? AND user_name = ?", (group_id, data['user_name']))
     for t in data['tips']:
         c.execute("INSERT INTO bets (group_id_str, user_name, fixture_id, home_score, away_score, golden_goal) VALUES (?,?,?,?,?,?)", 
                  (group_id, data['user_name'], int(t['match_id']), int(t['h']), int(t['a']), data.get('golden_goal', 0)))
-    
     if 'extras' in data:
         c.execute("DELETE FROM extra_bets WHERE group_id_str = ? AND user_name = ?", (group_id, data['user_name']))
         for q_id, val in data['extras'].items():
             c.execute("INSERT INTO extra_bets (group_id_str, user_name, question_id, user_answer) VALUES (?,?,?,?)", (group_id, data['user_name'], int(q_id), val))
-            
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
 
 @app.route('/api/update_group_settings', methods=['POST'])
 def update_group_settings():
-    data = request.get_json()
-    conn = get_db(); c = conn.cursor()
+    data = request.get_json(); conn = get_db(); c = conn.cursor()
     c.execute("SELECT id FROM groups WHERE group_id_str = ?", (data['group_id_str'],))
     gid = c.fetchone()[0]
     c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data.get('mode', 'multi'), data.get('prize', ''), gid))
@@ -225,16 +224,14 @@ def update_group_settings():
 
 @app.route('/api/add_smart_question', methods=['POST'])
 def add_smart_question():
-    data = request.get_json()
-    conn = get_db(); c = conn.cursor()
+    data = request.get_json(); conn = get_db(); c = conn.cursor()
     c.execute("INSERT INTO extra_questions (group_id_str, fixture_id, question_text) VALUES (?,?,?)", (data['group_id_str'], data['match_id'], data['text']))
     conn.commit(); conn.close()
     return jsonify({"status": "OK"})
 
 @app.route('/api/delete_question', methods=['POST'])
 def delete_question():
-    data = request.get_json()
-    q_id = data.get('q_id')
+    data = request.get_json(); q_id = data.get('q_id')
     conn = get_db(); c = conn.cursor()
     c.execute("DELETE FROM extra_questions WHERE id = ?", (q_id,))
     c.execute("DELETE FROM extra_bets WHERE question_id = ?", (q_id,)) 
@@ -243,29 +240,26 @@ def delete_question():
 
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
-    data = request.get_json()
-    gid_str = data['name'].lower().replace(" ", "-")
+    data = request.get_json(); gid_str = data['name'].lower().replace(" ", "-")
     conn = get_db(); c = conn.cursor()
     c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", (data['name'], gid_str, data['admin_name']))
     conn.commit(); conn.close()
     return jsonify({"status": "Suksess"})
 
-@app.route('/api/import_league/PL')
-def import_league():
-    url = "https://api.football-data.org/v4/competitions/PL/matches"
+@app.route('/api/import_league/<league_code>')
+def import_league(league_code):
+    """Henter kamper for PL eller CL. Sletter runden for å starte på nytt."""
+    url = f"https://api.football-data.org/v4/competitions/{league_code}/matches"
     headers = {'X-Auth-Token': API_KEY}
     res = requests.get(url, headers=headers).json()
     conn = get_db(); c = conn.cursor()
-    c.execute("DELETE FROM fixtures")
-    c.execute("DELETE FROM extra_questions")
-    c.execute("DELETE FROM extra_bets")
-    c.execute("DELETE FROM group_matches")
-    c.execute("DELETE FROM bets")
+    c.execute("DELETE FROM fixtures"); c.execute("DELETE FROM extra_questions")
+    c.execute("DELETE FROM extra_bets"); c.execute("DELETE FROM group_matches"); c.execute("DELETE FROM bets")
     for m in res.get('matches', []):
         c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
-            (m['id'], 'PL', m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam'].get('crest',''), m['awayTeam'].get('crest',''), m['utcDate'], 'upcoming'))
+            (m['id'], league_code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam'].get('crest',''), m['awayTeam'].get('crest',''), m['utcDate'], 'upcoming'))
     conn.commit(); conn.close()
-    return jsonify({"status": "Suksess"})
+    return jsonify({"status": "Suksess", "league": league_code})
 
 @app.route('/api/get_user_bets/<group_id_str>/<user_name>')
 def get_user_bets(group_id_str, user_name):
@@ -273,8 +267,7 @@ def get_user_bets(group_id_str, user_name):
     c.execute("SELECT b.home_score, b.away_score, b.points, b.golden_goal, f.home_team, f.away_team, f.home_logo, f.away_logo FROM bets b JOIN fixtures f ON b.fixture_id = f.id WHERE b.group_id_str = ? AND b.user_name = ?", (group_id_str, user_name))
     main_bet = c.fetchall()
     c.execute("SELECT q.question_text, eb.user_answer FROM extra_bets eb JOIN extra_questions q ON eb.question_id = q.id WHERE eb.group_id_str = ? AND eb.user_name = ?", (group_id_str, user_name))
-    extras = c.fetchall()
-    conn.close()
+    extras = c.fetchall(); conn.close()
     return jsonify({
         'main': [{'h': b[0], 'a': b[1], 'pts': b[2], 'gg': b[3], 'ht': b[4], 'at': b[5], 'hl': b[6], 'al': b[7]} for b in main_bet],
         'extras': [{'q': e[0], 'ans': e[1]} for e in extras]
