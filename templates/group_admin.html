@@ -37,6 +37,11 @@
         </div>
 
         <div class="mb-4">
+            <label class="fw-bold small text-uppercase text-muted">Premie i runden</label>
+            <input type="text" id="prize" class="form-control fw-bold" value="{{ group[5] or '' }}" placeholder="F.eks: En signert drakt" style="border-radius: 12px;">
+        </div>
+
+        <div class="mb-4">
             <label class="fw-bold small text-uppercase text-muted">Velg kamper</label>
             <div class="match-list">
                 {% for k in kamper %}
@@ -90,6 +95,7 @@
                 body: JSON.stringify({
                     group_id_str: '{{ group[2] }}',
                     mode: document.getElementById('mode').value,
+                    prize: document.getElementById('prize').value, # Gjenopprettet
                     matches: matches
                 })
             });
