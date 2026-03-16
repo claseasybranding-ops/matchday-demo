@@ -11,16 +11,13 @@
         body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--md-dark); }
         .leaderboard-container { max-width: 500px; margin: 40px auto; padding: 20px; }
         
-        /* Header & Status */
         .live-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 5px; }
         .live-dot { height: 8px; width: 8px; background-color: var(--md-red); border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 70% { transform: scale(1.6); opacity: 0; } 100% { transform: scale(0.95); opacity: 0; } }
         
-        /* Prize Card */
         .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); }
         .prize-icon { font-size: 2rem; margin-right: 20px; }
         
-        /* Table Design */
         .leaderboard-card { background: white; border-radius: 28px; box-shadow: 0 15px 45px rgba(0,0,0,0.07); overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
         .table { margin-bottom: 0; }
         .table thead th { background: #fafafa; border-bottom: 1px solid #eee; padding: 15px 20px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
@@ -33,13 +30,12 @@
         
         .user-name { font-weight: 700; font-size: 1.05rem; }
         
-        /* Faste piler ved poengsum */
+        /* Pilen er nå flyttet til høyre, rett før poengsummen */
         .points-cell { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
         .points-display { font-weight: 800; color: var(--md-red); font-size: 1.2rem; }
         .chevron { width: 18px; height: 18px; transition: transform 0.3s; color: #bbb; }
         .open .chevron { transform: rotate(180deg); color: var(--md-red); }
 
-        /* Ekspanderende innhold */
         .details-row { display: none; background: #fafafa; }
         .details-content { padding: 20px; border-bottom: 1px solid #eee; }
         
@@ -65,18 +61,13 @@
                 <span class="fw-800 small text-uppercase" style="color: var(--md-red); letter-spacing: 1px;">Live Leaderboard</span>
             </div>
             <h1 class="fw-800">{{ group[1] }}</h1>
-            {% if start_time %}
-                <div class="small fw-bold text-muted text-uppercase mb-3" style="font-size: 0.65rem; letter-spacing: 0.5px;">
-                    Konkurransestart: {{ start_time }}
-                </div>
-            {% endif %}
         </div>
 
         <div class="prize-card shadow-sm">
             <div class="prize-icon">🎁</div>
             <div>
-                <div class="small fw-800 text-muted text-uppercase" style="font-size: 0.6rem;">Rundens Premie</div>
-                <div class="fw-800 m-0" style="font-size: 1.1rem;">{{ group[5] or 'Ære og berømmelse' }}</div>
+                <div class="small fw-800 text-muted text-uppercase" style="font-size: 0.65rem;">Rundens Premie</div>
+                <div class="fw-800 h5 m-0">{{ group[5] or 'Ære og berømmelse' }}</div>
             </div>
         </div>
         
@@ -126,7 +117,7 @@
                 return;
             }
 
-            // Lukk andre rader
+            // Lukk andre åpne rader for å holde det ryddig (valgfritt, men proffere)
             document.querySelectorAll('.details-row').forEach(row => row.style.display = 'none');
             document.querySelectorAll('.user-row').forEach(row => row.classList.remove('open'));
 
@@ -138,29 +129,56 @@
             .then(res => res.json())
             .then(data => {
                 let html = '';
+                
                 if (data.main && data.main.length > 0) {
                     data.main.forEach(b => {
                         html += `
                             <div class="bet-mini-card shadow-sm">
-                                <div class="team-box"><img src="${b.hl}"><span>${b.ht}</span></div>
+                                <div class="team-box">
+                                    <img src="${b.hl}">
+                                    <span>${b.ht}</span>
+                                </div>
                                 <div class="score-box">${b.h} - ${b.a}</div>
-                                <div class="team-box"><img src="${b.al}"><span>${b.at}</span></div>
+                                <div class="team-box">
+                                    <img src="${b.al}">
+                                    <span>${b.at}</span>
+                                </div>
                             </div>
                         `;
                     });
 
                     html += '<div class="extra-box">';
+                    
+                    // Golden Goal
                     if(data.main[0].gg) {
-                        html += `<div class="extra-line"><span class="fw-bold text-muted">Golden Goal:</span><span class="fw-800 text-danger">${data.main[0].gg}. min</span></div>`;
+                        html += `
+                            <div class="extra-line">
+                                <span class="fw-bold text-muted">Golden Goal:</span>
+                                <span class="fw-800 text-danger">${data.main[0].gg}. min</span>
+                            </div>
+                        `;
                     }
+
+                    // Tilleggsspørsmål
                     if (data.extras) {
                         data.extras.forEach(e => {
-                            html += `<div class="extra-line"><span class="fw-bold text-muted">${e.q}</span><span class="fw-800 text-danger">${e.ans}</span></div>`;
+                            html += `
+                                <div class="extra-line">
+                                    <span class="fw-bold text-muted">${e.q}</span>
+                                    <span class="fw-800 text-danger">${e.ans}</span>
+                                </div>
+                            `;
                         });
                     }
                     html += '</div>';
+                } else {
+                    html = '<div class="text-center p-2 small text-muted">Ingen tips registrert</div>';
                 }
+
                 content.innerHTML = html;
+            })
+            .catch(err => {
+                content.innerHTML = '<div class="text-center p-2 small text-danger">Feil ved henting av data</div>';
             });
         }
 
