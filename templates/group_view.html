@@ -7,143 +7,51 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-gold: #FFD700; }
-        body { 
-            background-color: var(--md-bg); 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            padding-bottom: 240px; /* God plass i bunn for knappen */
-        }
+        :root { --md-red: #cc0000; --md-bg: #f8f9fa; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; 
+               /* Økt padding i bunn slik at innholdet kan scrolles helt opp over knappen */
+               padding-bottom: 220px; }
         
-        .header { 
-            background: white; 
-            padding: 25px; 
-            border-radius: 0 0 30px 30px; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05); 
-            text-align: center; 
-            margin-bottom: 20px; 
-        }
+        .header { background: white; padding: 25px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center; margin-bottom: 30px; }
         
-        .prize-card { 
-            background: white; 
-            border-radius: 24px; 
-            padding: 15px; 
-            margin-bottom: 20px; 
-            display: flex; 
-            align-items: center; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.04); 
-            border-left: 6px solid var(--md-gold); 
-        }
-        .prize-icon { font-size: 1.5rem; margin-right: 15px; }
-        
-        .match-card { 
-            background: white; 
-            border-radius: 24px; 
-            padding: 25px; 
-            margin-bottom: 20px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05); 
-            position: relative;
-        }
-        
-        .match-time-badge {
-            display: inline-block;
-            background: #f8f9fa;
-            color: #888;
-            font-size: 0.65rem;
-            font-weight: 800;
-            padding: 4px 10px;
-            border-radius: 8px;
-            border: 1px solid #eee;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-        }
-
+        .match-card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .team-logo { width: 50px; height: 50px; object-fit: contain; margin-bottom: 10px; }
-        .score-box { 
-            background: #f1f1f1; 
-            border-radius: 15px; 
-            width: 60px; 
-            height: 60px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 1.8rem; 
-            font-weight: 800; 
-        }
+        .score-box { background: #f1f1f1; border-radius: 15px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; }
+        .btn-adjust { width: 40px; height: 40px; border-radius: 12px; border: 2px solid #eee; background: white; font-weight: 800; }
         
-        .btn-adjust { 
-            width: 40px; 
-            height: 40px; 
-            border-radius: 12px; 
-            border: 2px solid #eee; 
-            background: white; 
-            font-weight: 800; 
-            transition: 0.2s;
-            cursor: pointer;
-        }
-        .btn-adjust:active { transform: scale(0.9); background: #eee; }
-        
-        .gg-input { 
-            background: #fff; 
-            border: 2px solid var(--md-red); 
-            border-radius: 18px; 
-            padding: 20px; 
-            text-align: center; 
-            font-size: 1.2rem; 
-            font-weight: 800; 
-            width: 100%; 
-            color: var(--md-red); 
-        }
+        .gg-input { background: #fff; border: 2px solid var(--md-red); border-radius: 18px; padding: 20px; text-align: center; font-size: 1.2rem; font-weight: 800; width: 100%; color: var(--md-red); }
         
         .extra-card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .btn-check:checked + .btn-outline-danger { background-color: var(--md-red); color: white; }
         
+        /* Oppgradert Footer: Glass-effekt og mer luft */
         .footer-action { 
             position: fixed; 
             bottom: 0; left: 0; right: 0; 
             background: rgba(255, 255, 255, 0.95); 
             backdrop-filter: blur(10px);
-            padding: 20px 20px 40px 20px; 
+            padding: 20px 20px 30px 20px; 
             border-radius: 30px 30px 0 0; 
             box-shadow: 0 -10px 30px rgba(0,0,0,0.08); 
             z-index: 1000; 
         }
-        
-        .btn-submit { 
-            background: var(--md-red); 
-            color: white; 
-            border: none; 
-            padding: 20px; 
-            border-radius: 20px; 
-            font-weight: 800; 
-            width: 100%; 
-            font-size: 1.1rem; 
-            text-transform: uppercase; 
-            box-shadow: 0 10px 20px rgba(204, 0, 0, 0.2);
-            cursor: pointer;
-        }
-        .btn-submit:disabled { background: #ccc; box-shadow: none; }
+        .btn-submit { background: var(--md-red); color: white; border: none; padding: 18px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; transition: 0.3s; }
+        .btn-submit:active { transform: scale(0.98); }
 
+        /* Regler-boks */
         .rules-badge { border-left: 5px solid var(--md-red); background: #fffcfc; }
     </style>
 </head>
 <body>
     <div class="header">
         <h1 class="fw-800 m-0">{{ group[1] }}</h1>
+        <span class="badge bg-light text-dark mt-2 fw-bold">RUNDE {{ group[4]|upper }}</span>
     </div>
 
     <div class="container" style="max-width: 500px;">
-        
-        <div class="prize-card shadow-sm">
-            <div class="prize-icon">🎁</div>
-            <div>
-                <div class="small fw-800 text-muted text-uppercase" style="font-size: 0.6rem;">Rundens Premie</div>
-                <div class="fw-800 m-0" style="font-size: 1.1rem;">{{ group[5] or 'Ære og berømmelse' }}</div>
-            </div>
-        </div>
-
-        <div class="match-card p-3 mb-4 rules-badge text-center">
-            <h6 class="fw-800 text-uppercase small mb-2">Poengsystem:</h6>
-            <div class="d-flex justify-content-between mt-2">
+        <div class="match-card p-3 mb-4 rules-badge">
+            <h6 class="fw-800 text-uppercase small mb-2 text-center">Slik får du poeng:</h6>
+            <div class="d-flex justify-content-between text-center mt-2">
                 <div><div class="fw-800 h5 m-0">3p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">SCORE</div></div>
                 <div><div class="fw-800 h5 m-0">1p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">HUB</div></div>
                 <div><div class="fw-800 h5 m-0" style="color: var(--md-red)">+5p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">GG TREFF</div></div>
@@ -153,8 +61,6 @@
 
         {% for k in kamper %}
         <div class="match-card text-center match-row" data-id="{{ k[0] }}">
-            <div class="match-time-badge">{{ k[6] }}</div>
-
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div style="width: 35%;">
                     <img src="{{ k[4] }}" class="team-logo"><br>
@@ -183,9 +89,9 @@
         </div>
         {% endfor %}
 
-        <div class="match-card text-center">
-            <label class="fw-800 small text-uppercase text-muted d-block mb-3">Golden Goal (Første målminutt)</label>
-            <input type="number" id="golden-goal" class="gg-input" placeholder="Minutt: Eks 24">
+        <div class="match-card">
+            <label class="fw-800 small text-uppercase text-muted d-block text-center mb-3">Golden Goal (Første målminutt)</label>
+            <input type="number" id="golden-goal" class="gg-input" placeholder="Hvilket minutt? Eks: 24">
         </div>
 
         {% if questions %}
@@ -210,7 +116,7 @@
     <div class="footer-action">
         <div class="container" style="max-width: 460px;">
             <input type="text" id="user-name" class="form-control mb-3 p-3 fw-bold shadow-sm" placeholder="Ditt navn..." style="border-radius:15px; border: 1px solid #eee;">
-            <button class="btn-submit shadow-lg" id="submitBtn" onclick="sendTips()">Lagre mine tips 🚀</button>
+            <button class="btn-submit shadow-lg" onclick="sendTips()">Lagre mine tips 🚀</button>
         </div>
     </div>
 
@@ -224,60 +130,34 @@
 
         function sendTips() {
             const name = document.getElementById('user-name').value;
-            const gg = document.getElementById('golden-goal').value;
-            const btn = document.getElementById('submitBtn');
-
-            if(!name) { alert("Vennligst skriv navnet ditt!"); return; }
-            if(!gg) { alert("Du må tippe på Golden Goal!"); return; }
-
-            btn.innerText = "Lagrer tips...";
-            btn.disabled = true;
-
+            if(!name) return alert("Husk navn!");
+            
             const tips = [];
-            document.querySelectorAll('.match-row').forEach(function(row) {
+            document.querySelectorAll('.match-row').forEach(row => {
                 tips.push({
-                    match_id: row.getAttribute('data-id'),
+                    match_id: row.dataset.id,
                     h: row.querySelector('.h-score').innerText,
                     a: row.querySelector('.a-score').innerText
                 });
             });
 
             const extras = {};
-            document.querySelectorAll('.extra-q-row').forEach(function(row) {
-                const qid = row.getAttribute('data-qid');
-                const selected = row.querySelector('input:checked');
-                if(selected) {
-                    extras[qid] = selected.value;
-                }
+            document.querySelectorAll('.extra-q-row').forEach(row => {
+                const qid = row.dataset.qid;
+                extras[qid] = row.querySelector('input:checked').value;
             });
-
-            const data = {
-                group_id: '{{ group[2] }}',
-                user_name: name,
-                tips: tips,
-                golden_goal: gg,
-                extras: extras
-            };
 
             fetch('/api/submit_tips', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
-            .then(function(res) {
-                if(res.ok) {
-                    window.location.href = "/group/{{ group[2] }}/leaderboard";
-                } else {
-                    alert("Noe gikk galt på serveren. Prøv igjen.");
-                    btn.innerText = "Lagre mine tips 🚀";
-                    btn.disabled = false;
-                }
-            })
-            .catch(function(err) {
-                alert("Nettverksfeil. Sjekk at du er på nett.");
-                btn.innerText = "Lagre mine tips 🚀";
-                btn.disabled = false;
-            });
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    group_id: '{{ group[2] }}',
+                    user_name: name,
+                    tips: tips,
+                    golden_goal: document.getElementById('golden-goal').value,
+                    extras: extras
+                })
+            }).then(() => window.location.href = "/group/{{ group[2] }}/leaderboard");
         }
     </script>
 </body>
