@@ -38,8 +38,63 @@ def init_db():
 
 init_db()
 
-@app.route('/')
-def index(): return render_template('index.html')
+def get_players_from_api(fixture_id):
+    headers = {'X-Auth-Token': API_KEY}
+    players = []
+    try:
+        res = requests.get(f"https://api.football-data.org/v4/matches/{fixture_id}", headers=headers, timeout=5).json()
+        for team in ['homeTeam', 'awayTeam']:
+            t_id = res[team]['id']
+            t_name = res[team]['shortName']
+            s_res = requests.get(f"https://api.football-data.org/v4/teams/{t_id}", headers=headers, timeout=5).json()
+            for p in s_res.get('squad', []):
+                players.append({'name': p['name'], 'team': t_name})
+    except: pass
+    return players
+
+@app.route('/group/<group_id_str>/admin')
+def group_admin(group_id_str):
+    conn = get_db(); c = conn.cursor()
+    c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
+    group = c.fetchone()
+    # Hent kamper (kun de som ikke er eldgamle)
+    now_iso = (datetime.utcnow() - timedelta(days=1)).isoformat()
+    c.execute("SELECT * FROM fixtures WHERE date > ? ORDER BY date ASC", (now_iso,))
+    alle = c.fetchall()
+    c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
+    valgte = [r[0] for r in c.fetchall()]
+    
+    # Hent spillere hvis det er valgt én kamp (Single Game)
+    players = []
+    if len(valgte) == 1:
+        players = get_players_from_api(valgte[0])
+        
+    c.execute("SELECT id, question_text FROM extra_questions WHERE group_id_str = ?", (group_id_str,))
+    questions = c.fetchall()
+    conn.close()
+    return render_template('group_admin.html', group=group, kamper=alle, valgte=valgte, players=players, questions=questions)
+
+@app.route('/api/update_group_settings', methods=['POST'])
+def update_group_settings():
+    data = request.get_json()
+    conn = get_db(); c = conn.cursor()
+    c.execute("SELECT id FROM groups WHERE group_id_str = ?", (data['group_id_str'],))
+    gid = c.fetchone()[0]
+    c.execute("UPDATE groups SET mode = ?, prize_info = ? WHERE id = ?", (data['mode'], data['prize'], gid))
+    c.execute("DELETE FROM group_matches WHERE group_id = ?", (gid,))
+    for mid in data['matches']:
+        c.execute("INSERT INTO group_matches (group_id, fixture_id) VALUES (?, ?)", (gid, int(mid)))
+    conn.commit(); conn.close()
+    return jsonify({"status": "OK"})
+
+@app.route('/api/add_smart_question', methods=['POST'])
+def add_smart_question():
+    data = request.get_json()
+    conn = get_db(); c = conn.cursor()
+    c.execute("INSERT INTO extra_questions (group_id_str, fixture_id, question_text) VALUES (?,?,?)",
+              (data['group_id_str'], data['match_id'], data['text']))
+    conn.commit(); conn.close()
+    return jsonify({"status": "OK"})
 
 @app.route('/super_admin_dashboard')
 def super_admin():
@@ -57,16 +112,11 @@ def super_admin():
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     data = request.get_json()
-    group_name = data.get('name')
-    admin_name = data.get('admin_name')
-    if not group_name: return jsonify({"status": "Feil", "message": "Mangler navn"}), 400
-    
-    gid_str = group_name.lower().replace(" ", "-")
+    gid = data['name'].lower().replace(" ", "-")
     conn = get_db(); c = conn.cursor()
-    c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", 
-              (group_name, gid_str, admin_name))
+    c.execute("INSERT INTO groups (group_name, group_id_str, admin_name) VALUES (?, ?, ?)", (data['name'], gid, data['admin_name']))
     conn.commit(); conn.close()
-    return jsonify({"status": "Suksess", "group_id": gid_str})
+    return jsonify({"status": "Suksess"})
 
 @app.route('/api/import_league/<code>')
 def import_league(code):
@@ -75,34 +125,15 @@ def import_league(code):
     res = requests.get(url, headers=headers).json()
     conn = get_db(); c = conn.cursor()
     now = datetime.utcnow()
-    # Vi henter kun kamper som er i dag eller i fremtiden
     for m in res.get('matches', []):
         m_date = datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00')).replace(tzinfo=None)
-        if m_date > (now - timedelta(hours=24)):
+        if m_date > (now - timedelta(days=1)):
             h = m['homeTeam']['shortName'] or m['homeTeam']['name']
             a = m['awayTeam']['shortName'] or m['awayTeam']['name']
             c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
                 (m['id'], 'PL', h, a, m['homeTeam'].get('crest',''), m['awayTeam'].get('crest',''), m['utcDate'], 'upcoming'))
     conn.commit(); conn.close()
     return jsonify({"status": "Suksess"})
-
-# (Resten av rutinene for admin/view/leaderboard følger samme mønster som før)
-# Jeg inkluderer dem her for å sikre at filen er komplett.
-
-@app.route('/group/<group_id_str>/admin')
-def group_admin(group_id_str):
-    conn = get_db(); c = conn.cursor()
-    c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
-    group = c.fetchone()
-    now_iso = (datetime.utcnow() - timedelta(hours=6)).isoformat()
-    c.execute("SELECT * FROM fixtures WHERE date > ? ORDER BY date ASC LIMIT 30", (now_iso,))
-    alle = c.fetchall()
-    c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
-    valgte = [r[0] for r in c.fetchall()]
-    c.execute("SELECT id, question_text FROM extra_questions WHERE group_id_str = ?", (group_id_str,))
-    questions = c.fetchall()
-    conn.close()
-    return render_template('group_admin.html', group=group, kamper=alle, valgte=valgte, questions=questions)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
