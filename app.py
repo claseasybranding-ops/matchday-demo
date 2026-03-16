@@ -38,6 +38,7 @@ def init_db():
 
 init_db()
 
+# --- POENG OG API LOGIKK ---
 def update_points_logic():
     url = "https://api.football-data.org/v4/competitions/PL/matches"
     headers = {'X-Auth-Token': API_KEY}
@@ -80,15 +81,16 @@ def get_players_from_api(fixture_id):
     except: pass
     return players
 
+# --- HOVEDSIDER ---
 @app.route('/')
-def index(): return render_template('index.html')
+def index():
+    return render_template('index.html')
 
 @app.route('/super_admin_dashboard')
 def super_admin():
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT id, group_name, group_id_str, admin_name FROM groups")
     grupper = c.fetchall()
-    # KUN fremtidige kamper i oversikten
     now_iso = datetime.utcnow().isoformat()
     c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (now_iso,))
     raw = c.fetchall(); kamper = []
@@ -120,7 +122,6 @@ def group_admin(group_id_str):
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
     if not group: return "Gruppe ikke funnet", 404
-    # KUN fremtidige kamper å velge mellom
     now_iso = datetime.utcnow().isoformat()
     c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (now_iso,))
     alle = c.fetchall()
@@ -144,6 +145,7 @@ def leaderboard(group_id_str):
     rows = c.fetchall(); conn.close()
     return render_template('leaderboard.html', group=group, leaderboard=rows)
 
+# --- API ENDEPUNKTER ---
 @app.route('/api/create_group', methods=['POST'])
 def create_group():
     data = request.get_json()
@@ -200,11 +202,9 @@ def import_league(code):
     res = requests.get(url, headers=headers).json()
     conn = get_db(); c = conn.cursor()
     now = datetime.utcnow()
-    # Sletter gamle kamper fra lageret før ny import for å holde det rent
     c.execute("DELETE FROM fixtures WHERE date < ?", (now.isoformat(),))
     for m in res.get('matches', []):
         m_date = datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00')).replace(tzinfo=None)
-        # KUN kamper fra nå og fremover
         if m_date >= now:
             h = m['homeTeam']['shortName'] or m['homeTeam']['name']
             a = m['awayTeam']['shortName'] or m['awayTeam']['name']
@@ -229,6 +229,11 @@ def get_user_bets(group_id_str, user_name):
         'main': [{'h': b[0], 'a': b[1], 'pts': b[2], 'gg': b[3], 'ht': b[4], 'at': b[5], 'hl': b[6], 'al': b[7]} for b in main_bet],
         'extras': [{'q': e[0], 'ans': e[1]} for e in extras]
     })
+
+@app.route('/api/refresh_data')
+def refresh_data():
+    success = update_points_logic()
+    return jsonify({"status": "OK" if success else "Error"})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
