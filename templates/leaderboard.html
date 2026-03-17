@@ -30,21 +30,22 @@
         .team-box img { width: 25px; height: 25px; object-fit: contain; }
         .team-box span { display: block; font-size: 0.65rem; font-weight: 800; margin-top: 4px; }
         
-        /* SVART STATS-BOKS */
         .stats-box { background: var(--md-dark); color: white; border-radius: 16px; padding: 15px; margin-top: 10px; margin-bottom: 15px; }
         .stats-line { display: flex; justify-content: space-between; font-size: 0.75rem; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .stats-line:last-child { border: none; }
         .stats-label { color: #aaa; font-weight: 600; text-transform: uppercase; }
         .stats-val { color: #fff; font-weight: 800; }
 
-        /* NORSK TIPPING ANNONSE - EKTE DESIGN */
-        .nt-ad-container { background: white; border-radius: 16px; padding: 15px; border: 1px solid #eee; margin-top: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        /* NORSK TIPPING ANNONSE */
+        .nt-ad-link { text-decoration: none; color: inherit; display: block; }
+        .nt-ad-container { background: white; border-radius: 16px; padding: 15px; border: 1px solid #eee; margin-top: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: 0.2s; }
+        .nt-ad-container:hover { border-color: #0055ff; }
         .nt-header { font-size: 0.6rem; color: #bbb; text-transform: uppercase; text-align: center; margin-bottom: 8px; letter-spacing: 1.5px; }
         .nt-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 12px; color: #222; }
         .nt-odds-row { display: flex; gap: 8px; margin-bottom: 12px; }
-        .nt-odds-btn { background: #f2f4f7; border: none; border-radius: 8px; flex: 1; padding: 10px 2px; text-align: center; text-decoration: none; color: #333; }
+        .nt-odds-btn { background: #f2f4f7; border: none; border-radius: 8px; flex: 1; padding: 10px 2px; text-align: center; }
         .nt-label { font-size: 0.6rem; color: #777; display: block; margin-bottom: 2px; }
-        .nt-val { font-weight: 800; font-size: 1.05rem; display: block; }
+        .nt-val { font-weight: 800; font-size: 1.05rem; display: block; color: #333; }
         
         .nt-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid #f0f0f0; }
         .nt-brand { color: #0055ff; font-weight: 900; font-style: italic; font-size: 1.1rem; display: flex; align-items: center; gap: 5px; }
@@ -122,7 +123,6 @@
             .then(data => {
                 let html = '<div class="details-inner">';
                 
-                // 1. KAMPKORT
                 data.main.forEach(b => {
                     let pDesc = b.pts >= 3 ? "3p - Riktig" : (b.pts >= 1 ? "1p - HUB" : "0p");
                     html += `
@@ -133,15 +133,12 @@
                         </div>`;
                 });
 
-                // 2. SVART STATS-BOKS
                 html += '<div class="stats-box">';
                 let playerNameForAd = "";
                 if(data.main[0].gg > 0) html += `<div class="stats-line"><span class="stats-label">Golden Goal Tips</span><span class="stats-val">${data.main[0].gg}. min</span></div>`;
                 
                 data.extras.forEach(e => {
                     html += `<div class="stats-line"><span class="stats-label">${e.q}</span><span class="stats-val">${e.ans}</span></div>`;
-                    
-                    // Trekk ut navnet mellom parenteser eller før spørsmålstegnet
                     if(e.q.toLowerCase().includes("scorer") && e.ans === "JA") {
                         let match = e.q.match(/scorer\s+(.*?)\s*(\(|$|\?)/i);
                         if(match && match[1]) playerNameForAd = match[1].trim();
@@ -149,26 +146,28 @@
                 });
                 html += '</div>';
 
-                // 3. NORSK TIPPING ANNONSE (Målrettet mot spilleren)
                 if(playerNameForAd) {
-                    let o1 = (Math.random() * (3.5 - 1.5) + 1.5).toFixed(2);
-                    let o2 = (Math.random() * (25.0 - 15.0) + 15.0).toFixed(2);
-                    let o3 = (Math.random() * (6.0 - 2.5) + 2.5).toFixed(2);
+                    // Justert oddslogikk for realisme
+                    let o1 = (Math.random() * (4.5 - 2.1) + 2.1).toFixed(2);
+                    let o2 = (Math.random() * (2.8 - 1.2) + 1.2).toFixed(2); // "Ingen" er mer sannsynlig, derfor lavere odds
+                    let o3 = (Math.random() * (1.9 - 1.1) + 1.1).toFixed(2);
 
                     html += `
-                    <div class="nt-ad-container shadow-sm">
-                        <div class="nt-header">ANNONSE</div>
-                        <div class="nt-title">Scorer ${playerNameForAd} neste mål?</div>
-                        <div class="nt-odds-row">
-                            <div class="nt-odds-btn"><span class="nt-label">Ja</span><span class="nt-val">${o1}</span></div>
-                            <div class="nt-odds-btn"><span class="nt-label">Ingen</span><span class="nt-val">${o2}</span></div>
-                            <div class="nt-odds-btn"><span class="nt-label">Nei</span><span class="nt-val">${o3}</span></div>
+                    <a href="https://www.norsk-tipping.no/sport" target="_blank" class="nt-ad-link">
+                        <div class="nt-ad-container shadow-sm">
+                            <div class="nt-header">ANNONSE</div>
+                            <div class="nt-title">Scorer ${playerNameForAd} neste mål?</div>
+                            <div class="nt-odds-row">
+                                <div class="nt-odds-btn"><span class="nt-label">Ja</span><span class="nt-val">${o1}</span></div>
+                                <div class="nt-odds-btn"><span class="nt-label">Ingen</span><span class="nt-val">${o2}</span></div>
+                                <div class="nt-odds-btn"><span class="nt-label">Nei</span><span class="nt-val">${o3}</span></div>
+                            </div>
+                            <div class="nt-footer">
+                                <div class="nt-brand"><span>×</span> Oddsen</div>
+                                <div class="nt-legal">18+ Hjelpelinjen.no</div>
+                            </div>
                         </div>
-                        <div class="nt-footer">
-                            <div class="nt-brand"><span>×</span> Oddsen</div>
-                            <div class="nt-legal">18+ Hjelpelinjen.no</div>
-                        </div>
-                    </div>`;
+                    </a>`;
                 }
 
                 content.innerHTML = html + '</div>';
