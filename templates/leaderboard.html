@@ -12,33 +12,34 @@
         .leaderboard-container { max-width: 500px; margin: auto; }
 
         /* Live Status */
-        .status-container { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+        .status-container { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 15px; }
         .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
         .dot-waiting { background: #ced4da; }
         .dot-live { background: var(--md-red); animation: pulse 2s infinite; }
-        .status-text { font-size: 0.7rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: #888; }
+        .status-text { font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: #888; }
         @keyframes pulse { 0% { transform: scale(0.9); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.5; } 100% { transform: scale(0.9); opacity: 1; } }
 
+        /* Leaderboard Tabell */
         .leaderboard-card { background: white; border-radius: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
         .user-row { cursor: pointer; border-bottom: 1px solid #f1f1f1; transition: 0.3s; }
+        .user-row:hover { background-color: #f9f9f9; }
+        
         .rank-box { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
         .rank-1 { background: #fff9db; color: #fab005; }
         .rank-other { background: #f8f9fa; color: #adb5bd; }
 
-        .trend-stay { color: #fcc419; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 4px; }
-        .trend-line { width: 12px; height: 3px; background-color: #fcc419; border-radius: 2px; }
-
-        .points-display { font-weight: 800; font-size: 1.4rem; }
-        .chevron { width: 18px; height: 18px; transition: transform 0.3s; color: #ced4da; }
+        .points-display { font-weight: 800; color: var(--md-dark); font-size: 1.4rem; }
+        .chevron { width: 18px; height: 18px; transition: transform 0.3s; color: #ced4da; stroke-width: 3; }
         .open .chevron { transform: rotate(180deg); color: var(--md-red); }
 
+        /* Detaljer Nedtrekk */
         .details-row { display: none; background: #fafafa; }
         .bet-mini-card { background: white; border-radius: 16px; padding: 12px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .stats-box { background: var(--md-dark); color: white; border-radius: 20px; padding: 18px; margin: 10px 0; }
         .stats-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; }
         .stats-label { color: #aaa; text-transform: uppercase; }
 
-        /* NORSK TIPPING ANNONSE */
+        /* Norsk Tipping Annonse */
         .nt-ad-container { background: white; border-radius: 20px; padding: 18px; border: 1px solid #eee; margin-top: 10px; }
         .nt-header { font-size: 0.6rem; color: #bbb; text-transform: uppercase; text-align: center; margin-bottom: 12px; letter-spacing: 2px; font-weight: 800; }
         .nt-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 15px; color: #222; }
@@ -72,21 +73,33 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% set leader_points = leaderboard[0][1] if leaderboard else 0 %}
                     {% for row in leaderboard %}
-                    <tr class="user-row" onclick="toggleDetails('{{ loop.index }}', '{{ row[0] }}')">
+                    <tr class="user-row" onclick="toggleDetails('{{ loop.index }}', '{{ row.name }}')">
                         <td class="ps-4 align-middle" style="width: 75px;">
                             <div class="rank-box {% if loop.index == 1 %}rank-1{% else %}rank-other{% endif %}">
                                 {% if loop.index == 1 %}🥇{% else %}{{ loop.index }}{% endif %}
                             </div>
                         </td>
                         <td class="align-middle">
-                            <span class="fw-800 d-block" style="font-size: 1.1rem;">{{ row[0] }}</span>
-                            <div class="trend-stay"><span class="trend-line"></span><span>Uendret</span></div>
+                            <span class="fw-800 d-block" style="font-size: 1.1rem;">{{ row.name }}</span>
+                            
+                            {% if row.trend == 'up' %}
+                                <div style="color: #2b8a3e; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 4px;">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l-8 8h16l-8-8z"/></svg> Opp
+                                </div>
+                            {% elif row.trend == 'down' %}
+                                <div style="color: #c92a2a; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 4px;">
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20l8-8h-16l8 8z"/></svg> Ned
+                                </div>
+                            {% else %}
+                                <div style="color: #fcc419; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 4px;">
+                                    <span style="width: 12px; height: 3px; background-color: #fcc419; border-radius: 2px;"></span> Uendret
+                                </div>
+                            {% endif %}
                         </td>
                         <td class="pe-4 text-end align-middle">
                             <div class="d-flex align-items-center justify-content-end gap-3">
-                                <span class="points-display">{{ row[1] }}</span>
+                                <span class="points-display">{{ row.points }}</span>
                                 <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path></svg>
                             </div>
                         </td>
@@ -117,19 +130,17 @@
             document.querySelectorAll('.details-row').forEach(row => row.style.display = 'none');
             detailRow.style.display = 'table-row';
             userRow.classList.add('open');
-            content.innerHTML = '<div class="text-center p-4 small">Laster...</div>';
+            content.innerHTML = '<div class="text-center p-4 small">Laster live-status...</div>';
             
             fetch(`/api/get_user_bets/{{ group[2] }}/${rowUser}`)
             .then(res => res.json())
             .then(data => {
-                if(data.gg_live > 0) {
+                if(data.is_live) {
                     document.getElementById('status-dot').className = 'dot dot-live';
                     document.getElementById('status-label').innerText = 'LIVE OPPDATERING';
                 }
 
                 let html = '<div class="details-inner">';
-                
-                // KAMPENE
                 data.main.forEach(b => {
                     html += `
                         <div class="bet-mini-card shadow-sm">
@@ -139,12 +150,9 @@
                         </div>`;
                 });
 
-                // DEN SVARTE BOKSEN (Nå med både Golden Goal og Tillegg)
                 html += '<div class="stats-box">';
-                
-                // Sjekk om GG er lagret for brukeren
                 if(data.main[0] && data.main[0].gg > 0) {
-                    html += `<div class="stats-line"><span class="stats-label">GOLDEN GOAL</span><span class="stats-val">${data.main[0].gg}. min</span></div>`;
+                    html += `<div class="stats-line"><span class="stats-label">Golden Goal</span><span class="stats-val">${data.main[0].gg}. min</span></div>`;
                 }
 
                 let playerName = "";
@@ -157,26 +165,19 @@
                 });
                 html += '</div>';
 
-                // REKLAME (Kun til deg selv)
                 if(rowUser.trim().toLowerCase() === loggedInUser.trim().toLowerCase() && playerName !== "") {
                     html += `
-                    <a href="https://www.norsk-tipping.no" target="_blank" style="text-decoration:none">
-                        <div class="nt-ad-container shadow-sm border-0">
-                            <div class="nt-header">ANNONSE</div>
-                            <div class="nt-title">Scorer ${playerName} neste mål?</div>
-                            <div class="nt-odds-row">
-                                <div class="nt-odds-btn"><span class="nt-label">Ja</span><span class="nt-val">3.40</span></div>
-                                <div class="nt-odds-btn"><span class="nt-label">Ingen</span><span class="nt-val">18.50</span></div>
-                                <div class="nt-odds-btn"><span class="nt-label">Nei</span><span class="nt-val">1.25</span></div>
-                            </div>
-                            <div class="nt-footer">
-                                <div class="nt-brand"><span>×</span> Oddsen</div>
-                                <span class="nt-legal">18+ Hjelpelinjen.no</span>
-                            </div>
+                    <div class="nt-ad-container shadow-sm">
+                        <div class="nt-header">ANNONSE</div>
+                        <div class="nt-title">Scorer ${playerName} neste mål?</div>
+                        <div class="nt-odds-row">
+                            <a href="https://www.norsk-tipping.no" target="_blank" class="nt-odds-btn"><span class="nt-label">Ja</span><span class="nt-val">3.40</span></a>
+                            <a href="https://www.norsk-tipping.no" target="_blank" class="nt-odds-btn"><span class="nt-label">Ingen</span><span class="nt-val">18.50</span></a>
+                            <a href="https://www.norsk-tipping.no" target="_blank" class="nt-odds-btn"><span class="nt-label">Nei</span><span class="nt-val">1.25</span></a>
                         </div>
-                    </a>`;
+                        <div class="nt-footer"><div class="nt-brand"><span>×</span> Oddsen</div><span class="nt-legal">18+ Hjelpelinjen.no</span></div>
+                    </div>`;
                 }
-
                 content.innerHTML = html + '</div>';
             });
         }
