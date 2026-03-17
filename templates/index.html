@@ -18,6 +18,12 @@
             background-color: var(--md-red); border: none; padding: 15px 40px; 
             font-weight: 800; border-radius: 14px; text-transform: uppercase; letter-spacing: 1px;
             box-shadow: 0 4px 15px rgba(204, 0, 0, 0.2);
+            transition: 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #b30000;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(204, 0, 0, 0.3);
         }
         
         .feature-card { 
@@ -26,6 +32,16 @@
         }
         .feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         .icon-box { font-size: 2rem; margin-bottom: 15px; }
+
+        .admin-link {
+            margin-top: 30px;
+            display: inline-block;
+            color: #888;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .admin-link:hover { color: var(--md-red); }
     </style>
 </head>
 <body>
@@ -35,8 +51,9 @@
             <h1 class="logo-main">MATCHDAY<span class="logo-dot">.</span></h1>
             <p class="lead fw-bold text-muted mb-4">Den ultimate plattformen for sportskonkurranser.</p>
             <div class="d-flex justify-content-center gap-3">
-                <a href="/group/marines-konkurranse" class="btn btn-primary btn-lg">Gå til Marines Konkurranse 🚀</a>
+                <a href="/group/marines-konkurranse" class="btn btn-primary btn-lg">Gå til Konkurransen 🚀</a>
             </div>
+            <a href="/super_admin_dashboard" class="admin-link">System Admin</a>
         </div>
     </div>
 
@@ -46,21 +63,21 @@
                 <div class="feature-card">
                     <div class="icon-box">⏱️</div>
                     <h4 class="fw-800">Sanntid</h4>
-                    <p class="text-muted small">Live oppdateringer direkte fra de største ligaene i verden.</p>
+                    <p class="text-muted small">Live oppdateringer direkte fra de største ligaene i verden via offisielle API-er.</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="feature-card">
                     <div class="icon-box">🔒</div>
                     <h4 class="fw-800">Sikkert</h4>
-                    <p class="text-muted small">Automatisert tidslås hindrer tipping etter kampstart.</p>
+                    <p class="text-muted small">Automatisert tidslås basert på kampenes faktiske starttidspunkt hindrer juks.</p>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="feature-card">
                     <div class="icon-box">🏆</div>
                     <h4 class="fw-800">Proff</h4>
-                    <p class="text-muted small">Designet for å gi dine deltakere den beste brukeropplevelsen.</p>
+                    <p class="text-muted small">Ny poenglogikk inkludert Golden Goal tie-breaker og ekstra spørsmål.</p>
                 </div>
             </div>
         </div>
