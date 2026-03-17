@@ -11,48 +11,40 @@
             --md-red: #cc0000; 
             --md-bg: #f4f7f6; 
             --md-gold: #FFD700; 
-            --md-silver: #C0C0C0;
-            --md-bronze: #CD7F32;
             --md-dark: #1a1a1a; 
         }
         body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; color: var(--md-dark); }
         .leaderboard-container { max-width: 500px; margin: auto; }
 
-        /* Live Header */
         .live-badge { background: var(--md-red); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        /* Ticker */
         .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-left: 6px solid var(--md-gold); }
         
-        /* Leaderboard Styling */
         .leaderboard-card { background: white; border-radius: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
-        .user-row { cursor: pointer; border-bottom: 1px solid #f1f1f1; transition: 0.3s; position: relative; }
+        .user-row { cursor: pointer; border-bottom: 1px solid #f1f1f1; transition: 0.3s; }
         .user-row:hover { background-color: #f9f9f9; }
         
-        /* Medaljer og Plassering */
-        .rank-box { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; }
-        .rank-1 { background: linear-gradient(135deg, #FFD700, #FFA500); color: white; box-shadow: 0 4px 10px rgba(255,165,0,0.3); }
-        .rank-2 { background: linear-gradient(135deg, #C0C0C0, #808080); color: white; }
-        .rank-3 { background: linear-gradient(135deg, #CD7F32, #8B4513); color: white; }
-        .rank-other { background: #f0f0f0; color: #666; }
+        .rank-box { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .rank-1 { background: #fff9db; color: #fab005; }
+        .rank-2 { background: #f1f3f5; color: #868e96; }
+        .rank-3 { background: #fff4e6; color: #d9480f; }
+        .rank-other { background: #f8f9fa; color: #adb5bd; font-size: 1rem; }
 
-        /* Trend og Poeng */
-        .trend-up { color: #28a745; font-size: 0.8rem; font-weight: 800; }
-        .trend-down { color: #dc3545; font-size: 0.8rem; font-weight: 800; }
-        .points-display { font-weight: 800; color: var(--md-dark); font-size: 1.3rem; line-height: 1; }
-        .behind-leader { font-size: 0.65rem; color: #999; font-weight: 600; text-align: right; display: block; }
+        .points-wrapper { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+        .points-display { font-weight: 800; color: var(--md-dark); font-size: 1.4rem; }
+        .chevron { width: 18px; height: 18px; transition: transform 0.3s; color: #ced4da; stroke-width: 3; }
+        .open .chevron { transform: rotate(180deg); color: var(--md-red); }
 
-        /* Nedtrekk */
+        .trend-up { color: #28a745; font-size: 0.75rem; font-weight: 800; margin-top: -2px; display: block; }
+        .behind-leader { font-size: 0.65rem; color: #adb5bd; font-weight: 600; display: block; margin-top: 2px; }
+
         .details-row { display: none; background: #fafafa; }
         .stats-box { background: var(--md-dark); color: white; border-radius: 20px; padding: 18px; margin: 10px 0; }
         .stats-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; }
         
-        /* Norsk Tipping Annonse */
-        .nt-ad-link { text-decoration: none; }
         .nt-ad-container { background: white; border-radius: 20px; padding: 15px; border: 1px solid #eee; margin-top: 10px; }
         .nt-odds-btn { background: #f1f3f5; border-radius: 10px; flex: 1; padding: 10px; text-align: center; color: #333; }
-        .nt-val { font-weight: 800; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -60,21 +52,21 @@
     <div class="leaderboard-container">
         <div class="text-center mb-4">
             <div class="mb-2"><span class="live-badge">LIVE OPPDATERING</span></div>
-            <h1 class="fw-800 m-0" style="font-size: 2.2rem; letter-spacing: -1px;">{{ group[1] }}</h1>
+            <h1 class="fw-800 m-0" style="font-size: 2.2rem;">{{ group[1] }}</h1>
         </div>
 
-        <div class="prize-card shadow-sm" id="live-ticker">
-            <div class="prize-icon" id="ticker-icon">🏆</div>
+        <div class="prize-card shadow-sm">
+            <div class="prize-icon">🏆</div>
             <div>
                 <div class="small fw-800 text-muted text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Rundens Premie</div>
-                <div class="fw-800 h5 m-0" id="ticker-text">{{ group[5] or 'Middag' }}</div>
+                <div class="fw-800 h5 m-0">{{ group[5] or 'Middag' }}</div>
             </div>
         </div>
         
         <div class="leaderboard-card">
             <table class="table table-borderless mb-0">
                 <thead>
-                    <tr class="small text-muted text-uppercase" style="letter-spacing: 1px;">
+                    <tr class="small text-muted text-uppercase">
                         <th class="ps-4 py-3">#</th>
                         <th class="py-3">Deltaker</th>
                         <th class="text-end pe-4 py-3">Poeng</th>
@@ -84,28 +76,31 @@
                     {% set leader_points = leaderboard[0][1] if leaderboard else 0 %}
                     {% for row in leaderboard %}
                     <tr class="user-row" onclick="toggleDetails('{{ loop.index }}', '{{ row[0] }}')">
-                        <td class="ps-4 align-middle" style="width: 70px;">
+                        <td class="ps-4 align-middle" style="width: 75px;">
                             <div class="rank-box {% if loop.index == 1 %}rank-1{% elif loop.index == 2 %}rank-2{% elif loop.index == 3 %}rank-3{% else %}rank-other{% endif %}">
-                                {{ loop.index }}
+                                {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}
                             </div>
                         </td>
                         <td class="align-middle">
-                            <div>
-                                <span class="fw-800 d-block">{{ row[0] }}</span>
-                                <span class="trend-up">▲ 2 plasser</span>
-                            </div>
+                            <span class="fw-800 d-block" style="font-size: 1.1rem;">{{ row[0] }}</span>
+                            <span class="trend-up">▲ 2 plasser</span>
                         </td>
                         <td class="pe-4 text-end align-middle">
-                            <span class="points-display">{{ row[1] }}</span>
-                            {% if loop.index > 1 %}
-                                <span class="behind-leader">-{{ leader_points - row[1] }}p bak</span>
-                            {% endif %}
+                            <div class="points-wrapper">
+                                <div class="text-end">
+                                    <span class="points-display">{{ row[1] }}</span>
+                                    {% if loop.index > 1 %}
+                                        <span class="behind-leader">-{{ leader_points - row[1] }}p bak</span>
+                                    {% endif %}
+                                </div>
+                                <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
+                                </svg>
+                            </div>
                         </td>
                     </tr>
                     <tr class="details-row" id="details-{{ loop.index }}">
-                        <td colspan="3">
-                            <div class="p-3" id="content-{{ loop.index }}"></div>
-                        </td>
+                        <td colspan="3"><div class="p-3" id="content-{{ loop.index }}"></div></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -116,68 +111,61 @@
     <script>
         function toggleDetails(index, user) {
             const detailRow = document.getElementById(`details-${index}`);
+            const userRow = detailRow.previousElementSibling;
             const content = document.getElementById(`content-${index}`);
 
             if (detailRow.style.display === 'table-row') {
                 detailRow.style.display = 'none';
+                userRow.classList.remove('open');
                 return;
             }
 
             document.querySelectorAll('.details-row').forEach(row => row.style.display = 'none');
+            document.querySelectorAll('.user-row').forEach(row => row.classList.remove('open'));
+
             detailRow.style.display = 'table-row';
-            content.innerHTML = '<div class="text-center p-4">Henter live stats...</div>';
+            userRow.classList.add('open');
+            content.innerHTML = '<div class="text-center p-4">Laster statistikk...</div>';
             
             fetch(`/api/get_user_bets/{{ group[2] }}/${user}`)
             .then(res => res.json())
             .then(data => {
                 let html = '<div class="details-inner">';
-                
                 data.main.forEach(b => {
                     let pDesc = b.pts >= 3 ? "Spot on!" : (b.pts >= 1 ? "HUB Treff" : "0 poeng");
                     html += `
-                        <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 mb-2 border">
-                            <div class="text-center" style="width:30%"><img src="${b.hl}" width="20"> <span class="d-block small fw-800">${b.ht}</span></div>
+                        <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-4 mb-2 border shadow-sm">
+                            <div class="text-center" style="width:30%"><img src="${b.hl}" width="20"><span class="d-block small fw-800">${b.ht}</span></div>
                             <div class="text-center">
                                 <b class="h5 m-0">${b.h} - ${b.a}</b>
-                                <span class="d-block badge bg-danger" style="font-size:0.5rem">${pDesc}</span>
+                                <span class="d-block badge bg-danger mt-1" style="font-size:0.5rem">${pDesc}</span>
                             </div>
-                            <div class="text-center" style="width:30%"><img src="${b.al}" width="20"> <span class="d-block small fw-800">${b.at}</span></div>
+                            <div class="text-center" style="width:30%"><img src="${b.al}" width="20"><span class="d-block small fw-800">${b.at}</span></div>
                         </div>`;
                 });
 
                 html += '<div class="stats-box">';
                 if(data.main[0].gg > 0) html += `<div class="stats-line"><span class="stats-label">GOLDEN GOAL</span><span class="stats-val">${data.main[0].gg}. min</span></div>`;
-                
-                let targetPlayer = "";
                 data.extras.forEach(e => {
                     html += `<div class="stats-line"><span class="stats-label">${e.q}</span><span class="stats-val">${e.ans}</span></div>`;
-                    if(e.q.toLowerCase().includes("scorer") && e.ans === "JA") {
-                        let match = e.q.match(/scorer\s+(.*?)\s*(\(|$|\?)/i);
-                        if(match && match[1]) targetPlayer = match[1].trim();
-                    }
                 });
                 html += '</div>';
 
-                if(targetPlayer) {
-                    let o1 = (Math.random() * (3.8 - 1.8) + 1.8).toFixed(2);
-                    let o2 = (Math.random() * (2.5 - 1.1) + 1.1).toFixed(2);
-                    html += `
-                    <a href="https://www.norsk-tipping.no/sport" target="_blank" class="nt-ad-link">
-                        <div class="nt-ad-container shadow-sm">
-                            <div class="small fw-800 text-muted text-center mb-2" style="font-size:0.5rem; letter-spacing:2px">ANNONSE</div>
-                            <div class="fw-800 mb-2">Scorer ${targetPlayer} neste mål?</div>
-                            <div class="d-flex gap-2 mb-3">
-                                <div class="nt-odds-btn"><span class="d-block small text-muted">JA</span><span class="nt-val">${o1}</span></div>
-                                <div class="nt-odds-btn"><span class="d-block small text-muted">INGEN</span><span class="nt-val">${o2}</span></div>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <b style="color:#0055ff; font-style:italic">× Oddsen</b>
-                                <span class="text-muted" style="font-size:0.5rem">18+ Hjelpelinjen.no</span>
-                            </div>
-                        </div>
-                    </a>`;
-                }
-
+                // Norsk Tipping-annonse
+                let targetPlayer = data.extras[0] ? data.extras[0].ans : "spilleren";
+                html += `
+                <div class="nt-ad-container shadow-sm border-0">
+                    <div class="small fw-800 text-muted text-center mb-2" style="font-size:0.5rem; letter-spacing:2px">ANNONSE</div>
+                    <div class="fw-800 mb-2">Scorer ${targetPlayer} neste mål?</div>
+                    <div class="d-flex gap-2 mb-3">
+                        <div class="nt-odds-btn"><span class="d-block small text-muted">JA</span><span class="nt-val">3.40</span></div>
+                        <div class="nt-odds-btn"><span class="d-block small text-muted">NEI</span><span class="nt-val">1.25</span></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <b style="color:#0055ff; font-style:italic">× Oddsen</b>
+                        <span class="text-muted" style="font-size:0.5rem">18+ Hjelpelinjen.no</span>
+                    </div>
+                </div>`;
                 content.innerHTML = html + '</div>';
             });
         }
