@@ -7,147 +7,143 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-gold: #FFD700; --md-blue: #0066ff; }
-        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 140px; }
+        :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-gold: #FFD700; }
+        body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding-bottom: 180px; }
         
-        .header { background: white; padding: 15px; border-radius: 0 0 25px 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 15px; }
+        .header { background: white; padding: 25px; border-radius: 0 0 30px 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center; margin-bottom: 25px; }
         
-        .prize-card { background: white; border-radius: 20px; padding: 12px 18px; margin-bottom: 15px; display: flex; align-items: center; box-shadow: 0 8px 25px rgba(0,0,0,0.04); border-left: 5px solid var(--md-gold); }
+        .prize-card { background: white; border-radius: 24px; padding: 15px 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); text-align: left; }
+        .prize-icon { font-size: 1.8rem; margin-right: 15px; }
         
-        .rules-badge { border-left: 5px solid var(--md-red); background: #fffcfc; border-radius: 20px; padding: 15px; margin-bottom: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.04); }
-
-        .match-card { background: white; border-radius: 24px; padding: 15px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .match-card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .team-logo { width: 50px; height: 50px; object-fit: contain; margin-bottom: 10px; }
+        .score-box { background: #f1f1f1; border-radius: 15px; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 800; }
+        .btn-adjust { width: 40px; height: 40px; border-radius: 12px; border: 2px solid #eee; background: white; font-weight: 800; }
         
-        /* Team layout for mobil */
-        .team-box { width: 30%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .team-logo { width: 35px; height: 35px; object-fit: contain; margin-bottom: 5px; }
-        .team-name { font-weight: 800; font-size: 0.75rem; line-height: 1.1; text-align: center; }
-
-        .score-display { width: 40%; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .score-box { background: #f1f1f1; border-radius: 12px; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; }
+        .gg-input { background: #fff; border: 2px solid var(--md-red); border-radius: 18px; padding: 20px; text-align: center; font-size: 1.2rem; font-weight: 800; width: 100%; color: var(--md-red); }
+        .extra-card { background: white; border-radius: 24px; padding: 25px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         
-        .btn-adjust { width: 42px; height: 42px; border-radius: 12px; border: 2px solid #eee; background: white; font-weight: 800; font-size: 1.2rem; }
-        
-        /* Tilleggsspørsmål stil */
-        .extra-card { background: #fff5f5; border: 2px solid #ffebeb; border-radius: 20px; padding: 15px; margin-top: 10px; }
-        .extra-q-text { font-weight: 800; font-size: 0.85rem; color: #444; margin-bottom: 10px; display: block; }
-        .btn-check-group { display: flex; gap: 10px; }
-        .btn-check { flex: 1; border-radius: 12px; font-weight: 800; border: 2px solid #eee; background: white; padding: 10px; transition: 0.2s; }
-        .btn-check.active { background: var(--md-red); color: white; border-color: var(--md-red); }
-
-        .footer-action { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); padding: 15px 15px 30px 15px; border-top: 1px solid rgba(0,0,0,0.05); z-index: 1000; }
-        .btn-submit { background: var(--md-red); color: white; border: none; padding: 16px; border-radius: 18px; font-weight: 800; width: 100%; text-transform: uppercase; box-shadow: 0 8px 20px rgba(204, 0, 0, 0.2); }
-        
-        .gg-input { border: 2px solid var(--md-red); border-radius: 15px; padding: 12px; text-align: center; font-size: 1.1rem; font-weight: 800; width: 100%; color: var(--md-red); margin-top: 10px; }
-        .locked-overlay { background: #eee; color: #666; padding: 20px; border-radius: 20px; text-align: center; font-weight: 800; }
+        .footer-action { 
+            position: fixed; 
+            bottom: 0; left: 0; right: 0; 
+            background: rgba(255, 255, 255, 0.85); 
+            backdrop-filter: blur(15px);
+            padding: 15px 20px 35px 20px; 
+            border-top: 1px solid rgba(0,0,0,0.05);
+            z-index: 1000; 
+        }
+        .btn-submit { background: var(--md-red); color: white; border: none; padding: 16px; border-radius: 18px; font-weight: 800; width: 100%; font-size: 1.1rem; text-transform: uppercase; transition: 0.3s; box-shadow: 0 8px 20px rgba(204, 0, 0, 0.2); }
+        .rules-badge { border-left: 5px solid var(--md-red); background: #fffcfc; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h2 class="fw-800 m-0" style="font-size: 1.4rem;">{{ group[1] }}</h2>
+        <h1 class="fw-800 m-0">{{ group[1] }}</h1>
     </div>
 
-    <div class="container" style="max-width: 480px;">
+    <div class="container" style="max-width: 500px;">
         <div class="prize-card shadow-sm">
-            <div class="small fw-800 text-muted text-uppercase me-3" style="font-size: 0.6rem;">Premie:</div>
-            <div class="fw-800 m-0" style="font-size: 1rem;">{{ group[5] or 'Heder og ære' }}</div>
+            <div class="prize-icon">🎁</div>
+            <div>
+                <div class="small fw-800 text-muted text-uppercase" style="font-size: 0.65rem;">Rundens Premie</div>
+                <div class="fw-800 h5 m-0">{{ group[5] or 'Middag' }}</div>
+            </div>
         </div>
 
-        <div class="rules-badge text-center">
-            <h6 class="fw-800 text-uppercase small mb-0">3p (Res) | 1p (HUB) | +5p/2p (GG)</h6>
+        <div class="match-card p-3 mb-4 rules-badge">
+            <h6 class="fw-800 text-uppercase small mb-2 text-center">Slik får du poeng:</h6>
+            <div class="d-flex justify-content-between text-center mt-2">
+                <div><div class="fw-800 h5 m-0">3p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">SCORE</div></div>
+                <div><div class="fw-800 h5 m-0">1p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">HUB</div></div>
+                <div><div class="fw-800 h5 m-0" style="color: var(--md-red)">+5p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">GG TREFF</div></div>
+                <div><div class="fw-800 h5 m-0" style="color: #28a745">+2p</div><div class="small text-muted fw-bold" style="font-size: 0.55rem;">GG NÆRMEST</div></div>
+            </div>
         </div>
 
-        {% if is_locked %}
-        <div class="locked-overlay mb-4">🔒 RUNDEN ER LÅST</div>
-        {% else %}
-        
         {% for k in kamper %}
-        <div class="text-muted small fw-800 mb-1 ps-2" style="font-size: 0.65rem; color: var(--md-blue);">⚽ START: {{ k[6] }}</div>
-        <div class="match-card match-row" data-id="{{ k[0] }}">
+        <div class="text-muted small fw-800 mb-1 ps-2" style="font-size: 0.7rem; color: #4a90e2;">
+            ⚽ START: {{ k[6] }}
+        </div>
+        <div class="match-card text-center match-row" data-id="{{ k[0] }}">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <div class="team-box">
-                    <img src="{{ k[4] }}" class="team-logo">
-                    <span class="team-name">{{ k[2] }}</span>
+                <div style="width: 35%;">
+                    <img src="{{ k[4] }}" class="team-logo"><br>
+                    <span class="fw-800 small">{{ k[2] }}</span>
                 </div>
-                
-                <div class="score-display">
+                <div class="d-flex align-items-center gap-2">
                     <div class="score-box h-score">0</div>
                     <div class="fw-800 text-muted">:</div>
                     <div class="score-box a-score">0</div>
                 </div>
-
-                <div class="team-box">
-                    <img src="{{ k[5] }}" class="team-logo">
-                    <span class="team-name">{{ k[3] }}</span>
+                <div style="width: 35%;">
+                    <img src="{{ k[5] }}" class="team-logo"><br>
+                    <span class="fw-800 small">{{ k[3] }}</span>
                 </div>
             </div>
-            
-            <div class="d-flex justify-content-center gap-4">
+            <div class="d-flex justify-content-center gap-5">
                 <div class="d-flex gap-2">
-                    <button class="btn-adjust" onclick="adj(this, 'h', -1)">-</button>
-                    <button class="btn-adjust" onclick="adj(this, 'h', 1)">+</button>
+                    <button class="btn-adjust" onclick="adj(this, 'h', -1)" {% if is_locked %}disabled{% endif %}>-</button>
+                    <button class="btn-adjust" onclick="adj(this, 'h', 1)" {% if is_locked %}disabled{% endif %}>+</button>
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn-adjust" onclick="adj(this, 'a', -1)">-</button>
-                    <button class="btn-adjust" onclick="adj(this, 'a', 1)">+</button>
+                    <button class="btn-adjust" onclick="adj(this, 'a', -1)" {% if is_locked %}disabled{% endif %}>-</button>
+                    <button class="btn-adjust" onclick="adj(this, 'a', 1)" {% if is_locked %}disabled{% endif %}>+</button>
                 </div>
             </div>
         </div>
         {% endfor %}
 
-        {% if questions %}
-        <div class="match-card">
-            <label class="fw-800 small text-muted text-uppercase d-block mb-3 text-center">Ekstra spørsmål</label>
-            {% for q in questions %}
-            <div class="extra-card mb-2 q-row" data-qid="{{ q[0] }}">
-                <span class="extra-q-text">{{ q[1] }}</span>
-                <div class="btn-check-group">
-                    <button class="btn-check" onclick="setExtra(this, 'JA')">JA</button>
-                    <button class="btn-check" onclick="setExtra(this, 'NEI')">NEI</button>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
         {% if group[4] == 'single' %}
         <div class="match-card">
-            <label class="fw-800 small text-uppercase text-muted d-block text-center">Golden Goal (Minutt)</label>
-            <input type="number" id="golden-goal" class="gg-input" placeholder="Eks: 24">
+            <label class="fw-800 small text-uppercase text-muted d-block text-center mb-3">Golden Goal (Minutt)</label>
+            <input type="number" id="golden-goal" class="gg-input" placeholder="Eks: 24" {% if is_locked %}disabled{% endif %}>
         </div>
         {% else %}
         <input type="hidden" id="golden-goal" value="0">
         {% endif %}
 
+        {% if questions %}
+        <div class="extra-card">
+            <h6 class="fw-800 text-uppercase small text-muted mb-4 text-center">Tilleggsspørsmål</h6>
+            {% for q in questions %}
+            <div class="mb-4 extra-q-row" data-qid="{{ q[0] }}">
+                <label class="fw-bold d-block mb-3 text-center">{{ q[1] }}</label>
+                <div class="d-flex justify-content-center gap-3">
+                    <input type="radio" class="btn-check" name="q{{ q[0] }}" id="q{{ q[0] }}y" value="JA" {% if is_locked %}disabled{% endif %}>
+                    <label class="btn btn-outline-danger fw-bold px-4 py-2 rounded-pill" for="q{{ q[0] }}y">JA</label>
+
+                    <input type="radio" class="btn-check" name="q{{ q[0] }}" id="q{{ q[0] }}n" value="NEI" checked {% if is_locked %}disabled{% endif %}>
+                    <label class="btn btn-outline-danger fw-bold px-4 py-2 rounded-pill" for="q{{ q[0] }}n">NEI</label>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <div class="footer-action">
-        <div class="container" style="max-width: 440px;">
-            <div class="row g-2">
-                <div class="col-5">
-                    <input type="text" id="user-name" class="form-control p-3 fw-bold" placeholder="Navn..." style="border-radius:14px;">
+        <div class="container" style="max-width: 460px;">
+            {% if is_locked %}
+                <div class="alert alert-dark fw-800 text-center rounded-pill m-0">🔒 RUNDEN ER LÅST</div>
+            {% else %}
+                <div class="row g-2">
+                    <div class="col-5">
+                        <input type="text" id="user-name" class="form-control p-3 fw-bold shadow-sm" placeholder="Navn..." style="border-radius:15px; border: 1px solid #ddd;">
+                    </div>
+                    <div class="col-7">
+                        <button class="btn-submit" onclick="sendTips()">Lagre tips 🚀</button>
+                    </div>
                 </div>
-                <div class="col-7">
-                    <button class="btn-submit" onclick="sendTips()">Lagre tips 🚀</button>
-                </div>
-            </div>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
 
     <script>
         function adj(btn, side, d) {
-            const row = btn.closest('.match-row');
-            const el = row.querySelector('.' + side + '-score');
+            const card = btn.closest('.match-row');
+            const el = card.querySelector('.' + side + '-score');
             let val = parseInt(el.innerText) + d;
             if (val >= 0) el.innerText = val;
-        }
-
-        function setExtra(btn, val) {
-            const group = btn.closest('.btn-check-group');
-            group.querySelectorAll('.btn-check').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            btn.closest('.q-row').dataset.ans = val;
         }
 
         function sendTips() {
@@ -156,25 +152,37 @@
             
             const tips = [];
             document.querySelectorAll('.match-row').forEach(row => {
-                tips.push({ match_id: row.dataset.id, h: row.querySelector('.h-score').innerText, a: row.querySelector('.a-score').innerText });
+                tips.push({
+                    match_id: row.dataset.id,
+                    h: row.querySelector('.h-score').innerText,
+                    a: row.querySelector('.a-score').innerText
+                });
             });
 
             const extras = {};
-            document.querySelectorAll('.q-row').forEach(row => {
-                if(row.dataset.ans) extras[row.dataset.qid] = row.dataset.ans;
+            document.querySelectorAll('.extra-q-row').forEach(row => {
+                const qid = row.dataset.qid;
+                extras[qid] = row.querySelector('input:checked').value;
             });
 
             fetch('/api/submit_tips', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ 
-                    group_id: '{{ group[2] }}', 
-                    user_name: name, 
-                    tips: tips, 
-                    extras: extras,
-                    golden_goal: document.getElementById('golden-goal').value 
+                body: JSON.stringify({
+                    group_id: '{{ group[2] }}',
+                    user_name: name,
+                    tips: tips,
+                    golden_goal: document.getElementById('golden-goal').value,
+                    extras: extras
                 })
-            }).then(() => { window.location.href = "/group/{{ group[2] }}/leaderboard"; });
+            }).then(res => {
+                if (res.status === 403) {
+                    alert("For sent! Runden har startet.");
+                    window.location.reload();
+                } else {
+                    window.location.href = "/group/{{ group[2] }}/leaderboard";
+                }
+            });
         }
     </script>
 </body>
