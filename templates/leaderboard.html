@@ -7,13 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { 
-            --md-red: #cc0000; 
-            --md-bg: #f4f7f6; 
-            --md-gold: #FFD700; 
-            --md-dark: #1a1a1a; 
-            --md-gray: #adb5bd;
-        }
+        :root { --md-red: #cc0000; --md-bg: #f4f7f6; --md-gold: #FFD700; --md-dark: #1a1a1a; }
         body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; color: var(--md-dark); }
         .leaderboard-container { max-width: 500px; margin: auto; }
 
@@ -24,40 +18,35 @@
         .dot-live { background: var(--md-red); animation: pulse 2s infinite; }
         .status-text { font-size: 0.7rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: #888; }
         .status-live .status-text { color: var(--md-red); }
-
         @keyframes pulse { 0% { transform: scale(0.9); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.5; } 100% { transform: scale(0.9); opacity: 1; } }
 
-        /* Ticker */
-        .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border-left: 6px solid var(--md-gold); }
-        .prize-icon { font-size: 1.8rem; margin-right: 15px; }
-
-        /* Leaderboard */
+        /* Tabell og Kort */
         .leaderboard-card { background: white; border-radius: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.08); overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
         .user-row { cursor: pointer; border-bottom: 1px solid #f1f1f1; transition: 0.3s; }
-        .user-row:hover { background-color: #f9f9f9; }
-        
         .rank-box { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
         .rank-1 { background: #fff9db; color: #fab005; }
         .rank-2 { background: #f1f3f5; color: #868e96; }
         .rank-3 { background: #fff4e6; color: #d9480f; }
         .rank-other { background: #f8f9fa; color: #adb5bd; }
 
-        /* Trend Indikator (GUL STREK) */
         .trend-stay { color: #fcc419; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; gap: 4px; }
         .trend-line { width: 12px; height: 3px; background-color: #fcc419; border-radius: 2px; display: inline-block; }
 
-        .points-wrapper { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
         .points-display { font-weight: 800; color: var(--md-dark); font-size: 1.4rem; }
         .chevron { width: 18px; height: 18px; transition: transform 0.3s; color: #ced4da; stroke-width: 3; }
         .open .chevron { transform: rotate(180deg); color: var(--md-red); }
 
-        .behind-leader { font-size: 0.65rem; color: #adb5bd; font-weight: 600; display: block; }
-
+        /* Detaljer i nedtrekk */
         .details-row { display: none; background: #fafafa; }
         .bet-mini-card { background: white; border-radius: 16px; padding: 12px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        
         .stats-box { background: var(--md-dark); color: white; border-radius: 20px; padding: 18px; margin: 10px 0; }
         .stats-line { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.8rem; }
+        .stats-label { color: #aaa; text-transform: uppercase; }
+
+        /* Annonse */
+        .nt-ad-container { background: white; border-radius: 20px; padding: 15px; border: 1px solid #eee; margin-top: 10px; }
+        .nt-odds-btn { background: #f1f3f5; border-radius: 10px; flex: 1; padding: 10px; text-align: center; color: #333; text-decoration: none; }
+        .nt-val { font-weight: 800; font-size: 1.1rem; display: block; }
     </style>
 </head>
 <body>
@@ -71,14 +60,6 @@
             <h1 class="fw-800 m-0" style="font-size: 2.2rem;">{{ group[1] }}</h1>
         </div>
 
-        <div class="prize-card shadow-sm">
-            <div class="prize-icon">🏆</div>
-            <div>
-                <div class="small fw-800 text-muted text-uppercase" style="font-size: 0.6rem; letter-spacing: 1px;">Rundens Premie</div>
-                <div class="fw-800 h5 m-0">{{ group[5] or 'Middag' }}</div>
-            </div>
-        </div>
-        
         <div class="leaderboard-card">
             <table class="table table-borderless mb-0">
                 <thead>
@@ -99,22 +80,12 @@
                         </td>
                         <td class="align-middle">
                             <span class="fw-800 d-block" style="font-size: 1.1rem;">{{ row[0] }}</span>
-                            <div class="trend-stay">
-                                <span class="trend-line"></span>
-                                <span>Uendret</span>
-                            </div>
+                            <div class="trend-stay"><span class="trend-line"></span><span>Uendret</span></div>
                         </td>
                         <td class="pe-4 text-end align-middle">
-                            <div class="points-wrapper">
-                                <div class="text-end">
-                                    <span class="points-display">{{ row[1] }}</span>
-                                    {% if loop.index > 1 %}
-                                        <span class="behind-leader">-{{ leader_points - row[1] }}p bak</span>
-                                    {% endif %}
-                                </div>
-                                <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path>
-                                </svg>
+                            <div class="d-flex align-items-center justify-content-end gap-3">
+                                <span class="points-display">{{ row[1] }}</span>
+                                <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"></path></svg>
                             </div>
                         </td>
                     </tr>
@@ -128,7 +99,10 @@
     </div>
 
     <script>
-        function toggleDetails(index, user) {
+        // Henter lagret brukernavn fra localStorage (eller prompt hvis tom) for å vite hvem som er "deg"
+        let currentUser = localStorage.getItem('matchday_user') || "";
+
+        function toggleDetails(index, rowUser) {
             const detailRow = document.getElementById(`details-${index}`);
             const userRow = detailRow.previousElementSibling;
             const content = document.getElementById(`content-${index}`);
@@ -140,43 +114,60 @@
             }
 
             document.querySelectorAll('.details-row').forEach(row => row.style.display = 'none');
-            document.querySelectorAll('.user-row').forEach(row => row.classList.remove('open'));
-
             detailRow.style.display = 'table-row';
             userRow.classList.add('open');
-            content.innerHTML = '<div class="text-center p-4 small">Oppdaterer...</div>';
+            content.innerHTML = '<div class="text-center p-4 small">Laster...</div>';
             
-            fetch(`/api/get_user_bets/{{ group[2] }}/${user}`)
+            fetch(`/api/get_user_bets/{{ group[2] }}/${rowUser}`)
             .then(res => res.json())
             .then(data => {
-                // SJEKKER STATUS FOR LIVE
+                // Oppdater LIVE status
                 if(data.gg_live > 0) {
-                    const dot = document.getElementById('status-dot');
-                    dot.className = 'dot dot-live';
+                    document.getElementById('status-dot').className = 'dot dot-live';
                     document.getElementById('status-label').innerText = 'LIVE OPPDATERING';
-                    document.getElementById('live-status').classList.add('status-live');
                 }
 
                 let html = '<div class="details-inner">';
                 data.main.forEach(b => {
-                    let pDesc = b.pts >= 3 ? "Spot on!" : (b.pts >= 1 ? "HUB Treff" : "0 poeng");
                     html += `
                         <div class="bet-mini-card shadow-sm">
                             <div class="text-center" style="width:30%"><img src="${b.hl}" width="22"><span class="d-block small fw-800">${b.ht}</span></div>
-                            <div class="text-center">
-                                <b class="h5 m-0">${b.h} - ${b.a}</b>
-                                <span class="d-block badge bg-danger mt-1" style="font-size:0.5rem">${pDesc}</span>
-                            </div>
+                            <div class="text-center"><b class="h5 m-0">${b.h} - ${b.a}</b></div>
                             <div class="text-center" style="width:30%"><img src="${b.al}" width="22"><span class="d-block small fw-800">${b.at}</span></div>
                         </div>`;
                 });
-                
+
                 html += '<div class="stats-box">';
                 if(data.main[0].gg > 0) html += `<div class="stats-line"><span class="stats-label">Golden Goal</span><span class="stats-val">${data.main[0].gg}. min</span></div>`;
+                
+                let targetPlayer = "";
                 data.extras.forEach(e => {
                     html += `<div class="stats-line"><span class="stats-label">${e.q}</span><span class="stats-val">${e.ans}</span></div>`;
+                    if(e.q.toLowerCase().includes("scorer") && e.ans === "JA") {
+                        let m = e.q.match(/scorer\s+(.*?)\s*(\(|$|\?)/i);
+                        if(m) targetPlayer = m[1].trim();
+                    }
                 });
                 html += '</div>';
+
+                // KUN VIS ANNONSE HVIS DET ER DEG SELV
+                if(rowUser.trim() === currentUser.trim() && targetPlayer) {
+                    html += `
+                    <a href="https://www.norsk-tipping.no" target="_blank" style="text-decoration:none">
+                        <div class="nt-ad-container shadow-sm">
+                            <div class="small fw-800 text-muted text-center mb-2" style="font-size:0.5rem; letter-spacing:2px">ANNONSE</div>
+                            <div class="fw-800 mb-2">Scorer ${targetPlayer} neste mål?</div>
+                            <div class="d-flex gap-2 mb-3">
+                                <div class="nt-odds-btn"><span class="small text-muted">JA</span><span class="nt-val">3.40</span></div>
+                                <div class="nt-odds-btn"><span class="small text-muted">NEI</span><span class="nt-val">1.25</span></div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <b style="color:#0055ff; font-style:italic">× Oddsen</b>
+                                <span class="text-muted" style="font-size:0.5rem">18+ Hjelpelinjen.no</span>
+                            </div>
+                        </div>
+                    </a>`;
+                }
 
                 content.innerHTML = html + '</div>';
             });
