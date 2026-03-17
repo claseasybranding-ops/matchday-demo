@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, jsonify
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.secret_key = "matchday_final_v4_live"
+app.secret_key = "matchday_final_v5_live_only"
 
 DB_PATH = 'matchday_v3.db'
 API_KEY = '58f8589c07824c2495869fa6b7b815e5' 
@@ -111,6 +111,7 @@ def super_admin():
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT id, group_name, group_id_str, admin_name FROM groups")
     grupper = c.fetchall()
+    # Sorterer slik at de nærmeste kampene kommer først i listen
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
     raw = c.fetchall(); kamper = []
     for f in raw:
@@ -142,7 +143,8 @@ def group_admin(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
-    limit_date = (datetime.utcnow() - timedelta(days=1)).isoformat()
+    # Viser kun kamper som ikke har startet ennå i admin-velgeren
+    limit_date = datetime.utcnow().isoformat()
     c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (limit_date,))
     alle = c.fetchall()
     c.execute("SELECT fixture_id FROM group_matches WHERE group_id = ?", (group[0],))
@@ -223,11 +225,21 @@ def import_league(league_code):
     url = f"https://api.football-data.org/v4/competitions/{league_code}/matches"
     headers = {'X-Auth-Token': API_KEY}; res = requests.get(url, headers=headers).json()
     conn = get_db(); c = conn.cursor()
+    
+    # RENSING: Kun kamper fra NÅ og 14 dager frem
+    now = datetime.utcnow()
+    future = now + timedelta(days=14)
+    
     c.execute("DELETE FROM fixtures"); c.execute("DELETE FROM extra_questions")
     c.execute("DELETE FROM extra_bets"); c.execute("DELETE FROM group_matches"); c.execute("DELETE FROM bets")
+    
     for m in res.get('matches', []):
-        c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
-            (m['id'], league_code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam'].get('crest',''), m['awayTeam'].get('crest',''), m['utcDate'], 'upcoming'))
+        m_date = datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00')).replace(tzinfo=None)
+        # Lagrer kun kamper som starter i fremtiden
+        if m_date >= now and m_date <= future:
+            c.execute("INSERT OR REPLACE INTO fixtures (id, league_id, home_team, away_team, home_logo, away_logo, date, status) VALUES (?,?,?,?,?,?,?,?)",
+                (m['id'], league_code, m['homeTeam']['shortName'], m['awayTeam']['shortName'], m['homeTeam'].get('crest',''), m['awayTeam'].get('crest',''), m['utcDate'], 'upcoming'))
+    
     conn.commit(); conn.close()
     return jsonify({"status": "Suksess"})
 
