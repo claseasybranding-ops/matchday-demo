@@ -42,7 +42,6 @@ init_db()
 # --- HJELPEFUNKSJONER ---
 
 def get_round_start(group_id_str):
-    """Henter starttid for første kamp i runden for å låse tipping."""
     conn = get_db(); c = conn.cursor()
     c.execute("""
         SELECT MIN(f.date) FROM fixtures f 
@@ -56,12 +55,10 @@ def get_round_start(group_id_str):
     return None
 
 def update_points_logic():
-    """Oppdaterer poeng automatisk basert på ferdige kamper i DB."""
+    """Implementert i tråd med teknisk overlevering: Akkumulerende poeng."""
     conn = get_db(); c = conn.cursor()
-    # Vi sjekker alle ligaer som ligger i databasen
     c.execute("SELECT DISTINCT league_id FROM fixtures")
     leagues = [row[0] for row in c.fetchall()]
-    
     headers = {'X-Auth-Token': API_KEY}
     now = datetime.utcnow()
 
@@ -76,41 +73,55 @@ def update_points_logic():
                 h_act = m['score']['fullTime']['home']
                 a_act = m['score']['fullTime']['away']
                 status = m['status'].lower()
-                m_time = datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00')).replace(tzinfo=None)
                 
-                if status in ['finished', 'live', 'in_play', 'paused'] or now > m_time:
-                    h_score = h_act if h_act is not None else 0
-                    a_score = a_act if a_act is not None else 0
-                    # Standard Golden Goal minutt for test/demo
-                    f_goal = 25 if (status == 'finished' and h_score+a_score > 0) else 0
-
-                    c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=?, first_goal_min=? WHERE id=?", 
-                             (h_score, a_score, status, f_goal, mid))
+                if h_act is not None:
+                    # Målminutt: Bruker 25 som demo hvis kampen er ferdig og det er scoret mål
+                    f_goal = 25 if (status == 'finished' and (h_act + a_act) > 0) else 0
                     
-                    c.execute("SELECT id, group_id_str, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
-                    for bet_id, gid, u_h, u_a, u_gg in c.fetchall():
-                        pts = 0
-                        # 3p for riktig resultat
-                        if u_h == h_score and u_a == a_score: pts = 3
-                        # 1p for riktig HUB
-                        elif (u_h > u_a and h_score > a_score) or (u_h < u_a and h_score < a_score) or (u_h == u_a and h_score == a_score): pts = 1
+                    c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=?, first_goal_min=? WHERE id=?", 
+                             (h_act, a_act, status, f_goal, mid))
+                    
+                    c.execute("SELECT id, group_id_str, user_name, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
+                    for bet_id, gid, user, u_h, u_a, u_gg in c.fetchall():
+                        total_points = 0
                         
-                        # +5p for nøyaktig Golden Goal
-                        if f_goal > 0 and u_gg == f_goal: pts += 5
-                        c.execute("UPDATE bets SET points=? WHERE id=?", (pts, bet_id))
+                        # STEG 1: Resultat (3p) / HUB (1p)
+                        if u_h == h_act and u_a == a_act:
+                            total_points += 3
+                        elif (u_h > u_a and h_act > a_act) or (u_h < u_a and h_act < a_act) or (u_h == u_a and h_act == a_act):
+                            total_points += 1
+                        
+                        # STEG 2: Ekstra spørsmål (Målscorer) +2p
+                        c.execute("""SELECT user_answer FROM extra_bets eb 
+                                   JOIN extra_questions eq ON eb.question_id = eq.id 
+                                   WHERE eb.user_name = ? AND eq.fixture_id = ? AND eb.group_id_str = ?""", 
+                                (user, mid, gid))
+                        extra_res = c.fetchone()
+                        if extra_res and extra_res[0] == 'JA' and (h_act + a_act) > 0:
+                            total_points += 2
+                            
+                        # STEG 3: Golden Goal - Spot On +5p
+                        if f_goal > 0 and u_gg == f_goal:
+                            total_points += 5
+                        
+                        c.execute("UPDATE bets SET points=? WHERE id=?", (total_points, bet_id))
 
-                    # +2p for nærmeste Golden Goal (Tie-breaker)
-                    if f_goal > 0:
+                    # STEG 4: Golden Goal - Tie-breaker +2p (Kun ferdige kamper)
+                    if status == 'finished' and f_goal > 0:
                         c.execute("SELECT DISTINCT group_id_str FROM bets WHERE fixture_id=?", (mid,))
-                        for (group_id,) in c.fetchall():
-                            c.execute("SELECT MIN(ABS(golden_goal - ?)) FROM bets WHERE fixture_id=? AND group_id_str=? AND golden_goal > 0", (f_goal, mid, group_id))
+                        for (group_id_val,) in c.fetchall():
+                            c.execute("""SELECT MIN(ABS(golden_goal - ?)) FROM bets 
+                                       WHERE fixture_id=? AND group_id_str=? AND golden_goal > 0""", 
+                                    (f_goal, mid, group_id_val))
                             min_diff = c.fetchone()[0]
+                            
                             if min_diff is not None and min_diff > 0:
-                                c.execute("UPDATE bets SET points = points + 2 WHERE fixture_id=? AND group_id_str=? AND ABS(golden_goal - ?) = ?", (mid, group_id, f_goal, min_diff))
+                                c.execute("""UPDATE bets SET points = points + 2 
+                                           WHERE fixture_id=? AND group_id_str=? 
+                                           AND ABS(golden_goal - ?) = ?""", 
+                                        (mid, group_id_val, f_goal, min_diff))
         except: continue
-        
     conn.commit(); conn.close()
-    return True
 
 def get_players_from_api(fixture_id):
     headers = {'X-Auth-Token': API_KEY}
@@ -134,8 +145,6 @@ def super_admin():
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT id, group_name, group_id_str, admin_name FROM groups")
     grupper = c.fetchall()
-    now_iso = datetime.utcnow().isoformat()
-    # Viser kamper fra lageret sortert på dato
     c.execute("SELECT * FROM fixtures ORDER BY date ASC")
     raw = c.fetchall(); kamper = []
     for f in raw:
@@ -149,6 +158,7 @@ def group_view(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
+    if not group: return "Gruppe ikke funnet", 404
     c.execute("SELECT f.* FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id WHERE gm.group_id = ?", (group[0],))
     raw = c.fetchall(); kamper = []
     round_start = get_round_start(group_id_str)
@@ -166,7 +176,6 @@ def group_admin(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
-    # Henter alle kamper som ikke er altfor gamle
     limit_date = (datetime.utcnow() - timedelta(days=1)).isoformat()
     c.execute("SELECT * FROM fixtures WHERE date >= ? ORDER BY date ASC", (limit_date,))
     alle = c.fetchall()
@@ -196,8 +205,7 @@ def leaderboard(group_id_str):
 def submit_tips():
     data = request.get_json(); group_id = data['group_id']
     round_start = get_round_start(group_id)
-    if round_start and datetime.utcnow() > round_start:
-        return jsonify({"status": "LOCKED"}), 403
+    if round_start and datetime.utcnow() > round_start: return jsonify({"status": "LOCKED"}), 403
     conn = get_db(); c = conn.cursor()
     c.execute("DELETE FROM bets WHERE group_id_str = ? AND user_name = ?", (group_id, data['user_name']))
     for t in data['tips']:
@@ -248,7 +256,6 @@ def create_group():
 
 @app.route('/api/import_league/<league_code>')
 def import_league(league_code):
-    """Henter kamper for PL eller CL. Sletter runden for å starte på nytt."""
     url = f"https://api.football-data.org/v4/competitions/{league_code}/matches"
     headers = {'X-Auth-Token': API_KEY}
     res = requests.get(url, headers=headers).json()
