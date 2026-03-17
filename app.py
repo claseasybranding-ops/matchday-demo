@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import requests
-from Flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
@@ -69,7 +69,7 @@ def update_points_logic():
                     c.execute("SELECT first_goal_min FROM fixtures WHERE id = ?", (mid,))
                     f_goal = c.fetchone()[0]
                     if (not f_goal or f_goal == 0) and (h_act + a_act > 0):
-                        f_goal = 25 # Demo minutt for gratis API
+                        f_goal = 25 
                         c.execute("UPDATE fixtures SET first_goal_min = ? WHERE id = ?", (f_goal, mid))
                     c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=? WHERE id=?", (h_act, a_act, status, mid))
                     c.execute("SELECT id, group_id_str, user_name, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
@@ -234,12 +234,9 @@ def import_league(league_code):
 @app.route('/api/get_user_bets/<group_id_str>/<user_name>')
 def get_user_bets(group_id_str, user_name):
     conn = get_db(); c = conn.cursor()
-    # Finn om det er et Golden Goal minutt for runden
     c.execute("SELECT f.first_goal_min FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id JOIN groups g ON gm.group_id = g.id WHERE g.group_id_str = ? AND f.first_goal_min > 0 LIMIT 1", (group_id_str,))
     gg_res = c.fetchone()
     gg_min = gg_res[0] if gg_res else 0
-    
-    # Finn hvem som leder GG-kampen akkurat nå
     winner_name = "Ingen"
     if gg_min > 0:
         c.execute("SELECT user_name FROM bets WHERE group_id_str = ? AND golden_goal > 0 ORDER BY ABS(golden_goal - ?) ASC LIMIT 1", (group_id_str, gg_min))
@@ -258,4 +255,5 @@ def get_user_bets(group_id_str, user_name):
     })
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
