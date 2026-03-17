@@ -1,11 +1,11 @@
 import os
 import sqlite3
 import requests
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.secret_key = "matchday_ultimate_v7"
+app.secret_key = "matchday_ultimate_v8_final_pro"
 
 DB_PATH = 'matchday_v3.db'
 API_KEY = '58f8589c07824c2495869fa6b7b815e5' 
@@ -137,8 +137,7 @@ def group_view(group_id_str):
         f_l = list(f); m_time = datetime.fromisoformat(f[6].replace('Z', '+00:00'))
         f_l[6] = m_time.strftime("%d.%m kl %H:%M"); kamper.append(f_l)
     c.execute("SELECT id, question_text FROM extra_questions WHERE group_id_str = ?", (group_id_str,))
-    questions = c.fetchall()
-    conn.close()
+    questions = c.fetchall(); conn.close()
     return render_template('group_view.html', group=group, kamper=kamper, questions=questions, is_locked=is_locked)
 
 @app.route('/group/<group_id_str>/admin')
@@ -153,8 +152,7 @@ def group_admin(group_id_str):
     valgte = [r[0] for r in c.fetchall()]
     players = get_players_from_api(valgte[0]) if valgte else []
     c.execute("SELECT id, question_text FROM extra_questions WHERE group_id_str = ?", (group_id_str,))
-    questions = c.fetchall()
-    conn.close()
+    questions = c.fetchall(); conn.close()
     return render_template('group_admin.html', group=group, kamper=alle, valgte=valgte, players=players, questions=questions)
 
 @app.route('/group/<group_id_str>/leaderboard')
@@ -163,18 +161,18 @@ def leaderboard(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
-    round_start = get_round_start(group_id_str)
-    start_str = round_start.strftime("%d.%m kl %H:%M") if round_start else "--:--"
     c.execute("SELECT user_name, SUM(points) as total FROM bets WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC, user_name ASC", (group_id_str,))
     rows = c.fetchall(); conn.close()
-    return render_template('leaderboard.html', group=group, leaderboard=rows, start_time=start_str)
+    logged_user = session.get('user_name', '')
+    return render_template('leaderboard.html', group=group, leaderboard=rows, current_user=logged_user)
 
-# --- API ---
+# --- API RUTER ---
 
 @app.route('/api/submit_tips', methods=['POST'])
 def submit_tips():
     data = request.get_json(); group_id = data['group_id']
     user = data['user_name'].strip()
+    session['user_name'] = user
     round_start = get_round_start(group_id)
     if round_start and datetime.utcnow() > round_start: return jsonify({"status": "LOCKED"}), 403
     conn = get_db(); c = conn.cursor()
@@ -230,8 +228,7 @@ def import_league(league_code):
     url = f"https://api.football-data.org/v4/competitions/{league_code}/matches"
     headers = {'X-Auth-Token': API_KEY}; res = requests.get(url, headers=headers).json()
     conn = get_db(); c = conn.cursor()
-    now = datetime.utcnow()
-    future = now + timedelta(days=14)
+    now = datetime.utcnow(); future = now + timedelta(days=14)
     c.execute("DELETE FROM fixtures"); c.execute("DELETE FROM extra_questions")
     c.execute("DELETE FROM extra_bets"); c.execute("DELETE FROM group_matches"); c.execute("DELETE FROM bets")
     for m in res.get('matches', []):
@@ -244,15 +241,13 @@ def import_league(league_code):
 
 @app.route('/api/get_user_bets/<group_id_str>/<user_name>')
 def get_user_bets(group_id_str, user_name):
-    conn = get_db(); c = conn.cursor()
-    user = user_name.strip()
+    conn = get_db(); c = conn.cursor(); user = user_name.strip()
     c.execute("SELECT b.home_score, b.away_score, b.points, b.golden_goal, f.home_team, f.away_team, f.home_logo, f.away_logo FROM bets b JOIN fixtures f ON b.fixture_id = f.id WHERE b.group_id_str = ? AND b.user_name = ?", (group_id_str, user))
     main_bet = c.fetchall()
     c.execute("SELECT q.question_text, eb.user_answer FROM extra_bets eb JOIN extra_questions q ON eb.question_id = q.id WHERE eb.group_id_str = ? AND eb.user_name = ?", (group_id_str, user))
     extras = c.fetchall()
     c.execute("SELECT f.first_goal_min FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id JOIN groups g ON gm.group_id = g.id WHERE g.group_id_str = ? AND f.first_goal_min > 0 LIMIT 1", (group_id_str,))
-    gg_res = c.fetchone()
-    gg_min = gg_res[0] if gg_res else 0
+    gg_res = c.fetchone(); gg_min = gg_res[0] if gg_res else 0
     winner_name = "Ingen"
     if gg_min > 0:
         c.execute("SELECT user_name FROM bets WHERE group_id_str = ? AND golden_goal > 0 ORDER BY ABS(golden_goal - ?) ASC LIMIT 1", (group_id_str, gg_min))
