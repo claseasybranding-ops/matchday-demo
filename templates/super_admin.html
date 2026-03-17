@@ -12,43 +12,57 @@
         .navbar { background: white; padding: 20px 0; border-bottom: 1px solid #eee; }
         .admin-card { background: white; border-radius: 24px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 30px; }
         .btn-create { background: var(--md-red); color: white; border: none; padding: 15px; border-radius: 14px; font-weight: 800; text-transform: uppercase; transition: 0.3s; width: 100%; }
+        .btn-create:hover { background: #b30000; transform: translateY(-2px); }
         .match-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #888; border: none; }
         .match-table td { font-weight: 700; font-size: 0.85rem; padding: 15px 10px; border-bottom: 1px solid #f1f1f1; }
         .status-badge { font-size: 0.6rem; padding: 4px 10px; border-radius: 6px; font-weight: 800; text-transform: uppercase; background: #eef2ff; color: #4338ca; }
+        .status-live { background: #fff5f5; color: #cc0000; border: 1px solid #ffcccc; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
     <nav class="navbar mb-5">
         <div class="container d-flex justify-content-between align-items-center">
             <h4 class="m-0 fw-800">MATCHDAY. <span class="text-muted fw-400" style="font-size: 0.8rem;">SYSTEM ADMIN</span></h4>
+            <a href="/" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold">Til Forsiden</a>
         </div>
     </nav>
 
     <div class="container" style="max-width: 1000px;">
         <div class="admin-card">
-            <h6 class="text-uppercase text-muted fw-800 mb-4" style="font-size: 0.7rem; letter-spacing: 1px;">Opprett ny supporterklubb</h6>
+            <h6 class="text-uppercase text-muted fw-800 mb-4" style="font-size: 0.7rem; letter-spacing: 1px;">Opprett ny supporterklubb / Gruppe</h6>
             <div class="row g-3">
-                <div class="col-md-4"><input type="text" id="new-group-name" class="form-control p-3 fw-bold" placeholder="Eks: TV2" style="background: #eef2ff; border: none; border-radius: 12px;"></div>
-                <div class="col-md-4"><input type="text" id="new-group-admin" class="form-control p-3 fw-bold" placeholder="Navn på admin" style="background: #eef2ff; border: none; border-radius: 12px;"></div>
-                <div class="col-md-4"><button class="btn-create" onclick="createGroup()">OPPRETT GRUPPE 🚀</button></div>
+                <div class="col-md-4"><input type="text" id="new-group-name" class="form-control p-3 fw-bold" placeholder="Eks: TV2 Sporten" style="background: #eef2ff; border: none; border-radius: 12px;"></div>
+                <div class="col-md-4"><input type="text" id="new-group-admin" class="form-control p-3 fw-bold" placeholder="Navn på administrator" style="background: #eef2ff; border: none; border-radius: 12px;"></div>
+                <div class="col-md-4"><button class="btn-create shadow-sm" onclick="createGroup()">OPPRETT GRUPPE 🚀</button></div>
             </div>
         </div>
 
         <div class="admin-card">
             <h6 class="text-uppercase text-muted fw-800 mb-4" style="font-size: 0.7rem; letter-spacing: 1px;">Aktive supporterklubber</h6>
             <div id="group-list">
-                {% for g in grupper %}
-                <div class="d-flex justify-content-between align-items-center p-3 mb-2 shadow-sm" style="background: white; border-radius: 16px; border: 1px solid #eee;">
-                    <span class="fw-800">{{ g[1] }} <span class="text-muted fw-400 ms-2">| Admin: {{ g[3] }}</span></span>
-                    <a href="/group/{{ g[2] }}/admin" class="btn btn-outline-dark btn-sm fw-800 px-4 rounded-pill">ADMIN PANEL</a>
-                </div>
-                {% endfor %}
+                {% if grupper %}
+                    {% for g in grupper %}
+                    <div class="d-flex justify-content-between align-items-center p-3 mb-2 shadow-sm" style="background: white; border-radius: 16px; border: 1px solid #eee;">
+                        <div>
+                            <span class="fw-800">{{ g[1] }}</span>
+                            <span class="text-muted fw-400 ms-2" style="font-size: 0.8rem;">| Admin: {{ g[3] }}</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="/group/{{ g[2] }}" class="btn btn-light btn-sm fw-800 px-3 rounded-pill border">SE SIDE</a>
+                            <a href="/group/{{ g[2] }}/admin" class="btn btn-dark btn-sm fw-800 px-4 rounded-pill">ADMIN PANEL</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center text-muted py-3">Ingen grupper opprettet ennå.</p>
+                {% endif %}
             </div>
         </div>
 
         <div class="admin-card">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h6 class="text-uppercase text-muted fw-800 m-0" style="font-size: 0.7rem; letter-spacing: 1px;">Globalt kamp-lager</h6>
+                <h6 class="text-uppercase text-muted fw-800 m-0" style="font-size: 0.7rem; letter-spacing: 1px;">Globalt kamp-lager (API)</h6>
                 <div class="btn-group shadow-sm">
                     <button class="btn btn-dark btn-sm fw-800 px-3" onclick="importLeague('PL')">HENT PREMIER LEAGUE</button>
                     <button class="btn btn-primary btn-sm fw-800 px-3" onclick="importLeague('CL')" style="background-color: #003399;">HENT CHAMPIONS LEAGUE</button>
@@ -64,13 +78,23 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for k in kamper %}
-                        <tr>
-                            <td>{{ k[6] }}</td>
-                            <td>{{ k[2] }} – {{ k[3] }}</td>
-                            <td class="text-end"><span class="status-badge">{{ k[7] }}</span></td>
-                        </tr>
-                        {% endfor %}
+                        {% if kamper %}
+                            {% for k in kamper %}
+                            <tr>
+                                <td>{{ k[6] }}</td>
+                                <td>{{ k[2] }} – {{ k[3] }}</td>
+                                <td class="text-end">
+                                    <span class="status-badge {% if k[7] == 'live' or k[7] == 'in_play' %}status-live{% endif %}">
+                                        {{ k[7] }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted small">Ingen kamper i lageret. Importer fra menyen over.</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -82,17 +106,24 @@
             const name = document.getElementById('new-group-name').value;
             const admin = document.getElementById('new-group-admin').value;
             if(!name || !admin) return alert("Fyll ut begge felt!");
+            
             fetch('/api/create_group', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ name: name, admin_name: admin })
-            }).then(() => window.location.reload());
+            }).then(res => {
+                if(res.ok) window.location.reload();
+                else alert("Kunne ikke opprette gruppe.");
+            });
         }
 
         function importLeague(code) {
             const msg = code === 'PL' ? "Premier League" : "Champions League";
-            if(confirm("Dette sletter alle nåværende runder og tips for å hente " + msg + ". Er du sikker?")) {
-                fetch('/api/import_league/' + code).then(() => window.location.reload());
+            if(confirm("Dette sletter alle nåværende runder og tips i ALLE grupper for å hente ferske " + msg + "-kamper. Er du sikker?")) {
+                fetch('/api/import_league/' + code).then(res => {
+                    if(res.ok) window.location.reload();
+                    else alert("Feil ved henting av kamper.");
+                });
             }
         }
     </script>
