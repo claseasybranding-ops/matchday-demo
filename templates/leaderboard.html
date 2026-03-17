@@ -18,17 +18,24 @@
         .prize-icon { font-size: 2rem; margin-right: 20px; }
         
         .leaderboard-card { background: white; border-radius: 28px; box-shadow: 0 15px 45px rgba(0,0,0,0.07); overflow: hidden; }
-        .user-row { cursor: pointer; border-bottom: 1px solid #f8f8f8; }
+        .user-row { cursor: pointer; border-bottom: 1px solid #f8f8f8; transition: 0.2s; }
         .rank-box { width: 32px; height: 32px; background: #f1f1f1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; }
         tr:nth-child(1) .rank-box { background: var(--md-gold); color: white; }
-        .points-display { font-weight: 800; color: var(--md-red); font-size: 1.2rem; }
         
+        .points-cell { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+        .points-display { font-weight: 800; color: var(--md-red); font-size: 1.2rem; }
+        .chevron { width: 16px; height: 16px; transition: transform 0.3s; color: #bbb; stroke-width: 3; }
+        .open .chevron { transform: rotate(180deg); color: var(--md-red); }
+
         .details-row { display: none; background: #fafafa; }
-        .bet-mini-card { background: white; border-radius: 16px; padding: 12px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .bet-mini-card { background: white; border-radius: 16px; padding: 12px; margin-bottom: 10px; border: 1px solid #eee; }
         .team-box { width: 30%; text-align: center; }
-        .team-box img { width: 22px; height: 22px; object-fit: contain; }
-        .team-box span { display: block; font-size: 0.6rem; font-weight: 800; }
-        .score-box { width: 40%; text-align: center; }
+        .team-box img { width: 25px; height: 25px; object-fit: contain; }
+        .team-box span { display: block; font-size: 0.65rem; font-weight: 800; margin-top: 4px; }
+        
+        .extra-box { background: #fff5f5; border-radius: 12px; padding: 12px; margin-top: 15px; }
+        .extra-line { display: flex; justify-content: space-between; font-size: 0.75rem; padding: 6px 0; border-bottom: 1px solid #ffebeb; }
+        .extra-line:last-child { border: none; }
     </style>
 </head>
 <body>
@@ -63,8 +70,13 @@
                     {% for row in leaderboard %}
                     <tr class="user-row" onclick="toggleDetails('{{ loop.index }}', '{{ row[0] }}')">
                         <td class="ps-4" style="width: 70px;"><div class="rank-box">{{ loop.index }}</div></td>
-                        <td><span class="fw-bold">{{ row[0] }}</span></td>
-                        <td class="pe-4 text-end"><span class="points-display">{{ row[1] }}p</span></td>
+                        <td><span class="fw-800">{{ row[0] }}</span></td>
+                        <td class="pe-4">
+                            <div class="points-cell">
+                                <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"></path></svg>
+                                <span class="points-display">{{ row[1] }}p</span>
+                            </div>
+                        </td>
                     </tr>
                     <tr class="details-row" id="details-{{ loop.index }}">
                         <td colspan="3"><div class="p-3" id="content-{{ loop.index }}"></div></td>
@@ -78,32 +90,60 @@
     <script>
         function toggleDetails(index, user) {
             const detailRow = document.getElementById(`details-${index}`);
+            const userRow = detailRow.previousElementSibling;
             const content = document.getElementById(`content-${index}`);
+
             if (detailRow.style.display === 'table-row') {
                 detailRow.style.display = 'none';
+                userRow.classList.remove('open');
                 return;
             }
-            
+
             document.querySelectorAll('.details-row').forEach(row => row.style.display = 'none');
+            document.querySelectorAll('.user-row').forEach(row => row.classList.remove('open'));
+
             detailRow.style.display = 'table-row';
-            content.innerHTML = '<div class="text-center p-2">Laster detaljer...</div>';
+            userRow.classList.add('open');
+            content.innerHTML = '<div class="text-center p-2 small">Laster detaljer...</div>';
             
             fetch(`/api/get_user_bets/{{ group[2] }}/${user}`)
             .then(res => res.json())
             .then(data => {
-                let html = '';
+                let html = '<div class="details-inner">';
+                
                 if (data.main && data.main.length > 0) {
                     data.main.forEach(b => {
                         let pDesc = b.pts >= 3 ? "3p - Riktig" : (b.pts >= 1 ? "1p - HUB" : "0p");
                         html += `
-                            <div class="bet-mini-card">
-                                <div class="team-box"><img src="${b.hl}"><span>${b.ht}</span></div>
-                                <div class="score-box"><b>${b.h}-${b.a}</b><br><span class="badge bg-danger" style="font-size:0.5rem;">${pDesc}</span></div>
-                                <div class="team-box"><img src="${b.al}"><span>${b.at}</span></div>
+                            <div class="bet-mini-card shadow-sm mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 0.65rem; border-bottom: 1px solid #eee; padding-bottom: 5px;">
+                                    <span class="fw-bold text-muted text-uppercase">Kamp-resultat</span>
+                                    <span class="badge bg-danger">${pDesc}</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="team-box"><img src="${b.hl}"><span>${b.ht}</span></div>
+                                    <div class="text-center fw-800" style="font-size: 1.2rem; width:40%;">${b.h} - ${b.a}</div>
+                                    <div class="team-box"><img src="${b.al}"><span>${b.at}</span></div>
+                                </div>
                             </div>`;
                     });
+
+                    html += '<div class="extra-box">';
                     
-                    // Oppdater ticker hvis vi har live data
+                    // Golden Goal (Ditt tips)
+                    if(data.main[0].gg && data.main[0].gg !== 0) {
+                        html += `<div class="extra-line"><span class="fw-bold text-muted">Mitt Golden Goal:</span><span class="fw-800 text-danger">${data.main[0].gg}. min</span></div>`;
+                    }
+                    
+                    // Tilleggsspørsmål (Målscorer etc)
+                    if (data.extras && data.extras.length > 0) {
+                        data.extras.forEach(e => {
+                            html += `<div class="extra-line"><span class="fw-bold text-muted">${e.q}</span><span class="fw-800">${e.ans}</span></div>`;
+                        });
+                    }
+                    html += '</div>';
+
+                    // Oppdater Live Ticker hvis GG er satt i databasen
                     if(data.gg_live > 0) {
                         const ticker = document.getElementById('live-ticker');
                         ticker.style.borderLeft = "6px solid #cc0000";
@@ -112,10 +152,9 @@
                         document.getElementById('ticker-text').innerHTML = `${data.gg_live}. min - ${data.gg_winner} leder!`;
                     }
                 }
-                content.innerHTML = html || 'Ingen tips funnet.';
+                content.innerHTML = html + '</div>';
             });
         }
-        
         setInterval(() => { window.location.reload(); }, 60000);
     </script>
 </body>
