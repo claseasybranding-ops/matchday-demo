@@ -16,11 +16,9 @@
         .live-dot { height: 8px; width: 8px; background-color: var(--md-red); border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 70% { transform: scale(1.6); opacity: 0; } 100% { transform: scale(0.95); opacity: 0; } }
         
-        /* Premie-kortet */
         .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); }
         .prize-icon { font-size: 2rem; margin-right: 20px; }
         
-        /* Tabellen og kortet */
         .leaderboard-card { background: white; border-radius: 28px; box-shadow: 0 15px 45px rgba(0,0,0,0.07); overflow: hidden; border: 1px solid rgba(0,0,0,0.03); }
         .table { margin-bottom: 0; }
         .table thead th { background: #fafafa; border-bottom: 1px solid #eee; padding: 15px 20px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
@@ -38,18 +36,18 @@
         .chevron { width: 18px; height: 18px; transition: transform 0.3s; color: #bbb; }
         .open .chevron { transform: rotate(180deg); color: var(--md-red); }
 
-        /* Ekspanderings-detaljer */
+        /* Detaljer for poeng-nedtrekk */
         .details-row { display: none; background: #fafafa; }
-        .details-content { padding: 20px; border-bottom: 1px solid #eee; }
+        .details-content { padding: 15px; border-bottom: 1px solid #eee; }
         
-        .bet-mini-card { background: white; border-radius: 16px; padding: 15px; margin-bottom: 10px; border: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
-        .team-box { width: 35%; text-align: center; }
-        .team-box img { width: 25px; height: 25px; object-fit: contain; }
-        .team-box span { display: block; font-size: 0.65rem; font-weight: 800; margin-top: 4px; }
-        .score-box { width: 30%; text-align: center; font-weight: 800; font-size: 1.2rem; }
+        .bet-mini-card { background: white; border-radius: 16px; padding: 12px; margin-bottom: 10px; border: 1px solid #eee; }
+        .team-box { width: 30%; text-align: center; }
+        .team-box img { width: 22px; height: 22px; object-fit: contain; }
+        .team-box span { display: block; font-size: 0.6rem; font-weight: 800; margin-top: 2px; }
+        .score-box { width: 40%; text-align: center; font-weight: 800; font-size: 1.1rem; }
         
-        .extra-box { background: #fff5f5; border-radius: 12px; padding: 12px; margin-top: 15px; }
-        .extra-line { display: flex; justify-content: space-between; font-size: 0.75rem; padding: 6px 0; border-bottom: 1px solid #ffebeb; }
+        .extra-box { background: #fff5f5; border-radius: 12px; padding: 12px; margin-top: 10px; }
+        .extra-line { display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; padding: 8px 0; border-bottom: 1px solid #ffebeb; }
         .extra-line:last-child { border: none; }
 
         .footer-info { text-align: center; margin-top: 25px; font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
@@ -106,7 +104,7 @@
             </table>
         </div>
         
-        <div class="footer-info">Tabellen oppdateres automatisk hvert 2. minutt</div>
+        <div class="footer-info">Siden oppdateres automatisk hvert 2. minutt</div>
     </div>
 
     <script>
@@ -131,32 +129,46 @@
             fetch(`/api/get_user_bets/{{ group[2] }}/${user}`)
             .then(res => res.json())
             .then(data => {
-                let html = '';
+                let html = '<div class="details-inner">';
+                
                 if (data.main && data.main.length > 0) {
                     data.main.forEach(b => {
+                        // Forklaring på poeng
+                        let pText = b.pts > 0 ? `${b.pts}p` : "0p";
+                        let pDesc = "";
+                        if(b.pts >= 3) pDesc = "Riktig resultat";
+                        else if(b.pts >= 1) pDesc = "Riktig HUB";
+                        else pDesc = "Ingen poeng";
+
                         html += `
-                            <div class="bet-mini-card shadow-sm">
-                                <div class="team-box">
-                                    <img src="${b.hl}">
-                                    <span>${b.ht}</span>
+                            <div class="bet-mini-card shadow-sm mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 0.6rem; border-bottom: 1px solid #eee; padding-bottom: 4px;">
+                                    <span class="fw-bold text-muted text-uppercase">Kamp-resultat</span>
+                                    <span class="badge bg-danger">${pText} - ${pDesc}</span>
                                 </div>
-                                <div class="score-box">${b.h} - ${b.a}</div>
-                                <div class="team-box">
-                                    <img src="${b.al}">
-                                    <span>${b.at}</span>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="team-box">
+                                        <img src="${b.hl}">
+                                        <span>${b.ht}</span>
+                                    </div>
+                                    <div class="score-box">${b.h} - ${b.a}</div>
+                                    <div class="team-box">
+                                        <img src="${b.al}">
+                                        <span>${b.at}</span>
+                                    </div>
                                 </div>
                             </div>
                         `;
                     });
 
+                    // EKSTRA POENG SEKSJON
                     html += '<div class="extra-box">';
                     
-                    // Golden Goal logikk (Kun hvis modus er single og verdien er satt)
                     const isSingleMode = "{{ group[4] }}" === "single" || "{{ group[4] }}" === "singel";
                     if(isSingleMode && data.main[0].gg && data.main[0].gg !== 0) {
                         html += `
                             <div class="extra-line">
-                                <span class="fw-bold text-muted">Golden Goal:</span>
+                                <span class="fw-bold text-muted">Mitt Golden Goal:</span>
                                 <span class="fw-800 text-danger">${data.main[0].gg}. min</span>
                             </div>
                         `;
@@ -167,7 +179,7 @@
                             html += `
                                 <div class="extra-line">
                                     <span class="fw-bold text-muted">${e.q}</span>
-                                    <span class="fw-800 text-danger">${e.ans}</span>
+                                    <span class="fw-800 text-danger">${e.ans} (+2p)</span>
                                 </div>
                             `;
                         });
@@ -176,11 +188,11 @@
                 } else {
                     html = '<div class="text-center p-2 small text-muted">Ingen tips registrert</div>';
                 }
+                html += '</div>';
                 content.innerHTML = html;
             });
         }
 
-        // Automatisk reload hvert 2. minutt for å fange opp nye poengberegninger
         setInterval(() => {
             window.location.reload();
         }, 120000);
