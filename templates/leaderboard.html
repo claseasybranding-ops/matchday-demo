@@ -151,8 +151,9 @@
 
                     html += '<div class="extra-box">';
                     
-                    // KUN VIS GOLDEN GOAL HVIS MODUS ER SINGLE
-                    if("{{ group[4] }}" === "single" && data.main[0].gg && data.main[0].gg !== 0) {
+                    // Golden Goal logikk (Kun hvis modus er single og verdien er satt)
+                    const isSingleMode = "{{ group[4] }}" === "single" || "{{ group[4] }}" === "singel";
+                    if(isSingleMode && data.main[0].gg && data.main[0].gg !== 0) {
                         html += `
                             <div class="extra-line">
                                 <span class="fw-bold text-muted">Golden Goal:</span>
@@ -161,7 +162,7 @@
                         `;
                     }
                     
-                    if (data.extras) {
+                    if (data.extras && data.extras.length > 0) {
                         data.extras.forEach(e => {
                             html += `
                                 <div class="extra-line">
@@ -179,8 +180,9 @@
             });
         }
 
+        // Automatisk reload hvert 2. minutt for å fange opp nye poengberegninger
         setInterval(() => {
-            fetch('/api/refresh_data').then(() => window.location.reload());
+            window.location.reload();
         }, 120000);
     </script>
 </body>
