@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, jsonify, session
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
-app.secret_key = "matchday_ultimate_v8_final_pro"
+app.secret_key = "matchday_ultimate_v9_trend_fixed"
 
 DB_PATH = 'matchday_v3.db'
 API_KEY = '58f8589c07824c2495869fa6b7b815e5' 
@@ -28,13 +28,20 @@ def init_db():
                  (group_id INTEGER, fixture_id INTEGER)''')
     c.execute('''CREATE TABLE IF NOT EXISTS bets
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id_str TEXT, user_name TEXT, 
-                  fixture_id INTEGER, home_score INTEGER, away_score INTEGER, points INTEGER DEFAULT 0, golden_goal INTEGER)''')
+                  fixture_id INTEGER, home_score INTEGER, away_score INTEGER, points INTEGER DEFAULT 0, 
+                  golden_goal INTEGER, last_rank INTEGER DEFAULT 0)''')
     c.execute('''CREATE TABLE IF NOT EXISTS extra_questions
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id_str TEXT, fixture_id INTEGER, 
                   question_text TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS extra_bets
                  (id INTEGER PRIMARY KEY AUTOINCREMENT, group_id_str TEXT, user_name TEXT, 
                   question_id INTEGER, user_answer TEXT)''')
+    
+    try:
+        c.execute("ALTER TABLE bets ADD COLUMN last_rank INTEGER DEFAULT 0")
+    except:
+        pass
+        
     conn.commit(); conn.close()
 
 init_db()
@@ -56,6 +63,18 @@ def get_round_start(group_id_str):
 
 def update_points_logic():
     conn = get_db(); c = conn.cursor()
+    
+    # 1. LAGRE NÅVÆRENDE PLASSERING FØR VI OPPDATERER POENG (Trend-logikk)
+    c.execute("SELECT DISTINCT group_id_str FROM bets")
+    all_groups = [r[0] for r in c.fetchall()]
+    for gid in all_groups:
+        c.execute("SELECT user_name, SUM(points) as total FROM bets WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC", (gid,))
+        current_lb = c.fetchall()
+        for rank, row in enumerate(current_lb, 1):
+            c.execute("UPDATE bets SET last_rank = ? WHERE user_name = ? AND group_id_str = ?", (rank, row[0], gid))
+    conn.commit()
+
+    # 2. HENT DATA FRA API
     c.execute("SELECT DISTINCT league_id FROM fixtures")
     leagues = [row[0] for row in c.fetchall()]
     headers = {'X-Auth-Token': API_KEY}
@@ -73,17 +92,28 @@ def update_points_logic():
                     if (not f_goal or f_goal == 0) and (h_act + a_act > 0):
                         f_goal = 25 
                         c.execute("UPDATE fixtures SET first_goal_min = ? WHERE id = ?", (f_goal, mid))
+                    
                     c.execute("UPDATE fixtures SET home_actual=?, away_actual=?, status=? WHERE id=?", (h_act, a_act, status, mid))
+                    
+                    # BEREGN POENG FOR HVER BRUKER
                     c.execute("SELECT id, group_id_str, user_name, home_score, away_score, golden_goal FROM bets WHERE fixture_id=?", (mid,))
                     for bet_id, gid, user, u_h, u_a, u_gg in c.fetchall():
                         tp = 0
+                        # HUB poeng (3p eller 1p)
                         if u_h == h_act and u_a == a_act: tp += 3
                         elif (u_h > u_a and h_act > a_act) or (u_h < u_a and h_act < a_act) or (u_h == u_a and h_act == a_act): tp += 1
+                        
+                        # Tilleggsspørsmål (2p for JA på målscorer hvis mål er scoret)
                         c.execute("SELECT user_answer FROM extra_bets eb JOIN extra_questions eq ON eb.question_id = eq.id WHERE eb.user_name=? AND eq.fixture_id=? AND eb.group_id_str=?", (user, mid, gid))
                         ex = c.fetchone()
                         if ex and ex[0] == 'JA' and (h_act + a_act > 0): tp += 2
+                        
+                        # Golden Goal spot on (5p)
                         if f_goal and u_gg == f_goal: tp += 5
+                        
                         c.execute("UPDATE bets SET points=? WHERE id=?", (tp, bet_id))
+                    
+                    # Golden Goal Nærmest (2p)
                     if f_goal and f_goal > 0:
                         c.execute("SELECT DISTINCT group_id_str FROM bets WHERE fixture_id=?", (mid,))
                         for (g_val,) in c.fetchall():
@@ -161,10 +191,26 @@ def leaderboard(group_id_str):
     conn = get_db(); c = conn.cursor()
     c.execute("SELECT * FROM groups WHERE group_id_str = ?", (group_id_str,))
     group = c.fetchone()
-    c.execute("SELECT user_name, SUM(points) as total FROM bets WHERE group_id_str = ? GROUP BY user_name ORDER BY total DESC, user_name ASC", (group_id_str,))
+    
+    # Henter nåværende poeng og forrige plassering (for pil-logikk)
+    c.execute("""
+        SELECT user_name, SUM(points) as total, MAX(last_rank) as prev_rank
+        FROM bets WHERE group_id_str = ? 
+        GROUP BY user_name 
+        ORDER BY total DESC, user_name ASC""", (group_id_str,))
     rows = c.fetchall(); conn.close()
+    
+    leaderboard_data = []
+    for rank, r in enumerate(rows, 1):
+        user, pts, prev = r
+        trend = "stay"
+        if prev > 0:
+            if rank < prev: trend = "up"
+            elif rank > prev: trend = "down"
+        leaderboard_data.append({'name': user, 'points': pts, 'trend': trend})
+
     logged_user = session.get('user_name', '')
-    return render_template('leaderboard.html', group=group, leaderboard=rows, current_user=logged_user)
+    return render_template('leaderboard.html', group=group, leaderboard=leaderboard_data, current_user=logged_user)
 
 # --- API RUTER ---
 
@@ -246,18 +292,13 @@ def get_user_bets(group_id_str, user_name):
     main_bet = c.fetchall()
     c.execute("SELECT q.question_text, eb.user_answer FROM extra_bets eb JOIN extra_questions q ON eb.question_id = q.id WHERE eb.group_id_str = ? AND eb.user_name = ?", (group_id_str, user))
     extras = c.fetchall()
-    c.execute("SELECT f.first_goal_min FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id JOIN groups g ON gm.group_id = g.id WHERE g.group_id_str = ? AND f.first_goal_min > 0 LIMIT 1", (group_id_str,))
-    gg_res = c.fetchone(); gg_min = gg_res[0] if gg_res else 0
-    winner_name = "Ingen"
-    if gg_min > 0:
-        c.execute("SELECT user_name FROM bets WHERE group_id_str = ? AND golden_goal > 0 ORDER BY ABS(golden_goal - ?) ASC LIMIT 1", (group_id_str, gg_min))
-        win_res = c.fetchone()
-        if win_res: winner_name = win_res[0]
+    c.execute("SELECT status FROM fixtures f JOIN group_matches gm ON f.id = gm.fixture_id JOIN groups g ON gm.group_id = g.id WHERE g.group_id_str = ? AND f.status = 'in_play' LIMIT 1", (group_id_str,))
+    is_live = 1 if c.fetchone() else 0
     conn.close()
     return jsonify({
         'main': [{'h': b[0], 'a': b[1], 'pts': b[2], 'gg': b[3], 'ht': b[4], 'at': b[5], 'hl': b[6], 'al': b[7]} for b in main_bet],
         'extras': [{'q': e[0], 'ans': e[1]} for e in extras],
-        'gg_live': gg_min, 'gg_winner': winner_name
+        'is_live': is_live
     })
 
 if __name__ == '__main__':
