@@ -7,14 +7,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-gold: #FFD700; }
+        :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-gold: #FFD700; --nt-green: #008a46; }
         body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
         .leaderboard-container { max-width: 500px; margin: auto; }
-        .live-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 5px; }
+        
+        .live-status { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 15px; }
         .live-dot { height: 8px; width: 8px; background-color: var(--md-red); border-radius: 50%; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(0.95); opacity: 1; } 70% { transform: scale(1.6); opacity: 0; } 100% { opacity: 0; } }
         
-        .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); transition: 0.5s; }
+        .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); }
         .prize-icon { font-size: 2rem; margin-right: 20px; }
         
         .leaderboard-card { background: white; border-radius: 28px; box-shadow: 0 15px 45px rgba(0,0,0,0.07); overflow: hidden; }
@@ -24,7 +25,7 @@
         
         .points-cell { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
         .points-display { font-weight: 800; color: var(--md-red); font-size: 1.2rem; }
-        .chevron { width: 16px; height: 16px; transition: transform 0.3s; color: #bbb; stroke-width: 3; }
+        .chevron { width: 16px; height: 16px; transition: transform 0.3s; color: #bbb; stroke: currentColor; stroke-width: 3; fill: none; }
         .open .chevron { transform: rotate(180deg); color: var(--md-red); }
 
         .details-row { display: none; background: #fafafa; }
@@ -32,6 +33,25 @@
         .team-box { width: 30%; text-align: center; }
         .team-box img { width: 25px; height: 25px; object-fit: contain; }
         .team-box span { display: block; font-size: 0.65rem; font-weight: 800; margin-top: 4px; }
+        
+        /* ODDS-TRIGGER MODUL */
+        .nt-odds-box { 
+            background: var(--nt-green); 
+            color: white; 
+            border-radius: 18px; 
+            padding: 15px; 
+            margin-top: 15px; 
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 138, 70, 0.2);
+            transition: 0.3s;
+        }
+        .nt-odds-box:hover { transform: translateY(-2px); color: white; opacity: 0.95; }
+        .nt-logo-circle { width: 35px; height: 35px; background: white; color: var(--nt-green); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.7rem; margin-right: 12px; }
+        .odds-val { background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 10px; font-weight: 800; font-size: 1.1rem; }
         
         .extra-box { background: #fff5f5; border-radius: 12px; padding: 12px; margin-top: 15px; }
         .extra-line { display: flex; justify-content: space-between; font-size: 0.75rem; padding: 6px 0; border-bottom: 1px solid #ffebeb; }
@@ -73,7 +93,7 @@
                         <td><span class="fw-800">{{ row[0] }}</span></td>
                         <td class="pe-4">
                             <div class="points-cell">
-                                <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"></path></svg>
+                                <svg class="chevron" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                                 <span class="points-display">{{ row[1] }}p</span>
                             </div>
                         </td>
@@ -99,62 +119,73 @@
                 return;
             }
 
+            // Lukk andre rader
             document.querySelectorAll('.details-row').forEach(row => row.style.display = 'none');
             document.querySelectorAll('.user-row').forEach(row => row.classList.remove('open'));
 
             detailRow.style.display = 'table-row';
             userRow.classList.add('open');
-            content.innerHTML = '<div class="text-center p-2 small">Laster detaljer...</div>';
+            content.innerHTML = '<div class="text-center p-2 small">Henter live-data...</div>';
             
             fetch(`/api/get_user_bets/{{ group[2] }}/${user}`)
             .then(res => res.json())
             .then(data => {
                 let html = '<div class="details-inner">';
                 
-                if (data.main && data.main.length > 0) {
-                    data.main.forEach(b => {
-                        let pDesc = b.pts >= 3 ? "3p - Riktig" : (b.pts >= 1 ? "1p - HUB" : "0p");
-                        html += `
-                            <div class="bet-mini-card shadow-sm mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 0.65rem; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                                    <span class="fw-bold text-muted text-uppercase">Kamp-resultat</span>
-                                    <span class="badge bg-danger">${pDesc}</span>
-                                </div>
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <div class="team-box"><img src="${b.hl}"><span>${b.ht}</span></div>
-                                    <div class="text-center fw-800" style="font-size: 1.2rem; width:40%;">${b.h} - ${b.a}</div>
-                                    <div class="team-box"><img src="${b.al}"><span>${b.at}</span></div>
-                                </div>
-                            </div>`;
-                    });
+                // Kampene brukeren har tippet
+                data.main.forEach(b => {
+                    let pDesc = b.pts >= 3 ? "3p - Riktig" : (b.pts >= 1 ? "1p - HUB" : "0p");
+                    html += `
+                        <div class="bet-mini-card shadow-sm mb-2">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="team-box"><img src="${b.hl}"><span>${b.ht}</span></div>
+                                <div class="text-center fw-800" style="width:40%;">${b.h} - ${b.a}<br><span class="badge bg-danger" style="font-size:0.5rem;">${pDesc}</span></div>
+                                <div class="team-box"><img src="${b.al}"><span>${b.at}</span></div>
+                            </div>
+                        </div>`;
+                });
 
-                    html += '<div class="extra-box">';
-                    
-                    // Golden Goal (Ditt tips)
-                    if(data.main[0].gg && data.main[0].gg !== 0) {
-                        html += `<div class="extra-line"><span class="fw-bold text-muted">Mitt Golden Goal:</span><span class="fw-800 text-danger">${data.main[0].gg}. min</span></div>`;
-                    }
-                    
-                    // Tilleggsspørsmål (Målscorer etc)
-                    if (data.extras && data.extras.length > 0) {
-                        data.extras.forEach(e => {
-                            html += `<div class="extra-line"><span class="fw-bold text-muted">${e.q}</span><span class="fw-800">${e.ans}</span></div>`;
-                        });
-                    }
-                    html += '</div>';
+                // Ekstra-info (Golden Goal og Tillegg)
+                html += '<div class="extra-box">';
+                if(data.main[0].gg > 0) html += `<div class="extra-line"><span>Mitt Golden Goal:</span><b>${data.main[0].gg}. min</b></div>`;
+                
+                let targetPlayer = "";
+                data.extras.forEach(e => {
+                    html += `<div class="extra-line"><span>${e.q}</span><b>${e.ans}</b></div>`;
+                    // Sjekker om det er et målscorer-spørsmål for odds-demo
+                    if(e.q.toLowerCase().includes("mål") || e.q.toLowerCase().includes("scorer")) targetPlayer = e.ans;
+                });
+                html += '</div>';
 
-                    // Oppdater Live Ticker hvis GG er satt i databasen
-                    if(data.gg_live > 0) {
-                        const ticker = document.getElementById('live-ticker');
-                        ticker.style.borderLeft = "6px solid #cc0000";
-                        document.getElementById('ticker-icon').innerHTML = "🎯";
-                        document.getElementById('ticker-label').innerHTML = "LIVE: Golden Goal";
-                        document.getElementById('ticker-text').innerHTML = `${data.gg_live}. min - ${data.gg_winner} leder!`;
-                    }
+                // --- INVESTOR DEMO: NORSK TIPPING ODDS ---
+                if(targetPlayer && targetPlayer !== "Ingen") {
+                    let randomOdds = (Math.random() * (7.0 - 2.5) + 2.5).toFixed(2);
+                    html += `
+                    <a href="https://www.norsk-tipping.no/sport" target="_blank" class="nt-odds-box">
+                        <div class="d-flex align-items-center">
+                            <div class="nt-logo-circle">NT</div>
+                            <div>
+                                <div style="font-size: 0.55rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">Norsk Tipping Live</div>
+                                <div style="font-size: 0.85rem; font-weight: 800;">Scorer ${targetPlayer} nå?</div>
+                            </div>
+                        </div>
+                        <div class="odds-val">${randomOdds}</div>
+                    </a>`;
                 }
+
+                // Oppdater ticker-boksen øverst live hvis GG er registrert
+                if(data.gg_live > 0) {
+                    const ticker = document.getElementById('live-ticker');
+                    ticker.style.borderLeft = "6px solid #cc0000";
+                    document.getElementById('ticker-icon').innerHTML = "🎯";
+                    document.getElementById('ticker-label').innerHTML = "LIVE: Golden Goal";
+                    document.getElementById('ticker-text').innerHTML = `${data.gg_live}. min - ${data.gg_winner} leder!`;
+                }
+
                 content.innerHTML = html + '</div>';
             });
         }
+        // Auto-refresh hvert minutt
         setInterval(() => { window.location.reload(); }, 60000);
     </script>
 </body>
