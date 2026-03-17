@@ -7,13 +7,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-gold: #FFD700; --nt-blue: #0055ff; }
+        :root { --md-red: #cc0000; --md-bg: #f8f9fa; --md-gold: #FFD700; --md-dark: #1e1e1e; }
         body { background-color: var(--md-bg); font-family: 'Plus Jakarta Sans', sans-serif; padding: 20px; }
         .leaderboard-container { max-width: 500px; margin: auto; }
         
-        .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); }
+        /* Ticker øverst */
+        .prize-card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 25px; display: flex; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-left: 6px solid var(--md-gold); transition: 0.5s; }
         .prize-icon { font-size: 2rem; margin-right: 20px; }
         
+        /* Tabell */
         .leaderboard-card { background: white; border-radius: 28px; box-shadow: 0 15px 45px rgba(0,0,0,0.07); overflow: hidden; }
         .user-row { cursor: pointer; border-bottom: 1px solid #f8f8f8; transition: 0.2s; }
         .rank-box { width: 32px; height: 32px; background: #f1f1f1; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; }
@@ -24,27 +26,35 @@
         .chevron { width: 16px; height: 16px; transition: transform 0.3s; color: #bbb; stroke: currentColor; stroke-width: 3; fill: none; }
         .open .chevron { transform: rotate(180deg); color: var(--md-red); }
 
-        .details-row { display: none; background: #fafafa; }
+        /* Detaljer-området */
+        .details-row { display: none; background: #fcfcfc; }
         .bet-mini-card { background: white; border-radius: 16px; padding: 12px; margin-bottom: 10px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .team-box { width: 30%; text-align: center; }
         .team-box img { width: 25px; height: 25px; object-fit: contain; }
         .team-box span { display: block; font-size: 0.65rem; font-weight: 800; margin-top: 4px; }
         
-        /* --- NORSK TIPPING ANNONSE STIL --- */
-        .nt-ad-container { background: white; border-radius: 16px; padding: 15px; margin-top: 15px; border: 1px solid #eee; position: relative; }
-        .nt-header { font-size: 0.65rem; color: #888; text-transform: uppercase; text-align: center; margin-bottom: 10px; letter-spacing: 1px; }
-        .nt-title { font-weight: 800; font-size: 0.95rem; margin-bottom: 5px; text-align: left; }
-        .nt-odds-row { display: flex; gap: 8px; margin-bottom: 15px; }
-        .nt-odds-button { 
-            background: #e9ecef; border: none; border-radius: 8px; flex: 1; padding: 10px 5px; 
-            text-align: center; transition: 0.2s; text-decoration: none; color: inherit;
+        /* NY STATS-BOKS (Erstattet den rosa) */
+        .stats-box { background: var(--md-dark); color: white; border-radius: 16px; padding: 15px; margin-top: 10px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .stats-line { display: flex; justify-content: space-between; font-size: 0.75rem; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .stats-line:last-child { border: none; }
+        .stats-label { color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stats-val { color: #fff; font-weight: 800; }
+
+        /* NORSK TIPPING ANNONSE */
+        .nt-ad-container { background: white; border-radius: 16px; padding: 15px; border: 1px solid #ddd; }
+        .nt-header { font-size: 0.6rem; color: #999; text-transform: uppercase; text-align: center; margin-bottom: 8px; letter-spacing: 1px; }
+        .nt-title { font-weight: 800; font-size: 0.9rem; margin-bottom: 10px; color: #333; }
+        .nt-odds-row { display: flex; gap: 6px; margin-bottom: 12px; }
+        .nt-odds-btn { 
+            background: #f0f2f5; border: none; border-radius: 6px; flex: 1; padding: 8px 2px; 
+            text-align: center; text-decoration: none; color: #333;
         }
-        .nt-odds-button:hover { background: #dee2e6; }
-        .nt-odds-name { font-size: 0.65rem; color: #555; display: block; margin-bottom: 2px; }
-        .nt-odds-val { font-weight: 800; font-size: 1.1rem; display: block; }
+        .nt-label { font-size: 0.6rem; color: #666; display: block; margin-bottom: 2px; }
+        .nt-val { font-weight: 800; font-size: 1rem; display: block; }
         
-        .nt-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f1f1; pt: 10px; margin-top: 10px; }
-        .nt-brand { color: #0055ff; font-weight: 900; font-style: italic; display: flex; align-items: center; gap: 4px; }
-        .nt-legal { font-size: 0.55rem; color: #999; text-decoration: none; }
+        .nt-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px solid #eee; }
+        .nt-logo { height: 18px; }
+        .nt-legal { font-size: 0.5rem; color: #aaa; text-decoration: none; }
     </style>
 </head>
 <body>
@@ -52,7 +62,7 @@
     <div class="leaderboard-container">
         <div class="text-center mb-4">
             <h1 class="fw-800 m-0">{{ group[1] }}</h1>
-            <p class="text-muted small fw-bold">LIVE LEADERBOARD</p>
+            <p class="text-muted small fw-800" style="letter-spacing: 2px;">LIVE LEADERBOARD</p>
         </div>
 
         <div class="prize-card shadow-sm" id="live-ticker">
@@ -76,8 +86,8 @@
                     {% for row in leaderboard %}
                     <tr class="user-row" onclick="toggleDetails('{{ loop.index }}', '{{ row[0] }}')">
                         <td class="ps-4" style="width: 70px;"><div class="rank-box">{{ loop.index }}</div></td>
-                        <td><span class="fw-800">{{ row[0] }}</span></td>
-                        <td class="pe-4">
+                        <td><span class="fw-800 text-dark">{{ row[0] }}</span></td>
+                        <td class="pe-4 text-end">
                             <div class="points-cell">
                                 <svg class="chevron" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                                 <span class="points-display">{{ row[1] }}p</span>
@@ -110,63 +120,60 @@
 
             detailRow.style.display = 'table-row';
             userRow.classList.add('open');
-            content.innerHTML = '<div class="text-center p-2 small">Henter live-data...</div>';
+            content.innerHTML = '<div class="text-center p-4 small text-muted">Laster statistikk...</div>';
             
             fetch(`/api/get_user_bets/{{ group[2] }}/${user}`)
             .then(res => res.json())
             .then(data => {
-                let html = '<div class="details-inner">';
+                let html = '<div class="details-inner animate__animated animate__fadeIn">';
                 
+                // 1. KAMPKORTENE
                 data.main.forEach(b => {
                     let pDesc = b.pts >= 3 ? "3p - Riktig" : (b.pts >= 1 ? "1p - HUB" : "0p");
                     html += `
                         <div class="bet-mini-card shadow-sm mb-2">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <div class="team-box"><img src="${b.hl}"><span>${b.ht}</span></div>
-                                <div class="text-center fw-800" style="width:40%;">${b.h} - ${b.a}<br><span class="badge bg-danger" style="font-size:0.5rem;">${pDesc}</span></div>
-                                <div class="team-box"><img src="${b.al}"><span>${b.at}</span></div>
-                            </div>
+                            <div class="team-box"><img src="${b.hl}"><span>${b.ht}</span></div>
+                            <div class="text-center" style="width:40%;"><b style="font-size:1.1rem; color:#333;">${b.h} - ${b.a}</b><br><span class="badge bg-danger" style="font-size:0.55rem;">${pDesc}</span></div>
+                            <div class="team-box"><img src="${b.al}"><span>${b.at}</span></div>
                         </div>`;
                 });
 
-                let targetPlayer = "";
+                // 2. MØRK STATS-BOKS
+                html += '<div class="stats-box">';
+                let tippedPlayer = "Ingen";
+                if(data.main[0].gg > 0) {
+                    html += `<div class="stats-line"><span class="stats-label">Golden Goal Tips</span><span class="stats-val">${data.main[0].gg}. min</span></div>`;
+                }
+                
                 data.extras.forEach(e => {
-                    if(e.q.toLowerCase().includes("mål") || e.q.toLowerCase().includes("scorer")) targetPlayer = e.ans;
+                    html += `<div class="stats-line"><span class="stats-label">${e.q}</span><span class="stats-val">${e.ans}</span></div>`;
+                    if(e.q.toLowerCase().includes("mål") || e.q.toLowerCase().includes("scorer")) tippedPlayer = e.ans;
                 });
+                html += '</div>';
 
-                // --- NORSK TIPPING INVESTOR DEMO ---
-                if(targetPlayer && targetPlayer !== "Ingen") {
-                    let odds1 = (Math.random() * (4.0 - 1.5) + 1.5).toFixed(2);
-                    let odds2 = (Math.random() * (25.0 - 10.0) + 10.0).toFixed(2);
-                    let odds3 = (Math.random() * (6.0 - 2.5) + 2.5).toFixed(2);
+                // 3. NORSK TIPPING ODDS (Knyttet mot spiller)
+                if(tippedPlayer && tippedPlayer !== "Ingen") {
+                    let o1 = (Math.random() * (3.2 - 1.5) + 1.5).toFixed(2);
+                    let o2 = (Math.random() * (22.0 - 12.0) + 12.0).toFixed(2);
+                    let o3 = (Math.random() * (5.0 - 2.1) + 2.1).toFixed(2);
 
                     html += `
-                    <div class="nt-ad-container shadow-sm">
+                    <div class="nt-ad-container mt-2 shadow-sm">
                         <div class="nt-header">ANNONSE</div>
-                        <div class="nt-title">Neste målscorer: ${targetPlayer}</div>
+                        <div class="nt-title">Målscorer: ${tippedPlayer}</div>
                         <div class="nt-odds-row">
-                            <a href="https://www.norsk-tipping.no" class="nt-odds-button">
-                                <span class="nt-odds-name">Ja</span>
-                                <span class="nt-odds-val">${odds1}</span>
-                            </a>
-                            <a href="https://www.norsk-tipping.no" class="nt-odds-button">
-                                <span class="nt-odds-name">Ingen</span>
-                                <span class="nt-odds-val">${odds2}</span>
-                            </a>
-                            <a href="https://www.norsk-tipping.no" class="nt-odds-button">
-                                <span class="nt-odds-name">Nei</span>
-                                <span class="nt-odds-val">${odds3}</span>
-                            </a>
+                            <div class="nt-odds-btn"><span class="nt-label">Ja</span><span class="nt-val">${o1}</span></div>
+                            <div class="nt-odds-btn"><span class="nt-label">Ingen</span><span class="nt-val">${o2}</span></div>
+                            <div class="nt-odds-btn"><span class="nt-label">Nei</span><span class="nt-val">${o3}</span></div>
                         </div>
                         <div class="nt-footer">
-                            <div class="nt-brand">
-                                <span style="font-size:1.2rem;">×</span> Oddsen
-                            </div>
-                            <a href="https://hjelpelinjen.no" class="nt-legal">18+ Hjelpelinjen.no</a>
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Norsk_Tipping_logo.svg/2560px-Norsk_Tipping_logo.svg.png" class="nt-logo">
+                            <span class="nt-legal">18+ Hjelpelinjen.no</span>
                         </div>
                     </div>`;
                 }
 
+                // 4. LIVE UPDATE FOR GOLDEN GOAL
                 if(data.gg_live > 0) {
                     const ticker = document.getElementById('live-ticker');
                     ticker.style.borderLeft = "6px solid #cc0000";
